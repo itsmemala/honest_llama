@@ -73,16 +73,10 @@ def tokenized_tqa(dataset, tokenizer):
 
     all_prompts = []
     all_labels = []
-    # for i in range(len(dataset)):
-        # question = dataset[i]['question']
-        # choices = dataset[i]['mc2_targets']['choices']
-        # labels = dataset[i]['mc2_targets']['labels']
-    for val in dataset:
-        # print(val.keys())
-        # break
-        question = val['question']
-        choices = val['mc2_targets']['choices']
-        labels = val['mc2_targets']['labels']
+    for i in range(len(dataset)):
+        question = dataset[i]['question']
+        choices = dataset[i]['mc2_targets']['choices']
+        labels = dataset[i]['mc2_targets']['labels']
 
         assert len(choices) == len(labels), (len(choices), len(labels))
 
@@ -132,29 +126,20 @@ def tokenized_tqa_gen(dataset, tokenizer):
     all_prompts = []
     all_labels = []
     all_categories = []
-    # for i in range(len(dataset)): 
-    #     question = dataset[i]['question']
-    #     category = dataset[i]['category']
+    for i in range(len(dataset)): 
+        question = dataset[i]['question']
+        category = dataset[i]['category']
 
-    #     for j in range(len(dataset[i]['correct_answers'])): 
-    #         answer = dataset[i]['correct_answers'][j]
-    for i in range(817):
-        val = next(iter(dataset))
-        question = val['question']
-        category = val['category']
-
-        for j in range(len(val['correct_answers'])): 
-            answer = val['correct_answers'][j]
+        for j in range(len(dataset[i]['correct_answers'])): 
+            answer = dataset[i]['correct_answers'][j]
             prompt = format_truthfulqa(question, answer)
             prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
             all_prompts.append(prompt)
             all_labels.append(1)
             all_categories.append(category)
         
-        # for j in range(len(dataset[i]['incorrect_answers'])):
-        #     answer = dataset[i]['incorrect_answers'][j]
-        for j in range(len(val['incorrect_answers'])):
-            answer = val['incorrect_answers'][j]
+        for j in range(len(dataset[i]['incorrect_answers'])):
+            answer = dataset[i]['incorrect_answers'][j]
             prompt = format_truthfulqa(question, answer)
             prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
             all_prompts.append(prompt)
@@ -176,17 +161,11 @@ def get_llama_activations_bau(model, prompt, device):
         hidden_states = output.hidden_states
         hidden_states = torch.stack(hidden_states, dim = 0).squeeze()
         hidden_states = hidden_states.detach().cpu().numpy()
-        print(hidden_states.shape)
         head_wise_hidden_states = [ret[head].output.squeeze().detach().cpu() for head in HEADS]
-        print(len(head_wise_hidden_states),head_wise_hidden_states[0].shape)
         head_wise_hidden_states = torch.stack(head_wise_hidden_states, dim = 0).squeeze().numpy()
-        print(head_wise_hidden_states.shape)
         mlp_wise_hidden_states = [ret[mlp].output.squeeze().detach().cpu() for mlp in MLPS]
-        print(len(mlp_wise_hidden_states),mlp_wise_hidden_states[0].shape)
         mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().numpy()
-        print(mlp_wise_hidden_states.shape)
 
-        # del output
     return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states
 
 

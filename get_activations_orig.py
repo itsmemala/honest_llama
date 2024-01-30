@@ -1,6 +1,5 @@
 import os
 import torch
-import datasets
 from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
@@ -40,24 +39,21 @@ def main():
     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     device = "cuda"
 
-    if args.dataset_name == "tqa_mc2":
-        # all_hf_datasets = datasets.list_datasets()
-        # print([name for name in all_hf_datasets if 'truthful_qa' in name])
-        dataset = load_dataset("truthful_qa", "multiple_choice", streaming= True)['validation']
-        print('Here')
+    if args.dataset_name == "tqa_mc2": 
+        dataset = load_dataset("truthful_qa", "multiple_choice")['validation']
         formatter = tokenized_tqa
     elif args.dataset_name == "tqa_gen": 
-        dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
+        dataset = load_dataset("truthful_qa", 'generation')['validation']
         formatter = tokenized_tqa_gen
     elif args.dataset_name == 'tqa_gen_end_q': 
-        dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
+        dataset = load_dataset("truthful_qa", 'generation')['validation']
         formatter = tokenized_tqa_gen_end_q
     else: 
         raise ValueError("Invalid dataset name")
 
     print("Tokenizing prompts")
     if args.dataset_name == "tqa_gen" or args.dataset_name == "tqa_gen_end_q": 
-        prompts, labels, categories = formatter(dataset.with_format('torch'), tokenizer)
+        prompts, labels, categories = formatter(dataset, tokenizer)
         with open(f'features/{args.model_name}_{args.dataset_name}_categories.pkl', 'wb') as f:
             pickle.dump(categories, f)
     else: 
@@ -65,27 +61,21 @@ def main():
 
     all_layer_wise_activations = []
     all_head_wise_activations = []
-    all_mlp_wise_activations = []
 
     print("Getting activations")
-    for prompt in tqdm(prompts[:100]):
-        layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
+    for prompt in tqdm(prompts):
+        layer_wise_activations, head_wise_activations, _ = get_llama_activations_bau(model, prompt, device)
         all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
         all_head_wise_activations.append(head_wise_activations[:,-1,:])
-        all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
-        break
 
-    # print("Saving labels")
-    # np.save(f'features/{args.model_name}_{args.dataset_name}_labels.npy', labels)
+    print("Saving labels")
+    np.save(f'features/{args.model_name}_{args.dataset_name}_labels.npy', labels)
 
-    # print("Saving layer wise activations")
-    # np.save(f'features/{args.model_name}_{args.dataset_name}_layer_wise.npy', all_layer_wise_activations)
+    print("Saving layer wise activations")
+    np.save(f'features/{args.model_name}_{args.dataset_name}_layer_wise.npy', all_layer_wise_activations)
     
-    # print("Saving head wise activations")
-    # np.save(f'features/{args.model_name}_{args.dataset_name}_head_wise.npy', all_head_wise_activations)
-
-    # print("Saving mlp wise activations")
-    # np.save(f'features/{args.model_name}_{args.dataset_name}_mlp_wise.npy', all_mlp_wise_activations)
+    print("Saving head wise activations")
+    np.save(f'features/{args.model_name}_{args.dataset_name}_head_wise.npy', all_head_wise_activations)
 
 if __name__ == '__main__':
     main()
