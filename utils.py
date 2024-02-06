@@ -688,6 +688,30 @@ def train_probes(seed, train_set_idxs, val_set_idxs, separated_head_wise_activat
 
     return probes, all_head_accs_np
 
+def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers):
+    
+    all_layer_accs = []
+    probes = []
+
+    all_X_train = np.concatenate([separated_mlp_wise_activations[i] for i in train_set_idxs], axis = 0)
+    all_X_val = np.concatenate([separated_mlp_wise_activations[i] for i in val_set_idxs], axis = 0)
+    y_train = np.concatenate([separated_labels[i] for i in train_set_idxs], axis = 0)
+    y_val = np.concatenate([separated_labels[i] for i in val_set_idxs], axis = 0)
+
+    for layer in tqdm(range(num_layers)): 
+        X_train = all_X_train[:,layer,head,:]
+        X_val = all_X_val[:,layer,head,:]
+
+        clf = LogisticRegression(random_state=seed, max_iter=1000).fit(X_train, y_train)
+        y_pred = clf.predict(X_train)
+        y_val_pred = clf.predict(X_val)
+        all_layer_accs.append(accuracy_score(y_val, y_val_pred))
+        probes.append(clf)
+
+    all_layer_accs = np.array(all_layer_accs)
+
+    return probes, all_layer_accs
+
 def get_top_heads(train_idxs, val_idxs, separated_activations, separated_labels, num_layers, num_heads, seed, num_to_intervene, use_random_dir=False):
 
     probes, all_head_accs_np = train_probes(seed, train_idxs, val_idxs, separated_activations, separated_labels, num_layers=num_layers, num_heads=num_heads)

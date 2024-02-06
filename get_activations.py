@@ -68,25 +68,28 @@ def main():
     all_head_wise_activations = []
     all_mlp_wise_activations = []
 
-    print("Getting activations")
-    for prompt in tqdm(prompts[:100]):
-        layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-        all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
-        all_head_wise_activations.append(head_wise_activations[:,-1,:])
-        all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
-        # break
+    # start = 1000
+    # end = 4000 # 9803 : index of last
+    for start, end in [(7000,9803)]:
+        print("Getting activations for "+str(start)+" to "+str(end))
+        for prompt in tqdm(prompts[start:end]):
+            layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
+            all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
+            all_head_wise_activations.append(head_wise_activations[:,-1,:])
+            all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+            # break
 
-    print("Saving labels")
-    np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels.npy', labels)
+        print("Saving labels")
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels_{end}.npy', labels)
 
-    print("Saving layer wise activations")
-    np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_layer_wise.npy', all_layer_wise_activations)
-    
-    print("Saving head wise activations")
-    np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise.npy', all_head_wise_activations)
+        print("Saving layer wise activations")
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_layer_wise_{end}.npy', all_layer_wise_activations)
+        
+        print("Saving head wise activations")
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise_{end}.npy', all_head_wise_activations)
 
-    print("Saving mlp wise activations")
-    np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_mlp_wise.npy', all_mlp_wise_activations)
+        print("Saving mlp wise activations")
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_mlp_wise_{end}.npy', all_mlp_wise_activations)
 
 if __name__ == '__main__':
     main()
