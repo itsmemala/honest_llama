@@ -176,17 +176,17 @@ def get_llama_activations_bau(model, prompt, device):
         hidden_states = output.hidden_states
         hidden_states = torch.stack(hidden_states, dim = 0).squeeze()
         hidden_states = hidden_states.detach().cpu().numpy()
-        print(hidden_states.shape)
+        # print(hidden_states.shape)
         head_wise_hidden_states = [ret[head].output.squeeze().detach().cpu() for head in HEADS]
-        print(len(head_wise_hidden_states),head_wise_hidden_states[0].shape)
+        # print(len(head_wise_hidden_states),head_wise_hidden_states[0].shape)
         head_wise_hidden_states = torch.stack(head_wise_hidden_states, dim = 0).squeeze().numpy()
-        print(head_wise_hidden_states.shape)
+        # print(head_wise_hidden_states.shape) # (32,21,4096)
         mlp_wise_hidden_states = [ret[mlp].output.squeeze().detach().cpu() for mlp in MLPS]
-        print(len(mlp_wise_hidden_states),mlp_wise_hidden_states[0].shape)
+        # print(len(mlp_wise_hidden_states),mlp_wise_hidden_states[0].shape)
         mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().numpy()
-        print(mlp_wise_hidden_states.shape)
+        # print(mlp_wise_hidden_states.shape)
 
-        # del output
+        del output
     return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states
 
 
