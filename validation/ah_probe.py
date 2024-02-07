@@ -11,7 +11,7 @@ from datasets import load_dataset
 
 import sys
 sys.path.append('../')
-from utils import get_separated_activations, train_mlp_probes, train_mlp_single_probe
+from utils import get_separated_activations, train_probes, train_ah_single_probe
 import llama
 
 HF_NAMES = {
@@ -46,7 +46,7 @@ def main():
     parser.add_argument('--seed', type=int, default=42, help='seed')
     parser.add_argument('--judge_name', type=str, required=False)
     parser.add_argument('--info_name', type=str, required=False)
-    parser.add_argument('--save_path', type=str, default='')
+    parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--type_probes', type=str, default='ind')
     args = parser.parse_args()
 
@@ -80,19 +80,20 @@ def main():
 
     # load activations
     try:
-        mlp_wise_activations = np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_mlp_wise.npy")
+        head_wise_activations = np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise.npy")
         labels = np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels.npy")
     except FileNotFoundError:
         file_ends = [1000,3000,4000,5000,6000] #,7000,8000,9000,9803]
-        mlp_wise_activations, labels = [], []
+        head_wise_activations, labels = [], []
         for file_end in file_ends:
-            mlp_wise_activations.append(np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_mlp_wise_{file_end}.npy"))
+            head_wise_activations.append(np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise_{file_end}.npy"))
             labels.append(np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels_{file_end}.npy"))
-        mlp_wise_activations = np.concatenate(mlp_wise_activations, axis=0)
-        assert mlp_wise_activations.shape[1:] == (32, 4096)
+        head_wise_activations = np.concatenate(head_wise_activations, axis=0)
+        assert head_wise_activations.shape[1:] == (32, 4096)
         labels = np.concatenate(labels, axis=0)
+    head_wise_activations = rearrange(head_wise_activations, 'b l (h d) -> b l h d', h = num_heads)
 
-    separated_mlp_wise_activations, separated_labels, idxs_to_split_at = get_separated_activations(labels, mlp_wise_activations, 'generation')
+    separated_head_wise_activations, separated_labels, idxs_to_split_at = get_separated_activations(labels, head_wise_activations, 'generation')
 
     # run k-fold cross validation
     results = []
@@ -109,10 +110,10 @@ def main():
 
         # train probes
         if args.type_probes=='ind':
-            probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
+            probes, curr_fold_results = train_probes(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads)
         else:
-            probe, curr_fold_results = train_mlp_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
-            np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_coef.npy', probe.coef_)
+            probe, curr_fold_results = train_ah_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads)
+            np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_coef.npy', probe.coef_)
 
         print(f"FOLD {i}")
         print(curr_fold_results)
@@ -120,7 +121,7 @@ def main():
         results.append(curr_fold_results)
     
     results = np.array(results)
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_accs.npy', results)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_accs.npy', results)
     final = results.mean(axis=0)
     print('Mean Across Folds:',final)
 

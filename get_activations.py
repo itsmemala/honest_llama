@@ -64,13 +64,14 @@ def main():
     else: 
         prompts, labels = formatter(dataset, tokenizer)
 
-    all_layer_wise_activations = []
-    all_head_wise_activations = []
-    all_mlp_wise_activations = []
-
     # start = 1000
     # end = 4000 # 9803 : index of last
-    for start, end in [(7000,9803)]:
+    # for start, end in [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,9803)]:
+    for start, end in [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]:
+        all_layer_wise_activations = []
+        all_head_wise_activations = []
+        all_mlp_wise_activations = []
+
         print("Getting activations for "+str(start)+" to "+str(end))
         for prompt in tqdm(prompts[start:end]):
             layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)

@@ -77,9 +77,7 @@ def tokenized_tqa(dataset, tokenizer):
         # question = dataset[i]['question']
         # choices = dataset[i]['mc2_targets']['choices']
         # labels = dataset[i]['mc2_targets']['labels']
-    for val in dataset:
-        # print(val.keys())
-        # break
+    for val in list(dataset.take(817)):
         question = val['question']
         choices = val['mc2_targets']['choices']
         labels = val['mc2_targets']['labels']
@@ -138,8 +136,7 @@ def tokenized_tqa_gen(dataset, tokenizer):
 
     #     for j in range(len(dataset[i]['correct_answers'])): 
     #         answer = dataset[i]['correct_answers'][j]
-    for i in range(817):
-        val = next(iter(dataset))
+    for val in list(dataset.take(817)):
         question = val['question']
         category = val['category']
 
@@ -688,6 +685,22 @@ def train_probes(seed, train_set_idxs, val_set_idxs, separated_head_wise_activat
 
     return probes, all_head_accs_np
 
+def train_ah_single_probe(seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads):
+
+    all_X_train = np.concatenate([separated_head_wise_activations[i] for i in train_set_idxs], axis = 0)
+    all_X_val = np.concatenate([separated_head_wise_activations[i] for i in val_set_idxs], axis = 0)
+    y_train = np.concatenate([separated_labels[i] for i in train_set_idxs], axis = 0)
+    y_val = np.concatenate([separated_labels[i] for i in val_set_idxs], axis = 0)
+
+    X_train = rearrange(all_X_train, 'b l h d -> b (l h d)', l = num_layers, h = num_heads)
+    X_val = rearrange(all_X_val, 'b l h d -> b (l h d)', l = num_layers, h = num_heads)
+
+    clf = LogisticRegression(random_state=seed, max_iter=1000).fit(X_train, y_train)
+    y_pred = clf.predict(X_train)
+    y_val_pred = clf.predict(X_val)
+
+    return clf, accuracy_score(y_val, y_val_pred)
+
 def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers):
     
     all_layer_accs = []
@@ -699,8 +712,8 @@ def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_acti
     y_val = np.concatenate([separated_labels[i] for i in val_set_idxs], axis = 0)
 
     for layer in tqdm(range(num_layers)): 
-        X_train = all_X_train[:,layer,head,:]
-        X_val = all_X_val[:,layer,head,:]
+        X_train = all_X_train[:,layer,:]
+        X_val = all_X_val[:,layer,:]
 
         clf = LogisticRegression(random_state=seed, max_iter=1000).fit(X_train, y_train)
         y_pred = clf.predict(X_train)
@@ -711,6 +724,22 @@ def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_acti
     all_layer_accs = np.array(all_layer_accs)
 
     return probes, all_layer_accs
+
+def train_mlp_single_probe(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers):
+    
+    all_X_train = np.concatenate([separated_mlp_wise_activations[i] for i in train_set_idxs], axis = 0)
+    all_X_val = np.concatenate([separated_mlp_wise_activations[i] for i in val_set_idxs], axis = 0)
+    y_train = np.concatenate([separated_labels[i] for i in train_set_idxs], axis = 0)
+    y_val = np.concatenate([separated_labels[i] for i in val_set_idxs], axis = 0)
+    
+    X_train = rearrange(all_X_train, 'b l d -> b (l d)', l = num_layers)
+    X_val = rearrange(all_X_val, 'b l d -> b (l d)', l = num_layers)
+
+    clf = LogisticRegression(random_state=seed, max_iter=1000).fit(X_train, y_train)
+    y_pred = clf.predict(X_train)
+    y_val_pred = clf.predict(X_val)
+
+    return clf, accuracy_score(y_val, y_val_pred)
 
 def get_top_heads(train_idxs, val_idxs, separated_activations, separated_labels, num_layers, num_heads, seed, num_to_intervene, use_random_dir=False):
 
@@ -750,13 +779,18 @@ def get_interventions_dict(top_heads, probes, tuning_activations, num_heads, use
 
     return interventions
 
-def get_separated_activations(labels, head_wise_activations): 
+def get_separated_activations(labels, head_wise_activations, dataset_name='multiple_choice'): 
 
     # separate activations by question
-    dataset=load_dataset('truthful_qa', 'multiple_choice')['validation']
+    dataset=load_dataset('truthful_qa', dataset_name, streaming=True)['validation']
     actual_labels = []
-    for i in range(len(dataset)):
-        actual_labels.append(dataset[i]['mc2_targets']['labels'])
+    # for i in range(len(dataset)):
+    #     actual_labels.append(dataset[i]['mc2_targets']['labels'])
+    for val in list(dataset.take(817)):
+        if dataset_name=='multiple_choice':
+            actual_labels.append(val['mc2_targets']['labels'])
+        elif dataset_name=='generation':
+            actual_labels.append([1 for ans in val['correct_answers']]+[0 for ans in val['incorrect_answers']])
 
     idxs_to_split_at = np.cumsum([len(x) for x in actual_labels])        
 

@@ -56,7 +56,8 @@ def main():
     
     # Prepare prompts
     train_prompts = []
-    for i in train_reflection_indexes[:2]:
+    end=500
+    for i in train_reflection_indexes[:end]:
         prompt = "Below is a counselling conversation between a therapist and a client. Generate the last therapist response.\n"
         prompt += train_data[i]['prompt']
         # prompt += "\n An appropriate response from the therapist to the above context would be:"
@@ -81,7 +82,7 @@ def main():
                             ,'response1':response})
         # print('Response:',response)
     
-    with open(f'{args.save_path}/responses/{args.model_name}_annomi_greedy_responses.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/{args.model_name}_annomi_greedy_responses_{end}.json', 'w') as outfile:
         for entry in responses:
             json.dump(entry, outfile)
             outfile.write('\n')
