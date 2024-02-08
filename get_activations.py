@@ -5,7 +5,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
 import pickle
-from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q
+from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_triviaqa
 import llama
 import pickle
 import argparse
@@ -53,6 +53,9 @@ def main():
     elif args.dataset_name == 'tqa_gen_end_q': 
         dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
         formatter = tokenized_tqa_gen_end_q
+    elif args.dataset_name == 'triviaqa': 
+        dataset = load_dataset("OamPatel/iti_nq_open_val," streaming= True)['validation']
+        formatter = tokenized_triviaqa
     else: 
         raise ValueError("Invalid dataset name")
 
@@ -64,10 +67,11 @@ def main():
     else: 
         prompts, labels = formatter(dataset, tokenizer)
 
-    # start = 1000
-    # end = 4000 # 9803 : index of last
-    # for start, end in [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,9803)]:
-    for start, end in [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]:
+    if 'tqa' in args.dataset_name:
+        load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
+    else:
+        load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
+    for start, end in load_ranges:
         all_layer_wise_activations = []
         all_head_wise_activations = []
         all_mlp_wise_activations = []
@@ -80,9 +84,6 @@ def main():
             all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
             # break
 
-        print("Saving labels")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels_{end}.npy', labels)
-
         print("Saving layer wise activations")
         np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_layer_wise_{end}.npy', all_layer_wise_activations)
         
@@ -91,6 +92,9 @@ def main():
 
         print("Saving mlp wise activations")
         np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_mlp_wise_{end}.npy', all_mlp_wise_activations)
+
+    print("Saving labels")
+    np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels_{end}.npy', labels)
 
 if __name__ == '__main__':
     main()

@@ -161,6 +161,29 @@ def tokenized_tqa_gen(dataset, tokenizer):
     return all_prompts, all_labels, all_categories
 
 
+def tokenized_triviaqa(dataset, tokenizer): 
+
+    all_prompts = []
+    all_labels = []
+    for val in list(dataset.take(3610)):
+        question = val['question']
+
+        for j in range(len(val['answer'])): 
+            answer = val['answer'][j]
+            prompt = format_truthfulqa(question, answer)
+            prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+            all_prompts.append(prompt)
+            all_labels.append(1)
+        
+        answer = val['false_answer'][j]
+        prompt = format_truthfulqa(question, answer)
+        prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+        all_prompts.append(prompt)
+        all_labels.append(0)
+        
+    return all_prompts, all_labels
+
+
 def get_llama_activations_bau(model, prompt, device): 
 
     HEADS = [f"model.layers.{i}.self_attn.head_out" for i in range(model.config.num_hidden_layers)]

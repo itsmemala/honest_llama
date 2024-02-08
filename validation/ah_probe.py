@@ -84,13 +84,13 @@ def main():
         labels = np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels.npy")
     except FileNotFoundError:
         file_ends = [1000,3000,4000,5000,6000] #,7000,8000,9000,9803]
-        head_wise_activations, labels = [], []
+        head_wise_activations = []
         for file_end in file_ends:
             head_wise_activations.append(np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise_{file_end}.npy"))
-            labels.append(np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels_{file_end}.npy"))
         head_wise_activations = np.concatenate(head_wise_activations, axis=0)
         assert head_wise_activations.shape[1:] == (32, 4096)
-        labels = np.concatenate(labels, axis=0)
+        labels = np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels_{file_end}.npy")
+        assert len(labels)==len(head_wise_activations)
     head_wise_activations = rearrange(head_wise_activations, 'b l (h d) -> b l h d', h = num_heads)
 
     separated_head_wise_activations, separated_labels, idxs_to_split_at = get_separated_activations(labels, head_wise_activations, 'generation')
@@ -116,14 +116,22 @@ def main():
             np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_coef.npy', probe.coef_)
 
         print(f"FOLD {i}")
-        print(curr_fold_results)
+        # print(curr_fold_results)
 
         results.append(curr_fold_results)
     
     results = np.array(results)
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_accs.npy', results)
     final = results.mean(axis=0)
-    print('Mean Across Folds:',final)
+    # print('Mean Across Folds:',final)
+
+    if args.type_probes=='ind':
+        best_head = np.argmax(np.mean(results, axis=0))
+        best_layer, best_layer_head = int(np.floor(best_head/32)), (best_head%32)-1
+        truth_activations = np.concatenate([head_wise_activations[i,best_layer,best_layer_head,:] for i,label in enumerate(labels) if label==1], axis = 0)
+        false_activations = np.concatenate([head_wise_activations[i,best_layer,best_layer_head,:] for i,label in enumerate(labels) if label==0], axis = 0)
+        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_bestprobe_trueActsVar.npy',np.var(truth_activations))
+        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_bestprobe_falseActsVar.npy',np.var(false_activations))
 
 if __name__ == "__main__":
     main()
