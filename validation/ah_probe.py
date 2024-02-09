@@ -57,16 +57,17 @@ def main():
 
     # load dataset
     if args.dataset_name == "tqa_mc2":
-        dataset = load_dataset("truthful_qa", "multiple_choice", streaming= True)['validation']
+        # dataset = load_dataset("truthful_qa", "multiple_choice", streaming= True)['validation']
+        len_dataset = 817
     elif args.dataset_name=='tqa_gen':
-        dataset = load_dataset("truthful_qa", "generation", streaming= True)['validation']
-    # golden_q_order = list(dataset["question"])
-    golden_q_order = []
-    for val in list(dataset.take(817)):
-        golden_q_order.append(val['question'])
+        # dataset = load_dataset("truthful_qa", "generation", streaming= True)['validation']
+        len_dataset = 817
+    elif args.dataset_name=='nq':
+        # dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
+        len_dataset = 3610
     
     # get two folds using numpy
-    fold_idxs = np.array_split(np.arange(len(golden_q_order)), args.num_fold)
+    fold_idxs = np.array_split(np.arange(len_dataset), args.num_fold)
 
     # create model
     model_name = HF_NAMES["honest_" + args.model_name if args.use_honest else args.model_name]
@@ -83,7 +84,10 @@ def main():
         head_wise_activations = np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise.npy")
         labels = np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels.npy")
     except FileNotFoundError:
-        file_ends = [1000,3000,4000,5000,6000] #,7000,8000,9000,9803]
+        if 'tqa' in args.dataset_name:
+            file_ends = [1000,3000,4000,5000,6000]
+        else:
+            file_ends = [1000,3000,5000,7000,9000,11000]
         head_wise_activations = []
         for file_end in file_ends:
             head_wise_activations.append(np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise_{file_end}.npy"))
@@ -93,7 +97,7 @@ def main():
         assert len(labels)==len(head_wise_activations)
     head_wise_activations = rearrange(head_wise_activations, 'b l (h d) -> b l h d', h = num_heads)
 
-    separated_head_wise_activations, separated_labels, idxs_to_split_at = get_separated_activations(labels, head_wise_activations, 'generation')
+    separated_head_wise_activations, separated_labels, idxs_to_split_at = get_separated_activations(labels, head_wise_activations, args.dataset_name)
 
     # run k-fold cross validation
     results = []

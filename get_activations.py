@@ -53,9 +53,9 @@ def main():
     elif args.dataset_name == 'tqa_gen_end_q': 
         dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
         formatter = tokenized_tqa_gen_end_q
-    elif args.dataset_name == 'triviaqa': 
-        dataset = load_dataset("OamPatel/iti_nq_open_val," streaming= True)['validation']
-        formatter = tokenized_triviaqa
+    elif args.dataset_name == 'nq': 
+        dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
+        formatter = tokenized_nq
     else: 
         raise ValueError("Invalid dataset name")
 

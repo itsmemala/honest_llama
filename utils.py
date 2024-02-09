@@ -161,7 +161,7 @@ def tokenized_tqa_gen(dataset, tokenizer):
     return all_prompts, all_labels, all_categories
 
 
-def tokenized_triviaqa(dataset, tokenizer): 
+def tokenized_nq(dataset, tokenizer): 
 
     all_prompts = []
     all_labels = []
@@ -175,7 +175,7 @@ def tokenized_triviaqa(dataset, tokenizer):
             all_prompts.append(prompt)
             all_labels.append(1)
         
-        answer = val['false_answer'][j]
+        answer = val['false_answer']
         prompt = format_truthfulqa(question, answer)
         prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
         all_prompts.append(prompt)
@@ -802,18 +802,28 @@ def get_interventions_dict(top_heads, probes, tuning_activations, num_heads, use
 
     return interventions
 
-def get_separated_activations(labels, head_wise_activations, dataset_name='multiple_choice'): 
+def get_separated_activations(labels, head_wise_activations, dataset_name='tqa_mc2'): 
 
     # separate activations by question
-    dataset=load_dataset('truthful_qa', dataset_name, streaming=True)['validation']
+    if dataset_name == "tqa_mc2":
+        dataset = load_dataset("truthful_qa", "multiple_choice", streaming= True)['validation']
+        len_dataset = 817
+    elif dataset_name=='tqa_gen':
+        dataset = load_dataset("truthful_qa", "generation", streaming= True)['validation']
+        len_dataset = 817
+    elif dataset_name=='nq':
+        dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
+        len_dataset = 3610
     actual_labels = []
     # for i in range(len(dataset)):
     #     actual_labels.append(dataset[i]['mc2_targets']['labels'])
-    for val in list(dataset.take(817)):
-        if dataset_name=='multiple_choice':
+    for val in list(dataset.take(len_dataset)):
+        if dataset_name=='tqa_mc2':
             actual_labels.append(val['mc2_targets']['labels'])
-        elif dataset_name=='generation':
+        elif dataset_name=='tqa_gen':
             actual_labels.append([1 for ans in val['correct_answers']]+[0 for ans in val['incorrect_answers']])
+        elif dataset_name=='nq':
+            actual_labels.append([1 for ans in val['answer']]+[0])
 
     idxs_to_split_at = np.cumsum([len(x) for x in actual_labels])        
 
