@@ -37,6 +37,7 @@ def main():
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
+    parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -44,6 +45,8 @@ def main():
 
     print('Loading model..', end=' ', flush=True)
     if args.model_name=='flan_33B':
+        # Cache directory
+        os.environ['TRANSFORMERS_CACHE'] = args.save_path+"/"+args.model_cache_dir
         # Base model
         model_name_or_path = 'huggyllama/llama-30b' # 'huggyllama/llama-7b'
         # Adapter name on HF hub or local checkpoint path.
@@ -65,9 +68,10 @@ def main():
                 bnb_4bit_compute_dtype=torch.bfloat16,
                 bnb_4bit_use_double_quant=True,
                 bnb_4bit_quant_type='nf4',
-            )
+            ),
+            cache_dir=args.save_path+"/"+args.model_cache_dir
         )
-        model = PeftModel.from_pretrained(model, adapter_path)
+        model = PeftModel.from_pretrained(model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
@@ -88,9 +92,9 @@ def main():
     train_prompts = []
     end=10
     for i in train_reflection_indexes[:end]:
-        prompt = "Below is a counselling conversation between a therapist and a client. Generate the last therapist response.\n"
+        prompt = "Below is a counselling conversation between a therapist and a client.\n" # Generate the last therapist response.\n"
         prompt += train_data[i]['prompt']
-        # prompt += "\n An appropriate response from the therapist to the above context would be:"
+        prompt += "\n An appropriate response from the therapist to the above context would be:"
         train_prompts.append(prompt)
         # print('Prompt:',prompt)
         # break
@@ -106,14 +110,14 @@ def main():
     for i,prompt in enumerate(tqdm(tokenized_prompts)):
         prompt = prompt.to(device)
         if args.model_name=='flan_33B':
-            model.generate(input_ids=prompt,
-                            generation_config=GenerationConfig(
-                                max_new_tokens=512
-                                ,num_beams=1
-                                ,do_sample=False
-                                ,num_return_sequences=1
-                            )
-                        )[:, prompt.shape[-1]:]
+            response = model.generate(input_ids=prompt,
+                                    generation_config=GenerationConfig(
+                                        max_new_tokens=512
+                                        ,num_beams=1
+                                        ,do_sample=False
+                                        ,num_return_sequences=1
+                                    )
+                                )[:, prompt.shape[-1]:]
         else:
             response = model.generate(prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1)[:, prompt.shape[-1]:]
         # print(prompt.shape, response)

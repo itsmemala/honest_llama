@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.insert(0, "TruthfulQA")
 
+import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -182,6 +183,22 @@ def tokenized_nq(dataset, tokenizer):
         all_labels.append(0)
         
     return all_prompts, all_labels
+
+def tokenized_mi(file_path, tokenizer): 
+
+    all_prompts = []
+    with open(file_path, 'r') as read_file:
+        data = []
+        for line in read_file:
+            data.append(json.loads(line))
+    for row in data:
+        question = row['prompt']
+        answer = row['response1']
+        prompt = format_truthfulqa(question, answer)
+        prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+        all_prompts.append(prompt)
+        
+    return all_prompts
 
 
 def get_llama_activations_bau(model, prompt, device): 
