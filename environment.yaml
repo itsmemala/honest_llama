@@ -265,6 +265,7 @@ dependencies:
     - pandas==2.0.1
     - pandas-stubs==1.5.1.221024
     - parallelformers==1.2.7
+    - peft==0.5.0
     - plotly==5.14.1
     - portalocker==2.7.0
     - promise==2.3

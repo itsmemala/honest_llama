@@ -11,6 +11,9 @@ import random
 # from utils import get_llama_logits
 import llama
 import argparse
+from transformers import BitsAndBytesConfig, GenerationConfig
+from peft import PeftModel
+from peft.tuners.lora import LoraLayer
 
 HF_NAMES = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
@@ -20,6 +23,7 @@ HF_NAMES = {
     'llama2_chat_7B': 'meta-llama/Llama-2-7b-chat-hf', 
     'llama2_chat_13B': 'meta-llama/Llama-2-13b-chat-hf', 
     'llama2_chat_70B': 'meta-llama/Llama-2-70b-chat-hf', 
+    'flan_33B': 'timdettmers/qlora-flan-33b'
 }
 
 def main(): 
@@ -39,8 +43,34 @@ def main():
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
 
     print('Loading model..', end=' ', flush=True)
-    tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-    model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    if args.model_name=='flan_33B':
+        # Base model
+        model_name_or_path = 'huggyllama/llama-30b' # 'huggyllama/llama-7b'
+        # Adapter name on HF hub or local checkpoint path.
+        # adapter_path, _ = get_last_checkpoint('qlora/output/guanaco-7b')
+        adapter_path = MODEL # 'timdettmers/guanaco-7b'
+
+        tokenizer = llama.LlamaTokenizer.from_pretrained(model_name_or_path)
+        # Fixing some of the early LLaMA HF conversion issues.
+        tokenizer.bos_token_id = 1
+
+        # Load the model (use bf16 for faster inference)
+        model = llama.LlamaForCausalLM.from_pretrained(
+            model_name_or_path,
+            torch_dtype=torch.bfloat16,
+            device_map={"": 0},
+            # load_in_4bit=True,
+            quantization_config=BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type='nf4',
+            )
+        )
+        model = PeftModel.from_pretrained(model, adapter_path)
+    else:
+        tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+        model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     device = "cuda"
 
     print('Loading data..', end=' ', flush=True)
@@ -56,7 +86,7 @@ def main():
     
     # Prepare prompts
     train_prompts = []
-    end=500
+    end=10
     for i in train_reflection_indexes[:end]:
         prompt = "Below is a counselling conversation between a therapist and a client. Generate the last therapist response.\n"
         prompt += train_data[i]['prompt']
@@ -75,7 +105,17 @@ def main():
     responses = []
     for i,prompt in enumerate(tqdm(tokenized_prompts)):
         prompt = prompt.to(device)
-        response = model.generate(prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1)[:, prompt.shape[-1]:]
+        if args.model_name=='flan_33B':
+            model.generate(input_ids=prompt,
+                            generation_config=GenerationConfig(
+                                max_new_tokens=512
+                                ,num_beams=1
+                                ,do_sample=False
+                                ,num_return_sequences=1
+                            )
+                        )[:, prompt.shape[-1]:]
+        else:
+            response = model.generate(prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1)[:, prompt.shape[-1]:]
         # print(prompt.shape, response)
         response = tokenizer.decode(response[0], skip_special_tokens=True)
         responses.append({  'prompt':train_prompts[i]
