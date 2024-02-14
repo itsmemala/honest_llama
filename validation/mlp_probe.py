@@ -113,20 +113,25 @@ def main():
 
         # train probes
         if args.type_probes=='ind':
-            probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
+            probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
+        elif args.type_probes=='vote_on_ind':
+            probes, curr_fold_results, all_y_val_pred = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
+            np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_pred.npy', all_y_val_pred)
+        elif args.type_probes=='lr_on_ind':
+            probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
         else:
             probe, curr_fold_results = train_mlp_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
             np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_coef.npy', probe.coef_)
 
         print(f"FOLD {i}")
-        print(curr_fold_results)
+        # print(curr_fold_results)
 
         results.append(curr_fold_results)
     
     results = np.array(results)
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_accs.npy', results)
     final = results.mean(axis=0)
-    print('Mean Across Folds:',final)
+    # print('Mean Across Folds:',final)
 
 if __name__ == "__main__":
     main()

@@ -700,10 +700,12 @@ def flattened_idx_to_layer_head(flattened_idx, num_heads):
 def layer_head_to_flattened_idx(layer, head, num_heads):
     return layer * num_heads + head
 
-def train_probes(seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads):
+def train_probes(seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads, type_probes='ind'):
     
     all_head_accs = []
     probes = []
+    all_y_train_pred = []
+    all_y_val_pred = []
 
     all_X_train = np.concatenate([separated_head_wise_activations[i] for i in train_set_idxs], axis = 0)
     all_X_val = np.concatenate([separated_head_wise_activations[i] for i in val_set_idxs], axis = 0)
@@ -720,10 +722,30 @@ def train_probes(seed, train_set_idxs, val_set_idxs, separated_head_wise_activat
             y_val_pred = clf.predict(X_val)
             all_head_accs.append(accuracy_score(y_val, y_val_pred))
             probes.append(clf)
+            all_y_train_pred.append(clf.predict_proba(X_train))
+            all_y_val_pred.append(clf.predict_proba(X_val))
 
     all_head_accs_np = np.array(all_head_accs)
+    all_y_train_pred = np.array(all_y_train_pred)
+    all_y_val_pred = np.array(all_y_val_pred)
 
-    return probes, all_head_accs_np
+    if type_probes=='ind':
+        return probes, all_head_accs_np
+    elif type_probes=='vote_on_ind':
+        # print(all_y_val_pred.shape, y_val.shape)
+        y_val_pred = np.mean(np.argmax(all_y_val_pred, axis=2), axis=0).astype(int)
+        # print(y_val_pred.shape)
+        assert y_val_pred.shape == y_val.shape
+        return probes, accuracy_score(y_val, y_val_pred), all_y_val_pred
+    elif type_probes=='lr_on_ind':
+        X_train = np.swapaxes(all_y_train_pred,0,1)
+        X_train = X_train.reshape(X_train.shape[0],X_train.shape[1]*X_train.shape[2])
+        X_val = np.swapaxes(all_y_val_pred,0,1)
+        X_val = X_val.reshape(X_val.shape[0],X_val.shape[1]*X_val.shape[2])
+        # print(X_train.shape)
+        clf = LogisticRegression(random_state=seed, max_iter=1000).fit(X_train, y_train)
+        y_val_pred = clf.predict(X_val)
+        return probes, accuracy_score(y_val, y_val_pred)
 
 def train_ah_single_probe(seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads):
 
@@ -741,10 +763,12 @@ def train_ah_single_probe(seed, train_set_idxs, val_set_idxs, separated_head_wis
 
     return clf, accuracy_score(y_val, y_val_pred)
 
-def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers):
+def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, type_probes='ind'):
     
     all_layer_accs = []
     probes = []
+    all_y_train_pred = []
+    all_y_val_pred = []
 
     all_X_train = np.concatenate([separated_mlp_wise_activations[i] for i in train_set_idxs], axis = 0)
     all_X_val = np.concatenate([separated_mlp_wise_activations[i] for i in val_set_idxs], axis = 0)
@@ -760,10 +784,31 @@ def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_acti
         y_val_pred = clf.predict(X_val)
         all_layer_accs.append(accuracy_score(y_val, y_val_pred))
         probes.append(clf)
+        all_y_train_pred.append(clf.predict_proba(X_train))
+        all_y_val_pred.append(clf.predict_proba(X_val))
 
     all_layer_accs = np.array(all_layer_accs)
+    all_y_train_pred = np.array(all_y_train_pred)
+    all_y_val_pred = np.array(all_y_val_pred)
 
-    return probes, all_layer_accs
+    if type_probes=='ind':
+        return probes, all_layer_accs
+    elif type_probes=='vote_on_ind':
+        # print(all_y_val_pred.shape, y_val.shape)
+        y_val_pred = np.mean(np.argmax(all_y_val_pred, axis=2), axis=0).astype(int)
+        # print(y_val_pred.shape)
+        assert y_val_pred.shape == y_val.shape
+        return probes, accuracy_score(y_val, y_val_pred), all_y_val_pred
+    elif type_probes=='lr_on_ind':
+        X_train = np.swapaxes(all_y_train_pred,0,1)
+        X_train = X_train.reshape(X_train.shape[0],X_train.shape[1]*X_train.shape[2])
+        X_val = np.swapaxes(all_y_val_pred,0,1)
+        X_val = X_val.reshape(X_val.shape[0],X_val.shape[1]*X_val.shape[2])
+        # print(X_train.shape)
+        clf = LogisticRegression(random_state=seed, max_iter=1000).fit(X_train, y_train)
+        y_val_pred = clf.predict(X_val)
+        return probes, accuracy_score(y_val, y_val_pred)
+
 
 def train_mlp_single_probe(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers):
     

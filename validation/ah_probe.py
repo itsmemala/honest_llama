@@ -115,6 +115,11 @@ def main():
         # train probes
         if args.type_probes=='ind':
             probes, curr_fold_results = train_probes(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads)
+        elif args.type_probes=='vote_on_ind':
+            probes, curr_fold_results, all_y_val_pred = train_probes(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads, args.type_probes)
+            np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_pred.npy', all_y_val_pred)
+        elif args.type_probes=='lr_on_ind':
+            probes, curr_fold_results = train_probes(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads, args.type_probes)
         else:
             probe, curr_fold_results = train_ah_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads)
             np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_coef.npy', probe.coef_)
