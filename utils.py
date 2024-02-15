@@ -761,7 +761,7 @@ def train_ah_single_probe(seed, train_set_idxs, val_set_idxs, separated_head_wis
     y_pred = clf.predict(X_train)
     y_val_pred = clf.predict(X_val)
 
-    return clf, accuracy_score(y_val, y_val_pred)
+    return clf, accuracy_score(y_val, y_val_pred), y_val_pred
 
 def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, type_probes='ind'):
     
@@ -824,7 +824,7 @@ def train_mlp_single_probe(seed, train_set_idxs, val_set_idxs, separated_mlp_wis
     y_pred = clf.predict(X_train)
     y_val_pred = clf.predict(X_val)
 
-    return clf, accuracy_score(y_val, y_val_pred)
+    return clf, accuracy_score(y_val, y_val_pred), y_val_pred
 
 def get_top_heads(train_idxs, val_idxs, separated_activations, separated_labels, num_layers, num_heads, seed, num_to_intervene, use_random_dir=False):
 

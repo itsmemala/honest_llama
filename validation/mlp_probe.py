@@ -121,13 +121,14 @@ def main():
                 cur_probe_coefs += probe.coef_
             probe_coefs.append(cur_probe_coefs)
         elif args.type_probes=='vote_on_ind':
-            probes, curr_fold_results, all_y_val_pred = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
-            all_y_val_pred.append(all_y_val_pred)
+            probes, curr_fold_results, cur_y_val_pred = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
+            all_y_val_pred.append(cur_y_val_pred)
         elif args.type_probes=='lr_on_ind':
             probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
         else:
-            probe, curr_fold_results = train_mlp_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
+            probe, curr_fold_results, y_val_pred = train_mlp_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
             probe_coefs.append(probe.coef_)
+            all_y_val_pred.append(y_val_pred)
 
         print(f"FOLD {i}")
         # print(curr_fold_results)
@@ -138,7 +139,7 @@ def main():
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_accs.npy', results)
     if args.type_probes=='single' or args.type_probes=='ind':
         np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_coef.npy', probe_coefs)
-    if args.type_probes=='vote_on_ind':
+    if args.type_probes=='vote_on_ind' or args.type_probes=='single':
         np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_pred.npy', all_y_val_pred)
     final = results.mean(axis=0)
     # print('Mean Across Folds:',final)
