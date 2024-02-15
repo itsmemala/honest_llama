@@ -116,6 +116,10 @@ def main():
         # train probes
         if args.type_probes=='ind':
             probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
+            cur_probe_coefs = []
+            for probe in probes:
+                cur_probe_coefs += probe.coef_
+            probe_coefs.append(cur_probe_coefs)
         elif args.type_probes=='vote_on_ind':
             probes, curr_fold_results, all_y_val_pred = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
             all_y_val_pred.append(all_y_val_pred)
@@ -132,7 +136,7 @@ def main():
     
     results = np.array(results)
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_accs.npy', results)
-    if args.type_probes=='single':
+    if args.type_probes=='single' or args.type_probes=='ind':
         np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_coef.npy', probe_coefs)
     if args.type_probes=='vote_on_ind':
         np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_pred.npy', all_y_val_pred)

@@ -101,6 +101,8 @@ def main():
 
     # run k-fold cross validation
     results = []
+    probe_coefs = []
+    all_y_val_pred = []
     for i in range(args.num_fold):
 
         train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_fold) if j != i])
@@ -115,14 +117,18 @@ def main():
         # train probes
         if args.type_probes=='ind':
             probes, curr_fold_results = train_probes(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads)
+            cur_probe_coefs = []
+            for probe in probes:
+                cur_probe_coefs += probe.coef_
+            probe_coefs.append(cur_probe_coefs)
         elif args.type_probes=='vote_on_ind':
             probes, curr_fold_results, all_y_val_pred = train_probes(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads, args.type_probes)
-            np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_pred.npy', all_y_val_pred)
+            all_y_val_pred.append(all_y_val_pred)            
         elif args.type_probes=='lr_on_ind':
             probes, curr_fold_results = train_probes(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads, args.type_probes)
         else:
             probe, curr_fold_results = train_ah_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_head_wise_activations, separated_labels, num_layers, num_heads)
-            np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_coef.npy', probe.coef_)
+            probe_coefs.append(probe.coef_)            
 
         print(f"FOLD {i}")
         # print(curr_fold_results)
@@ -131,6 +137,10 @@ def main():
     
     results = np.array(results)
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_accs.npy', results)
+    if args.type_probes=='single' or args.type_probes=='ind':
+        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_coef.npy', probe_coefs)
+    if args.type_probes=='vote_on_ind':
+        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_ah_probe_pred.npy', all_y_val_pred)
     final = results.mean(axis=0)
     # print('Mean Across Folds:',final)
 
