@@ -59,7 +59,7 @@ def main():
         tokenizer.bos_token_id = 1
 
         # Load the model (use bf16 for faster inference)
-        model = llama.LlamaForCausalLM.from_pretrained(
+        base_model = llama.LlamaForCausalLM.from_pretrained(
             model_name_or_path,
             torch_dtype=torch.bfloat16,
             device_map={"": 0},
@@ -72,7 +72,7 @@ def main():
             ),
             cache_dir=args.save_path+"/"+args.model_cache_dir
         )
-        model = PeftModel.from_pretrained(model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
+        model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
@@ -122,7 +122,10 @@ def main():
 
         print("Getting activations for "+str(start)+" to "+str(end))
         for prompt in tqdm(prompts[start:end]):
-            layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
+            if  args.model_name=='flan_33B':
+                layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
+            else:
+                layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
             all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
             all_head_wise_activations.append(head_wise_activations[:,-1,:])
             all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])

@@ -102,6 +102,7 @@ def main():
     results = []
     probe_coefs = []
     all_y_val_pred = []
+    all_y_val = []
     for i in range(args.num_fold):
 
         train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_fold) if j != i])
@@ -118,17 +119,20 @@ def main():
             probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
             cur_probe_coefs = []
             for probe in probes:
-                cur_probe_coefs += probe.coef_
+                cur_probe_coefs += list(probe.coef_[0])
             probe_coefs.append(cur_probe_coefs)
         elif args.type_probes=='vote_on_ind':
-            probes, curr_fold_results, cur_y_val_pred = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
+            probes, curr_fold_results, cur_y_val_pred, cur_y_val = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
+            cur_y_val_pred = cur_y_val_pred.swapaxes(0,1)
             all_y_val_pred.append(cur_y_val_pred)
+            all_y_val.append(cur_y_val)    
         elif args.type_probes=='lr_on_ind':
             probes, curr_fold_results = train_mlp_probes(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, args.type_probes)
         else:
-            probe, curr_fold_results, y_val_pred = train_mlp_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
-            probe_coefs.append(probe.coef_)
+            probe, curr_fold_results, y_val_pred, y_val = train_mlp_single_probe(args.seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers)
+            probe_coefs.append(list(probe.coef_[0]))
             all_y_val_pred.append(y_val_pred)
+            all_y_val.append(y_val)
 
         print(f"FOLD {i}")
         # print(curr_fold_results)
@@ -141,6 +145,7 @@ def main():
         np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_coef.npy', probe_coefs)
     if args.type_probes=='vote_on_ind' or args.type_probes=='single':
         np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_pred.npy', all_y_val_pred)
+        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_true.npy', all_y_val)
     final = results.mean(axis=0)
     # print('Mean Across Folds:',final)
 

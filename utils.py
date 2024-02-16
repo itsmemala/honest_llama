@@ -736,7 +736,7 @@ def train_probes(seed, train_set_idxs, val_set_idxs, separated_head_wise_activat
         y_val_pred = np.mean(np.argmax(all_y_val_pred, axis=2), axis=0).astype(int)
         # print(y_val_pred.shape)
         assert y_val_pred.shape == y_val.shape
-        return probes, accuracy_score(y_val, y_val_pred), all_y_val_pred
+        return probes, accuracy_score(y_val, y_val_pred), all_y_val_pred, y_val
     elif type_probes=='lr_on_ind':
         X_train = np.swapaxes(all_y_train_pred,0,1)
         X_train = X_train.reshape(X_train.shape[0],X_train.shape[1]*X_train.shape[2])
@@ -761,7 +761,7 @@ def train_ah_single_probe(seed, train_set_idxs, val_set_idxs, separated_head_wis
     y_pred = clf.predict(X_train)
     y_val_pred = clf.predict(X_val)
 
-    return clf, accuracy_score(y_val, y_val_pred), y_val_pred
+    return clf, accuracy_score(y_val, y_val_pred), clf.predict_proba(X_val), y_val
 
 def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, type_probes='ind'):
     
@@ -798,7 +798,7 @@ def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_acti
         y_val_pred = np.mean(np.argmax(all_y_val_pred, axis=2), axis=0).astype(int)
         # print(y_val_pred.shape)
         assert y_val_pred.shape == y_val.shape
-        return probes, accuracy_score(y_val, y_val_pred), all_y_val_pred
+        return probes, accuracy_score(y_val, y_val_pred), all_y_val_pred, y_val
     elif type_probes=='lr_on_ind':
         X_train = np.swapaxes(all_y_train_pred,0,1)
         X_train = X_train.reshape(X_train.shape[0],X_train.shape[1]*X_train.shape[2])
@@ -824,7 +824,7 @@ def train_mlp_single_probe(seed, train_set_idxs, val_set_idxs, separated_mlp_wis
     y_pred = clf.predict(X_train)
     y_val_pred = clf.predict(X_val)
 
-    return clf, accuracy_score(y_val, y_val_pred), y_val_pred
+    return clf, accuracy_score(y_val, y_val_pred), clf.predict_proba(X_val), y_val
 
 def get_top_heads(train_idxs, val_idxs, separated_activations, separated_labels, num_layers, num_heads, seed, num_to_intervene, use_random_dir=False):
 
