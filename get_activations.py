@@ -112,7 +112,7 @@ def main():
     if 'tqa' in args.dataset_name:
         load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
     elif 'counselling' in args.dataset_name:
-        load_ranges = [(0,10)]
+        load_ranges = [(a*30,(a*30)+30) for a in range(int(500/30)+1)]
     else:
         load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
     for start, end in load_ranges:
@@ -122,7 +122,7 @@ def main():
 
         print("Getting activations for "+str(start)+" to "+str(end))
         for prompt in tqdm(prompts[start:end]):
-            if  args.model_name=='flan_33B':
+            if args.model_name=='flan_33B':
                 layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
             else:
                 layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)

@@ -90,7 +90,7 @@ def main():
     
     # Prepare prompts
     train_prompts = []
-    end=10
+    end=500
     for i in train_reflection_indexes[:end]:
         prompt = "Below is a counselling conversation between a therapist and a client.\n" # Generate the last therapist response.\n"
         prompt += train_data[i]['prompt']
