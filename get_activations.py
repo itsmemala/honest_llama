@@ -112,7 +112,7 @@ def main():
     if 'tqa' in args.dataset_name:
         load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
     elif 'counselling' in args.dataset_name:
-        load_ranges = [(a*30,(a*30)+30) for a in range(int(500/30)+1)]
+        load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1) if ((a*20)+20)>180]
     else:
         load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
     for start, end in load_ranges:

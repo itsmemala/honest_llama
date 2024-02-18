@@ -763,17 +763,23 @@ def train_ah_single_probe(seed, train_set_idxs, val_set_idxs, separated_head_wis
 
     return clf, accuracy_score(y_val, y_val_pred), clf.predict_proba(X_val), y_val
 
-def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, type_probes='ind'):
+def train_mlp_probes(seed, train_set_idxs, val_set_idxs, separated_mlp_wise_activations, separated_labels, num_layers, type_probes='ind', sep_act=True):
     
     all_layer_accs = []
     probes = []
     all_y_train_pred = []
     all_y_val_pred = []
 
-    all_X_train = np.concatenate([separated_mlp_wise_activations[i] for i in train_set_idxs], axis = 0)
-    all_X_val = np.concatenate([separated_mlp_wise_activations[i] for i in val_set_idxs], axis = 0)
-    y_train = np.concatenate([separated_labels[i] for i in train_set_idxs], axis = 0)
-    y_val = np.concatenate([separated_labels[i] for i in val_set_idxs], axis = 0)
+    if sep_act:
+        all_X_train = np.concatenate([separated_mlp_wise_activations[i] for i in train_set_idxs], axis = 0)
+        all_X_val = np.concatenate([separated_mlp_wise_activations[i] for i in val_set_idxs], axis = 0)
+        y_train = np.concatenate([separated_labels[i] for i in train_set_idxs], axis = 0)
+        y_val = np.concatenate([separated_labels[i] for i in val_set_idxs], axis = 0)
+    else:
+        all_X_train = np.array([separated_mlp_wise_activations[i] for i in train_set_idxs])
+        all_X_val = np.array([separated_mlp_wise_activations[i] for i in val_set_idxs])
+        y_train = np.array([separated_labels[i] for i in train_set_idxs])
+        y_val = np.array([separated_labels[i] for i in val_set_idxs])
 
     for layer in tqdm(range(num_layers)): 
         X_train = all_X_train[:,layer,:]
