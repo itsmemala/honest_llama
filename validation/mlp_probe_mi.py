@@ -49,6 +49,7 @@ def main():
     parser.add_argument('--info_name', type=str, required=False)
     parser.add_argument('--save_path', type=str, default='')
     parser.add_argument('--type_probes', type=str, default='ind')
+    parser.add_argument('--error_type', type=str, default='parrotting')
     args = parser.parse_args()
 
     # set seeds
@@ -100,7 +101,7 @@ def main():
             mlp_wise_activations.append(np.load(f"{args.save_path}/features/{args.model_name}_{args.dataset_name}_mlp_wise_{file_end}.npy"))
         mlp_wise_activations = np.concatenate(mlp_wise_activations, axis=0)
         assert mlp_wise_activations.shape[1:] == (num_layers, num_dim)
-        labels = np.load(f"{args.save_path}/responses/{args.model_name}_annomi_greedy_responses_{file_end}_parrotting_labels.npy")
+        labels = np.load(f"{args.save_path}/responses/{args.model_name}_annomi_greedy_responses_{file_end}_{args.error_type}_labels.npy")
         assert len(labels)==len(mlp_wise_activations)
 
     # separated_mlp_wise_activations, separated_labels, idxs_to_split_at = get_separated_activations(labels, mlp_wise_activations, args.dataset_name)
@@ -148,14 +149,16 @@ def main():
 
         results.append(curr_fold_results)        
     
+    dataset = args.dataset_name + args.error_type
+
     results = np.array(results)
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_accs.npy', results)
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_true_train.npy',train_set_idxs_foldwise)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{dataset}_{args.num_fold}_{args.type_probes}_mlp_probe_accs.npy', results)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{dataset}_{args.num_fold}_{args.type_probes}_mlp_probe_true_train.npy',train_set_idxs_foldwise)
     if args.type_probes=='single' or args.type_probes=='ind':
-        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_coef.npy', probe_coefs)
+        np.save(f'{args.save_path}/probes/{args.model_name}_{dataset}_{args.num_fold}_{args.type_probes}_mlp_probe_coef.npy', probe_coefs)
     if args.type_probes=='vote_on_ind' or args.type_probes=='single':
-        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_pred.npy', all_y_val_pred)
-        np.save(f'{args.save_path}/probes/{args.model_name}_{args.dataset_name}_{args.num_fold}_{args.type_probes}_mlp_probe_true.npy', all_y_val)
+        np.save(f'{args.save_path}/probes/{args.model_name}_{dataset}_{args.num_fold}_{args.type_probes}_mlp_probe_pred.npy', all_y_val_pred)
+        np.save(f'{args.save_path}/probes/{args.model_name}_{dataset}_{args.num_fold}_{args.type_probes}_mlp_probe_true.npy', all_y_val)
     final = results.mean(axis=0)
     # print('Mean Across Folds:',final)
 
