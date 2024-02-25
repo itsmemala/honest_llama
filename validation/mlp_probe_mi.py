@@ -149,7 +149,7 @@ def main():
 
         results.append(curr_fold_results)        
     
-    dataset = args.dataset_name + args.error_type
+    dataset = args.dataset_name + '_' + args.error_type
 
     results = np.array(results)
     np.save(f'{args.save_path}/probes/{args.model_name}_{dataset}_{args.num_fold}_{args.type_probes}_mlp_probe_accs.npy', results)
