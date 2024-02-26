@@ -126,11 +126,12 @@ def tokenized_tqa_gen_end_q(dataset, tokenizer):
         
     return all_prompts, all_labels, all_categories
 
-def tokenized_tqa_gen(dataset, tokenizer): 
+def tokenized_tqa_gen(dataset, tokenizer, token='last'): 
 
     all_prompts = []
     all_labels = []
     all_categories = []
+    token_idxes = []
     # for i in range(len(dataset)): 
     #     question = dataset[i]['question']
     #     category = dataset[i]['category']
@@ -145,6 +146,11 @@ def tokenized_tqa_gen(dataset, tokenizer):
             answer = val['correct_answers'][j]
             prompt = format_truthfulqa(question, answer)
             prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+            if args.token=='answer_first_a':
+                token_idx = len(tokenizer(f"Q: {question} ", return_tensors = 'pt').input_ids)
+            elif args.token=='answer_first_b':
+                token_idx = len(tokenizer(f"Q: {question} A: ", return_tensors = 'pt').input_ids)
+            token_idxes.append(token_idx)
             all_prompts.append(prompt)
             all_labels.append(1)
             all_categories.append(category)
@@ -155,11 +161,18 @@ def tokenized_tqa_gen(dataset, tokenizer):
             answer = val['incorrect_answers'][j]
             prompt = format_truthfulqa(question, answer)
             prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+            if args.token=='answer_first_a':
+                token_idx = len(tokenizer(f"Q: {question} ", return_tensors = 'pt').input_ids)
+            elif args.token=='answer_first_b':
+                token_idx = len(tokenizer(f"Q: {question} A: ", return_tensors = 'pt').input_ids)
+            token_idxes.append(token_idx)
             all_prompts.append(prompt)
             all_labels.append(0)
             all_categories.append(category)
-        
-    return all_prompts, all_labels, all_categories
+    if args.token=='last' or args.token=='first':
+        return all_prompts, all_labels, all_categories, _
+    else:
+        return all_prompts, all_labels, all_categories, token_idxes
 
 
 def tokenized_nq(dataset, tokenizer): 

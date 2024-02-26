@@ -36,6 +36,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
+    parser.add_argument('--token',type=str, default='last')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -100,7 +101,7 @@ def main():
 
     print("Tokenizing prompts")
     if args.dataset_name == "tqa_gen" or args.dataset_name == "tqa_gen_end_q": 
-        prompts, labels, categories = formatter(dataset.with_format('torch'), tokenizer)
+        prompts, labels, categories, token_idxes = formatter(dataset.with_format('torch'), tokenizer, args.token)
         with open(f'features/{args.model_name}_{args.dataset_name}_categories.pkl', 'wb') as f:
             pickle.dump(categories, f)
     elif args.dataset_name == 'counselling':
@@ -121,28 +122,36 @@ def main():
         all_mlp_wise_activations = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for prompt in tqdm(prompts[start:end]):
+        for i,prompt in enumerate(tqdm(prompts[start:end])):
             if args.model_name=='flan_33B':
                 layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
             else:
                 layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-            all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
-            all_head_wise_activations.append(head_wise_activations[:,-1,:])
-            all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
-            # break
+            if args.token=='last':
+                all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
+                all_head_wise_activations.append(head_wise_activations[:,-1,:])
+                all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+            elif args.token=='first':
+                all_layer_wise_activations.append(layer_wise_activations[:,0,:])
+                all_head_wise_activations.append(head_wise_activations[:,0,:])
+                all_mlp_wise_activations.append(mlp_wise_activations[:,0,:])
+            elif 'answer_first' in args.token:
+                all_layer_wise_activations.append(layer_wise_activations[:,token_idxes[i],:])
+                all_head_wise_activations.append(head_wise_activations[:,token_idxes[i],:])
+                all_mlp_wise_activations.append(mlp_wise_activations[:,token_idxes[i],:])
 
         print("Saving layer wise activations")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_layer_wise_{end}.npy', all_layer_wise_activations)
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
         
         print("Saving head wise activations")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_head_wise_{end}.npy', all_head_wise_activations)
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
 
         print("Saving mlp wise activations")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_mlp_wise_{end}.npy', all_mlp_wise_activations)
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
 
     if 'counselling' not in args.dataset_name:
         print("Saving labels")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_labels_{end}.npy', labels)
+        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_labels_{end}.npy', labels)
 
 if __name__ == '__main__':
     main()
