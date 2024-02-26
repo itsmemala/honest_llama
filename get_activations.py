@@ -111,7 +111,13 @@ def main():
         prompts, labels = formatter(dataset, tokenizer)
 
     if 'tqa' in args.dataset_name:
-        load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
+        if 'first' in args.token:
+            load_ranges = [(0,1000),(1000,2000),(2000,3000),(3000,3500),(3500,4000),
+                            (4000,4500),(4500,5000),(5000,5500),(5500,6000)]
+        elif 'answer_all' in args.token:
+            load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1)]
+        else:
+            load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
     elif 'counselling' in args.dataset_name:
         load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1) if ((a*20)+20)>180]
     else:
@@ -122,7 +128,7 @@ def main():
         all_mlp_wise_activations = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for i,prompt in enumerate(tqdm(prompts[start:end])):
+        for prompt,token_idx in tqdm(zip(prompts[start:end],token_idxes[start:end])):
             if args.model_name=='flan_33B':
                 layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
             else:
@@ -136,9 +142,13 @@ def main():
                 all_head_wise_activations.append(head_wise_activations[:,0,:])
                 all_mlp_wise_activations.append(mlp_wise_activations[:,0,:])
             elif 'answer_first' in args.token:
-                all_layer_wise_activations.append(layer_wise_activations[:,token_idxes[i],:])
-                all_head_wise_activations.append(head_wise_activations[:,token_idxes[i],:])
-                all_mlp_wise_activations.append(mlp_wise_activations[:,token_idxes[i],:])
+                all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
+                all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
+                all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx,:])
+            elif 'answer_all' in args.token:
+                all_layer_wise_activations.append(layer_wise_activations[:,token_idx:,:])
+                all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
+                all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
 
         print("Saving layer wise activations")
         np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)

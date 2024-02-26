@@ -146,11 +146,13 @@ def tokenized_tqa_gen(dataset, tokenizer, token='last'):
             answer = val['correct_answers'][j]
             prompt = format_truthfulqa(question, answer)
             prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
-            if args.token=='answer_first_a':
-                token_idx = len(tokenizer(f"Q: {question} ", return_tensors = 'pt').input_ids)
-            elif args.token=='answer_first_b':
-                token_idx = len(tokenizer(f"Q: {question} A: ", return_tensors = 'pt').input_ids)
-            token_idxes.append(token_idx)
+            if token=='answer_first_a':
+                token_idx = len(tokenizer(f"Q: {question} ", return_tensors = 'pt').input_ids[0])
+                token_idxes.append(token_idx)
+            elif token=='answer_first_b' or token=='answer_all':
+                if answer=='': continue
+                token_idx = len(tokenizer(f"Q: {question} A: ", return_tensors = 'pt').input_ids[0])
+                token_idxes.append(token_idx)
             all_prompts.append(prompt)
             all_labels.append(1)
             all_categories.append(category)
@@ -161,18 +163,17 @@ def tokenized_tqa_gen(dataset, tokenizer, token='last'):
             answer = val['incorrect_answers'][j]
             prompt = format_truthfulqa(question, answer)
             prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
-            if args.token=='answer_first_a':
-                token_idx = len(tokenizer(f"Q: {question} ", return_tensors = 'pt').input_ids)
-            elif args.token=='answer_first_b':
-                token_idx = len(tokenizer(f"Q: {question} A: ", return_tensors = 'pt').input_ids)
-            token_idxes.append(token_idx)
+            if token=='answer_first_a':
+                token_idx = len(tokenizer(f"Q: {question} ", return_tensors = 'pt').input_ids[0])
+                token_idxes.append(token_idx)
+            elif token=='answer_first_b' or token=='answer_all':
+                if answer=='': continue
+                token_idx = len(tokenizer(f"Q: {question} A: ", return_tensors = 'pt').input_ids[0])
+                token_idxes.append(token_idx)
             all_prompts.append(prompt)
             all_labels.append(0)
             all_categories.append(category)
-    if args.token=='last' or args.token=='first':
-        return all_prompts, all_labels, all_categories, _
-    else:
-        return all_prompts, all_labels, all_categories, token_idxes
+    return all_prompts, all_labels, all_categories, token_idxes
 
 
 def tokenized_nq(dataset, tokenizer): 
