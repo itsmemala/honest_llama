@@ -26,6 +26,11 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b'
 }
 
+def boolean_string(s):
+    if s not in {'False', 'True'}:
+        raise ValueError('Not a valid boolean string')
+    return s == 'True'
+
 def main(): 
     """
     Specify dataset name as the first command line argument. Current options are 
@@ -37,7 +42,7 @@ def main():
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--token',type=str, default='last')
-    parser.add_argument('--mlp_l1',type=bool, default=False)
+    parser.add_argument('--mlp_l1',type=str, default='No')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -130,7 +135,7 @@ def main():
 
         print("Getting activations for "+str(start)+" to "+str(end))
         for prompt,token_idx in tqdm(zip(prompts[start:end],token_idxes[start:end])):
-            if args.mlp_l1:
+            if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
                 all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
             else:
@@ -154,10 +159,10 @@ def main():
                     all_layer_wise_activations.append(layer_wise_activations[:,token_idx:,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
-            break
-        break
+        #     break
+        # break
 
-        if args.mlp_l1:
+        if args.mlp_l1=='Yes':
             print("Saving mlp l1 activations")
             with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_l1_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
@@ -177,7 +182,7 @@ def main():
             with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-    if 'counselling' not in args.dataset_name and args.mlp_l1==False:
+    if 'counselling' not in args.dataset_name and args.mlp_l1=='No':
         print("Saving labels")
         np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_labels_{end}.npy', labels)
 

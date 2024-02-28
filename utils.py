@@ -215,7 +215,7 @@ def tokenized_mi(file_path, tokenizer):
     return all_prompts
 
 
-def get_llama_activations_bau(model, prompt, device, mlp_l1=False): 
+def get_llama_activations_bau(model, prompt, device, mlp_l1='No'): 
 
     HEADS = [f"model.layers.{i}.self_attn.head_out" for i in range(model.config.num_hidden_layers)]
     MLPS = [f"model.layers.{i}.mlp" for i in range(model.config.num_hidden_layers)]
@@ -223,12 +223,12 @@ def get_llama_activations_bau(model, prompt, device, mlp_l1=False):
 
     with torch.no_grad():
         prompt = prompt.to(device)
-        if mlp_l1:
+        if mlp_l1=='Yes':
             with TraceDict(model, MLPS_L1) as ret:
                 output = model(prompt, output_hidden_states = True)
             mlp_wise_hidden_states = [ret[mlp].output.squeeze().detach().cpu() for mlp in MLPS_L1]
             mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
-            print(mlp_wise_hidden_states.shape)
+            # print(mlp_wise_hidden_states.shape)
         else:
             with TraceDict(model, HEADS+MLPS) as ret:
                 output = model(prompt, output_hidden_states = True)
@@ -241,7 +241,7 @@ def get_llama_activations_bau(model, prompt, device, mlp_l1=False):
             mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
 
         del output
-    if mlp_l1:
+    if mlp_l1=='Yes':
         return mlp_wise_hidden_states
     else:
         return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states
