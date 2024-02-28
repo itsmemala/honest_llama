@@ -215,30 +215,36 @@ def tokenized_mi(file_path, tokenizer):
     return all_prompts
 
 
-def get_llama_activations_bau(model, prompt, device): 
+def get_llama_activations_bau(model, prompt, device, mlp_l1=False): 
 
     HEADS = [f"model.layers.{i}.self_attn.head_out" for i in range(model.config.num_hidden_layers)]
     MLPS = [f"model.layers.{i}.mlp" for i in range(model.config.num_hidden_layers)]
+    MLPS_L1 = [f"model.layers.{i}.mlp.up_proj_out" for i in range(model.config.num_hidden_layers)]
 
     with torch.no_grad():
         prompt = prompt.to(device)
-        with TraceDict(model, HEADS+MLPS) as ret:
-            output = model(prompt, output_hidden_states = True)
-        hidden_states = output.hidden_states
-        hidden_states = torch.stack(hidden_states, dim = 0).squeeze()
-        hidden_states = hidden_states.detach().cpu().to(torch.float32).numpy()
-        # print(hidden_states.shape)
-        head_wise_hidden_states = [ret[head].output.squeeze().detach().cpu() for head in HEADS]
-        # print(len(head_wise_hidden_states),head_wise_hidden_states[0].shape)
-        head_wise_hidden_states = torch.stack(head_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
-        # print(head_wise_hidden_states.shape) # (32,21,4096)
-        mlp_wise_hidden_states = [ret[mlp].output.squeeze().detach().cpu() for mlp in MLPS]
-        # print(len(mlp_wise_hidden_states),mlp_wise_hidden_states[0].shape)
-        mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
-        # print(mlp_wise_hidden_states.shape)
+        if mlp_l1:
+            with TraceDict(model, MLPS_L1) as ret:
+                output = model(prompt, output_hidden_states = True)
+            mlp_wise_hidden_states = [ret[mlp].output.squeeze().detach().cpu() for mlp in MLPS_L1]
+            mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
+            print(mlp_wise_hidden_states.shape)
+        else:
+            with TraceDict(model, HEADS+MLPS) as ret:
+                output = model(prompt, output_hidden_states = True)
+            hidden_states = output.hidden_states
+            hidden_states = torch.stack(hidden_states, dim = 0).squeeze()
+            hidden_states = hidden_states.detach().cpu().to(torch.float32).numpy()
+            head_wise_hidden_states = [ret[head].output.squeeze().detach().cpu() for head in HEADS]
+            head_wise_hidden_states = torch.stack(head_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
+            mlp_wise_hidden_states = [ret[mlp].output.squeeze().detach().cpu() for mlp in MLPS]
+            mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
 
         del output
-    return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states
+    if mlp_l1:
+        return mlp_wise_hidden_states
+    else:
+        return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states
 
 
 def get_llama_logits(model, prompt, device): 

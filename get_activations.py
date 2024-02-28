@@ -37,6 +37,7 @@ def main():
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--token',type=str, default='last')
+    parser.add_argument('--mlp_l1',type=bool, default=False)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -129,43 +130,54 @@ def main():
 
         print("Getting activations for "+str(start)+" to "+str(end))
         for prompt,token_idx in tqdm(zip(prompts[start:end],token_idxes[start:end])):
-            if args.model_name=='flan_33B':
-                layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
-            else:
-                layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-            if args.token=='last':
-                all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
-                all_head_wise_activations.append(head_wise_activations[:,-1,:])
-                all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
-            elif args.token=='first':
-                all_layer_wise_activations.append(layer_wise_activations[:,0,:])
-                all_head_wise_activations.append(head_wise_activations[:,0,:])
-                all_mlp_wise_activations.append(mlp_wise_activations[:,0,:])
-            elif 'answer_first' in args.token:
-                all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
-                all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
-                all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx,:])
-            elif 'answer_all' in args.token:
-                all_layer_wise_activations.append(layer_wise_activations[:,token_idx:,:])
-                all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
+            if args.mlp_l1:
+                mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
                 all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
+            else:
+                if args.model_name=='flan_33B':
+                    layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
+                else:
+                    layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
+                if args.token=='last':
+                    all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
+                    all_head_wise_activations.append(head_wise_activations[:,-1,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+                elif args.token=='first':
+                    all_layer_wise_activations.append(layer_wise_activations[:,0,:])
+                    all_head_wise_activations.append(head_wise_activations[:,0,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,0,:])
+                elif 'answer_first' in args.token:
+                    all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
+                    all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx,:])
+                elif 'answer_all' in args.token:
+                    all_layer_wise_activations.append(layer_wise_activations[:,token_idx:,:])
+                    all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
+            break
+        break
 
-        print("Saving layer wise activations")
-        # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
-        with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
-            pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
-        
-        print("Saving head wise activations")
-        # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
-        with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
-            pickle.dump(all_head_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        if args.mlp_l1:
+            print("Saving mlp l1 activations")
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_l1_{end}.pkl', 'wb') as outfile:
+                pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        else:
+            print("Saving layer wise activations")
+            # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+                pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+            
+            print("Saving head wise activations")
+            # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
+                pickle.dump(all_head_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-        print("Saving mlp wise activations")
-        # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
-        with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
-            pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+            print("Saving mlp wise activations")
+            # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
+                pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-    if 'counselling' not in args.dataset_name:
+    if 'counselling' not in args.dataset_name and args.mlp_l1==False:
         print("Saving labels")
         np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_labels_{end}.npy', labels)
 

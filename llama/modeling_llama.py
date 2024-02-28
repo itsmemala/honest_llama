@@ -236,6 +236,7 @@ class LlamaMLP(nn.Module):
         self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
+        self.up_proj_out = nn.Identity()
 
     def forward(self, x):
         if self.config.pretraining_tp > 1:
@@ -255,7 +256,9 @@ class LlamaMLP(nn.Module):
             ]
             down_proj = sum(down_proj)
         else:
-            down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+            # down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+            up_proj = self.up_proj_out(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+            down_proj = self.down_proj(up_proj)
 
         return down_proj
 
