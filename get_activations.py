@@ -119,7 +119,7 @@ def main():
         else:
             load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
     elif 'counselling' in args.dataset_name:
-        load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1) if ((a*20)+20)>180]
+        load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1)] # if ((a*20)+20)>180]
     else:
         load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
     for start, end in load_ranges:
@@ -151,13 +151,19 @@ def main():
                 all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
 
         print("Saving layer wise activations")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
+        # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
+        with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+            pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
         
         print("Saving head wise activations")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
+        # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
+        with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
+            pickle.dump(all_head_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
         print("Saving mlp wise activations")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
+        # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
+        with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
+            pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
     if 'counselling' not in args.dataset_name:
         print("Saving labels")
