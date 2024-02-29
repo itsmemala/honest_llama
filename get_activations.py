@@ -108,6 +108,8 @@ def main():
     print("Tokenizing prompts")
     if args.dataset_name == "tqa_gen" or args.dataset_name == "tqa_gen_end_q": 
         prompts, labels, categories, token_idxes = formatter(dataset.with_format('torch'), tokenizer, args.token)
+        if len(token_idxes)==0:
+            token_idxes = [-1 for i in prompts]
         with open(f'features/{args.model_name}_{args.dataset_name}_categories.pkl', 'wb') as f:
             pickle.dump(categories, f)
     elif args.dataset_name == 'counselling':
@@ -117,7 +119,7 @@ def main():
         prompts, labels = formatter(dataset, tokenizer)
 
     if 'tqa' in args.dataset_name:
-        if 'first' in args.token:
+        if args.token=='last' or args.token=='answer_first':
             load_ranges = [(0,1000),(1000,2000),(2000,3000),(3000,3500),(3500,4000),
                             (4000,4500),(4500,5000),(5000,5500),(5500,6000)]
         elif 'answer_all' in args.token:
@@ -137,7 +139,10 @@ def main():
         for prompt,token_idx in tqdm(zip(prompts[start:end],token_idxes[start:end])):
             if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
-                all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
+                if args.token=='last':
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+                elif 'answer_all' in args.token:
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
             else:
                 if args.model_name=='flan_33B':
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
@@ -147,10 +152,6 @@ def main():
                     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
-                elif args.token=='first':
-                    all_layer_wise_activations.append(layer_wise_activations[:,0,:])
-                    all_head_wise_activations.append(head_wise_activations[:,0,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,0,:])
                 elif 'answer_first' in args.token:
                     all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
