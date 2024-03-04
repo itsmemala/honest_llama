@@ -120,8 +120,9 @@ def main():
 
     if 'tqa' in args.dataset_name:
         if args.token=='last' or args.token=='answer_first':
-            load_ranges = [(0,1000),(1000,2000),(2000,3000),(3000,3500),(3500,4000),
-                            (4000,4500),(4500,5000),(5000,5500),(5500,6000)]
+            # load_ranges = [(0,1000),(1000,2000),(2000,3000),(3000,3500),(3500,4000),
+            #                 (4000,4500),(4500,5000),(5000,5500),(5500,6000)] # llama-13B? first?
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(6000/100))]
         elif 'answer_all' in args.token:
             load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1)]
         else:

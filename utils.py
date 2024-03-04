@@ -198,6 +198,17 @@ def tokenized_nq(dataset, tokenizer):
         
     return all_prompts, all_labels
 
+def tokenized_nq_orig(dataset, tokenizer): 
+
+    all_prompts = []
+    for val in list(dataset.take(3610)):
+        question = val['question']
+        prompt = f"Q: {question} A: "
+        prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+        all_prompts.append(prompt)
+        
+    return all_prompts
+
 def tokenized_mi(file_path, tokenizer): 
 
     all_prompts = []
