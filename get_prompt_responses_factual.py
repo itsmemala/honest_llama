@@ -36,6 +36,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
+    parser.add_argument('dataset_name', type=str, default='nq_open', help='dataset for querying the model')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -56,13 +57,20 @@ def main():
 
     print('Loading data..')
     # Load data
-    len_dataset = 50 # 3610
-    dataset = load_dataset("nq_open", streaming= True)['validation']
+    if args.dataset_name=='nq_open':
+        len_dataset = 1800 #3610
+    elif args.dataset_name=='cnn_dailymail':
+        len_dataset = 10 #13400
+    dataset = load_dataset(args.dataset_name, streaming= True)['validation']
     prompts = []
     tokenized_prompts = []
     for val in list(dataset.take(len_dataset)):
-        question = val['question']
-        cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+        if args.dataset_name=='nq_open':
+            question = val['question']
+            cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+        elif args.dataset_name=='cnn_dailymail':
+            article = val['article']
+            cur_prompt = f"Article: {article}\n Summarize the article in one sentence. Summary: "
         prompts.append(cur_prompt)
         tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
         tokenized_prompts.append(tokenized_prompt)
@@ -70,14 +78,21 @@ def main():
     print('Getting model responses..')
     # Get model responses
     responses = []
-    # period_token_id = tokenizer('. ')['input_ids'][1]
-    period_token_id = tokenizer('.')['input_ids']
-    eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
-                    'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
-    # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
-    # eos_tokens = ['Question', '\n', 'Answer', ':']
+    if args.dataset_name=='nq_open':
+        # period_token_id = tokenizer('. ')['input_ids'][1]
+        period_token_id = tokenizer('.')['input_ids']
+        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
+        # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
+        # eos_tokens = ['Question', '\n', 'Answer', ':']
+        checkgens = ['QA2:','Q.', 'B:']
+    elif args.dataset_name=='cnn_dailymail':
+        period_token_id = tokenizer('\n')['input_ids']
+        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\", 'Summary:', ' Summary:']
+        checkgens = ['Summary:']
     question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
-    print('Bad word ids:',question_framing_ids)
+    # print('Bad word ids:',question_framing_ids)
     for i,prompt in enumerate(tqdm(tokenized_prompts)):
         prompt = prompt.to(device)
         response = model.generate(prompt, max_new_tokens=256, num_beams=1, do_sample=False, num_return_sequences=1,
@@ -85,13 +100,13 @@ def main():
                                     bad_words_ids=question_framing_ids + [prompt.tolist()[0]]
                                     )[:, prompt.shape[-1]:]
         response = tokenizer.decode(response[0], skip_special_tokens=True)
-        for check_gen in ['QA2:','Q.', 'B:']
+        for check_gen in checkgens: # Fix generation errors
             response = response.split(check_gen)[0]
         responses.append({'prompt':prompts[i],
                             'response1':response})
     
     print('Saving model responses..')
-    with open(f'{args.save_path}/responses/{args.model_name}_nq_greedy_responses.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{len_dataset}.json', 'w') as outfile:
         for entry in responses:
             json.dump(entry, outfile)
             outfile.write('\n')
@@ -105,7 +120,7 @@ def main():
                         'rouge1_to_target':0.0,
                         'rouge2_to_target':0.0,
                         'rougeL_to_target':0.0}
-        reference_answers = batch['answer']
+        reference_answers = batch['answer'] if args.dataset_name=='nq_open' else [batch['highlights']]
         for answer in reference_answers:
             predictions = [responses[i]['response1'].lstrip()]
             references = [answer]
@@ -123,7 +138,7 @@ def main():
 
 
     print('Saving labels..')
-    with open(f'{args.save_path}/responses/{args.model_name}_nq_greedy_responses_labels.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{len_dataset}.json', 'w') as outfile:
         for entry in labels:
             json.dump(entry, outfile)
             outfile.write('\n')

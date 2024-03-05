@@ -5,7 +5,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
 import pickle
-from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi
+from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_nq_open_during, tokenized_nq_open_after
 import llama
 import pickle
 import argparse
@@ -41,6 +41,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
+    parser.add_argument('--act_type',type=str, default='during')
     parser.add_argument('--token',type=str, default='last')
     parser.add_argument('--mlp_l1',type=str, default='No')
     parser.add_argument('--device', type=int, default=0)
@@ -100,6 +101,9 @@ def main():
     elif args.dataset_name == 'nq': 
         dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
         formatter = tokenized_nq
+    elif args.dataset_name == 'nq_open':
+        dataset = load_dataset("nq_open", streaming= True)['validation']
+        formatter = tokenized_nq_open_during if args.act_type=='during' else tokenized_nq_open_after
     elif args.dataset_name == 'counselling':
         pass
     else: 
@@ -115,6 +119,8 @@ def main():
     elif args.dataset_name == 'counselling':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
+    elif args.dataset_name == 'nq_open':
+        
     else: 
         prompts, labels = formatter(dataset, tokenizer)
 
