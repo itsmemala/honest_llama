@@ -117,6 +117,7 @@ def main():
     elif args.dataset_name == 'nq_open':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, token_idxes = tokenized_from_file(file_path, tokenizer)
+        np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', token_idxes)
     else: 
         prompts, labels = formatter(dataset, tokenizer)
 
