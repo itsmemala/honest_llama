@@ -5,7 +5,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
 import pickle
-from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_nq_open_during, tokenized_nq_open_after
+from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file
 import llama
 import pickle
 import argparse
@@ -101,11 +101,6 @@ def main():
     elif args.dataset_name == 'nq': 
         dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
         formatter = tokenized_nq
-    elif args.dataset_name == 'nq_open':
-        dataset = load_dataset("nq_open", streaming= True)['validation']
-        formatter = tokenized_nq_open_during if args.act_type=='during' else tokenized_nq_open_after
-    elif args.dataset_name == 'counselling':
-        pass
     else: 
         raise ValueError("Invalid dataset name")
 
@@ -120,7 +115,8 @@ def main():
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
     elif args.dataset_name == 'nq_open':
-        
+        file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
+        prompts, token_idxes = tokenized_from_file(file_path, tokenizer)
     else: 
         prompts, labels = formatter(dataset, tokenizer)
 
@@ -135,8 +131,14 @@ def main():
             load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
     elif 'counselling' in args.dataset_name:
         load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1)] # if ((a*20)+20)>180]
-    else:
+    elif args.dataset_name=='nq':
         load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
+    elif args.dataset_name=='nq_open':
+        if args.token=='all':
+            load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20)+1)]
+        else:
+            load_ranges = [(0,1000),(1000,2000)]
+    
     for start, end in load_ranges:
         all_layer_wise_activations = []
         all_head_wise_activations = []
@@ -150,6 +152,8 @@ def main():
                     all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
                 elif 'answer_all' in args.token:
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
+                elif args.token=='all':
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
             else:
                 if args.model_name=='flan_33B':
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
@@ -167,6 +171,10 @@ def main():
                     all_layer_wise_activations.append(layer_wise_activations[:,token_idx:,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
+                elif args.token=='all':
+                    all_layer_wise_activations.append(layer_wise_activations[:,:,:])
+                    all_head_wise_activations.append(head_wise_activations[:,:,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
         #     break
         # break
 
@@ -190,7 +198,7 @@ def main():
             with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-    if 'counselling' not in args.dataset_name and args.mlp_l1=='No':
+    if 'counselling' not in args.dataset_name and args.dataset_name!='nq_open' and args.mlp_l1=='No':
         print("Saving labels")
         np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_labels_{end}.npy', labels)
 

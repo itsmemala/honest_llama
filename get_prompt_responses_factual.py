@@ -8,7 +8,6 @@ import pickle
 import json
 import jsonlines
 import random
-from utils import tokenized_nq_orig
 import llama
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
@@ -60,7 +59,7 @@ def main():
     if args.dataset_name=='nq_open':
         len_dataset = 1800 #3610
     elif args.dataset_name=='cnn_dailymail':
-        len_dataset = 10 #13400
+        len_dataset = 1000 #13400
     dataset = load_dataset(args.dataset_name, streaming= True)['validation']
     prompts = []
     tokenized_prompts = []
@@ -70,7 +69,7 @@ def main():
             cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
         elif args.dataset_name=='cnn_dailymail':
             article = val['article']
-            cur_prompt = f"Article: {article}\n Summarize the article in one sentence. Summary: "
+            cur_prompt = f"Article: {article}\n Summarize the article in two to three sentences. Summary: "
         prompts.append(cur_prompt)
         tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
         tokenized_prompts.append(tokenized_prompt)
@@ -95,12 +94,12 @@ def main():
     # print('Bad word ids:',question_framing_ids)
     for i,prompt in enumerate(tqdm(tokenized_prompts)):
         prompt = prompt.to(device)
-        response = model.generate(prompt, max_new_tokens=256, num_beams=1, do_sample=False, num_return_sequences=1,
+        response = model.generate(prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1,
                                     eos_token_id=period_token_id,
                                     bad_words_ids=question_framing_ids + [prompt.tolist()[0]]
                                     )[:, prompt.shape[-1]:]
         response = tokenizer.decode(response[0], skip_special_tokens=True)
-        for check_gen in checkgens: # Fix generation errors
+        for check_gen in checkgens: # Fix generation stopping errors
             response = response.split(check_gen)[0]
         responses.append({'prompt':prompts[i],
                             'response1':response})

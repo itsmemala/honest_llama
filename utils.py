@@ -198,22 +198,23 @@ def tokenized_nq(dataset, tokenizer):
         
     return all_prompts, all_labels
 
-def tokenized_nq_open_during(dataset, tokenizer): 
+def tokenized_from_file(file_path, tokenizer): 
 
     all_prompts = []
-    for val in list(dataset.take(3610)):
-        question = val['question']
-        prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+    answer_token_idxes = []
+    with open(file_path, 'r') as read_file:
+        data = []
+        for line in read_file:
+            data.append(json.loads(line))
+    for row in data:
+        question = row['prompt']
+        answer = row['response1']
+        prompt = question + answer
         prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
         all_prompts.append(prompt)
+        answer_token_idxes.append(len(tokenizer(question, return_tensors = 'pt').input_ids[0]))
         
-    return all_prompts
-
-def tokenized_nq_open_after(dataset, tokenizer): 
-
-
-
-    return all_prompts
+    return all_prompts, answer_token_idxes
 
 def tokenized_mi(file_path, tokenizer): 
 
