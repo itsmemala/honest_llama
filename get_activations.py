@@ -101,6 +101,8 @@ def main():
     elif args.dataset_name == 'nq': 
         dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
         formatter = tokenized_nq
+    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open':
+        pass
     else: 
         raise ValueError("Invalid dataset name")
 
@@ -136,9 +138,14 @@ def main():
         load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
     elif args.dataset_name=='nq_open':
         if args.token=='all':
-            load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20)+1)]
+            load_ranges = [(a*20,(a*20)+20) for a in range(int(600/20)+1) if (a*20)+20>120]
         else:
             load_ranges = [(0,1000),(1000,2000)]
+    elif args.dataset_name=='cnn_dailymail':
+        if args.token=='prompt_last_onwards':
+            load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1) if (a*20)+20>120]
+        else:
+            load_ranges = [(0,1000)]
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
@@ -155,6 +162,8 @@ def main():
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
                 elif args.token=='all':
                     all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
+                elif args.token=='prompt_last_onwards':
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
             else:
                 if args.model_name=='flan_33B':
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
@@ -173,9 +182,13 @@ def main():
                     all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
                 elif args.token=='all':
-                    all_layer_wise_activations.append(layer_wise_activations[:,:,:])
+                    # all_layer_wise_activations.append(layer_wise_activations[:,:,:])
                     all_head_wise_activations.append(head_wise_activations[:,:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
+                elif args.token=='prompt_last_onwards':
+                    # all_layer_wise_activations.append(layer_wise_activations[:,:,:])
+                    all_head_wise_activations.append(head_wise_activations[:,token_idx-1:,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
         #     break
         # break
 
@@ -186,8 +199,8 @@ def main():
         else:
             print("Saving layer wise activations")
             # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
-                pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+            # with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+            #     pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
             
             print("Saving head wise activations")
             # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
