@@ -101,7 +101,7 @@ def main():
     elif args.dataset_name == 'nq': 
         dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
         formatter = tokenized_nq
-    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open':
+    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail':
         pass
     else: 
         raise ValueError("Invalid dataset name")
@@ -116,7 +116,7 @@ def main():
     elif args.dataset_name == 'counselling':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
-    elif args.dataset_name == 'nq_open':
+    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, token_idxes = tokenized_from_file(file_path, tokenizer)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', token_idxes)
@@ -138,12 +138,12 @@ def main():
         load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
     elif args.dataset_name=='nq_open':
         if args.token=='all':
-            load_ranges = [(a*20,(a*20)+20) for a in range(int(600/20)+1) if (a*20)+20>120]
+            load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20)+1) if (a*20)+20>540]
         else:
             load_ranges = [(0,1000),(1000,2000)]
     elif args.dataset_name=='cnn_dailymail':
         if args.token=='prompt_last_onwards':
-            load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1) if (a*20)+20>120]
+            load_ranges = [(a*20,(a*20)+20) for a in range(int(1000/20)+1) if (a*20)+20>520]
         else:
             load_ranges = [(0,1000)]
     
@@ -212,7 +212,7 @@ def main():
             with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-    if 'counselling' not in args.dataset_name and args.dataset_name!='nq_open' and args.mlp_l1=='No':
+    if 'counselling' not in args.dataset_name and args.dataset_name!='nq_open' and args.dataset_name!='cnn_dailymail' and args.mlp_l1=='No':
         print("Saving labels")
         np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_labels_{end}.npy', labels)
 
