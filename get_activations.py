@@ -138,8 +138,9 @@ def main():
         load_ranges = [(0,1000),(1000,3000),(3000,5000),(5000,7000),(7000,9000),(9000,11000)]
     elif args.dataset_name=='nq_open':
         if args.token=='all':
-            # load_ranges = [(a*5,(a*5)+5) for a in range(int(1800/5)+1) if (a*5)+5>1560] # 20 upto 540, 10 upto 860, 5 upto 1800
-            load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20)+1) if (a*20)+20>660] # mlp_l1
+            # load_ranges = [(a*5,(a*5)+5) for a in range(int(1800/5)+1) if (a*5)+5>860] # 20 upto 540, 10 upto 860, 5 upto 1800
+            load_ranges = [(1380,1385)]
+            # load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20)+1) if (a*20)+20>1700] # mlp_l1
     elif args.dataset_name=='cnn_dailymail':
         if args.token=='prompt_last_onwards':
             load_ranges = [(a*20,(a*20)+20) for a in range(int(1000/20)+1) if (a*20)+20>520]
