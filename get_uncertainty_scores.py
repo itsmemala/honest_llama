@@ -64,7 +64,7 @@ def main():
     print('Getting token probability scores..')
     # Get token probabilities
     scores = []
-    for i,sample in enumerate(data):
+    for i,sample in enumerate(data[:10]):
         prompt = sample['prompt']
         response = sample['response1']
         tokenized_input = tokenizer(prompt+response, return_tensors = 'pt').input_ids
