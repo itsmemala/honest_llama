@@ -64,21 +64,24 @@ def main():
     print('Getting token probability scores..')
     # Get token probabilities
     scores = []
-    for i,sample in enumerate(data[:10]):
+    for i,sample in tqdm(enumerate(data[:4])):
         prompt = sample['prompt']
         response = sample['response1']
-        tokenized_input = tokenizer(prompt+response, return_tensors = 'pt').input_ids
-        tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+        tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
+        # tokenized_input = tokenized_input[tokenized_input != tokenizer.pad_token_id]
+        tokenized_prompt = tokenizer([prompt], return_tensors = 'pt').input_ids
+        # tokenized_prompt = tokenized_prompt[tokenized_prompt != tokenizer.pad_token_id]
         # This computation of the negative log likelihoods follows this tutorial: https://huggingface.co/docs/transformers/perplexity
-        target_ids = tokenized_input.clone()
-        target_ids[:len(tokenized_prompt)] = -100
-        model_output = model(torch.reshape(tokenized_input, (1, -1)), labels=target_ids, output_hidden_states=True)
+        target_ids = tokenized_input.clone().to(device)
+        target_ids[0][:len(tokenized_prompt[0])] = -100
+        # model_output = model(torch.reshape(tokenized_input, (1, -1)), labels=target_ids, output_hidden_states=True)
+        model_output = model(tokenized_input, labels=target_ids, output_hidden_states=True)
         average_neg_log_likelihood = model_output['loss'] # len normalised predictive entropy
-        neg_log_likelihood = average_neg_log_likelihood * (len(tokenized_input) - len(tokenized_prompt)) # sequence predictive entropy
-        scores.append(np.array([average_neg_log_likelihood,neg_log_likelihood]))
+        neg_log_likelihood = average_neg_log_likelihood * (len(tokenized_input[0]) - len(tokenized_prompt[0])) # sequence predictive entropy
+        scores.append(np.array([average_neg_log_likelihood.detach().cpu().numpy(),neg_log_likelihood.detach().cpu().numpy()]))
 
     print('Saving token probability scores..')
-    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_uncertainty_scores.npy', scores)
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy', scores)
     
 
 if __name__ == '__main__':
