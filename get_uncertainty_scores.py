@@ -75,7 +75,7 @@ def main():
         model_output = model(torch.reshape(tokenized_input, (1, -1)), labels=target_ids, output_hidden_states=True)
         average_neg_log_likelihood = model_output['loss'] # len normalised predictive entropy
         neg_log_likelihood = average_neg_log_likelihood * (len(tokenized_input) - len(tokenized_prompt)) # sequence predictive entropy
-        scores.append([average_neg_log_likelihood,neg_log_likelihood])
+        scores.append(np.array([average_neg_log_likelihood,neg_log_likelihood]))
 
     print('Saving token probability scores..')
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_uncertainty_scores.npy', scores)
