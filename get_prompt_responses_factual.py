@@ -61,7 +61,7 @@ def main():
         len_dataset = 1800 #3610
     elif args.dataset_name=='trivia_qa':
         hf_dataset_name = 'mandarjoshi/trivia_qa'
-        len_dataset = 10 #17900
+        len_dataset = 1800 #17900
     elif args.dataset_name=='cnn_dailymail':
         hf_dataset_name = 'cnn_dailymail'
         len_dataset = 1000 #13400
@@ -85,7 +85,7 @@ def main():
     print('Getting model responses..')
     # Get model responses
     responses = []
-    if args.dataset_name=='nq_open':
+    if args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
         # period_token_id = tokenizer('. ')['input_ids'][1]
         period_token_id = tokenizer('.')['input_ids']
         eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
