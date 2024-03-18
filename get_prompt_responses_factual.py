@@ -57,14 +57,22 @@ def main():
     print('Loading data..')
     # Load data
     if args.dataset_name=='nq_open':
+        hf_dataset_name = 'nq_open'
         len_dataset = 1800 #3610
+    elif args.dataset_name=='trivia_qa':
+        hf_dataset_name = 'mandarjoshi/trivia_qa'
+        len_dataset = 10 #17900
     elif args.dataset_name=='cnn_dailymail':
+        hf_dataset_name = 'cnn_dailymail'
         len_dataset = 1000 #13400
-    dataset = load_dataset(args.dataset_name, streaming= True)['validation']
+    dataset = load_dataset(hf_dataset_name, streaming= True)['validation']
     prompts = []
     tokenized_prompts = []
     for val in list(dataset.take(len_dataset)):
         if args.dataset_name=='nq_open':
+            question = val['question']
+            cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+        elif args.dataset_name=='trivia_qa':
             question = val['question']
             cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
         elif args.dataset_name=='cnn_dailymail':
@@ -119,7 +127,13 @@ def main():
                         'rouge1_to_target':0.0,
                         'rouge2_to_target':0.0,
                         'rougeL_to_target':0.0}
-        reference_answers = batch['answer'] if args.dataset_name=='nq_open' else [batch['highlights']]
+        if args.dataset_name=='nq_open':
+            reference_answers = batch['answer'] 
+        elif args.dataset_name=='trivia_qa':
+            reference_answers_unformatted = batch['answer']
+            reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases']
+        elif args.dataset_name=='cnn_dailymail':
+            reference_answers = [batch['highlights']]
         for answer in reference_answers:
             predictions = [responses[i]['response1'].lstrip()]
             references = [answer]

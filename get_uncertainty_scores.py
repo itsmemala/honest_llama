@@ -64,7 +64,7 @@ def main():
     print('Getting token probability scores..')
     # Get token probabilities
     scores = []
-    for i,sample in tqdm(enumerate(data[:4])):
+    for i,sample in tqdm(enumerate(data)):
         prompt = sample['prompt']
         response = sample['response1']
         tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
