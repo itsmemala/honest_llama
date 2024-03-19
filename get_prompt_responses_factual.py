@@ -59,13 +59,15 @@ def main():
     if args.dataset_name=='nq_open':
         hf_dataset_name = 'nq_open'
         len_dataset = 1800 #3610
+        dataset = load_dataset(hf_dataset_name, streaming= True)['validation']
     elif args.dataset_name=='trivia_qa':
         hf_dataset_name = 'mandarjoshi/trivia_qa'
         len_dataset = 1800 #17900
+        dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)['validation']
     elif args.dataset_name=='cnn_dailymail':
         hf_dataset_name = 'cnn_dailymail'
         len_dataset = 1000 #13400
-    dataset = load_dataset(hf_dataset_name, streaming= True)['validation']
+        dataset = load_dataset(hf_dataset_name, streaming= True)['validation']
     prompts = []
     tokenized_prompts = []
     for val in list(dataset.take(len_dataset)):
