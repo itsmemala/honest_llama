@@ -62,7 +62,7 @@ def main():
         dataset = load_dataset(hf_dataset_name, streaming= True)['validation']
     elif args.dataset_name=='trivia_qa':
         hf_dataset_name = 'mandarjoshi/trivia_qa'
-        len_dataset = 1800 #17900
+        len_dataset = 500 #17900
         dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)['validation']
     elif args.dataset_name=='cnn_dailymail':
         hf_dataset_name = 'cnn_dailymail'
