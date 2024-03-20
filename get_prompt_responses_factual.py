@@ -56,21 +56,20 @@ def main():
 
     print('Loading data..')
     # Load data
+    len_dataset = args.len_dataset
+    start_at = args.start_at
     if args.dataset_name=='nq_open':
         hf_dataset_name = 'nq_open'
-        len_dataset = 1800 #3610
-        dataset = load_dataset(hf_dataset_name, streaming= True)['validation']
+        dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
     elif args.dataset_name=='trivia_qa':
         hf_dataset_name = 'mandarjoshi/trivia_qa'
-        len_dataset = 500 #17900
-        dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)['validation']
+        dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)[args.use_split]
     elif args.dataset_name=='cnn_dailymail':
         hf_dataset_name = 'cnn_dailymail'
-        len_dataset = 1000 #13400
-        dataset = load_dataset(hf_dataset_name, streaming= True)['validation']
+        dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
     prompts = []
     tokenized_prompts = []
-    for val in list(dataset.take(len_dataset)):
+    for val in list(dataset.take(len_dataset))[start_at:]:
         if args.dataset_name=='nq_open':
             question = val['question']
             cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
@@ -102,20 +101,34 @@ def main():
         checkgens = ['Summary:']
     question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
     # print('Bad word ids:',question_framing_ids)
-    for i,prompt in enumerate(tqdm(tokenized_prompts)):
-        prompt = prompt.to(device)
-        response = model.generate(prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1,
+    for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
+        tokenized_prompt = tokenized_prompt.to(device)
+        response = model.generate(tokenized_prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1,
                                     eos_token_id=period_token_id,
-                                    bad_words_ids=question_framing_ids + [prompt.tolist()[0]]
-                                    )[:, prompt.shape[-1]:]
+                                    bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+                                    )[:, tokenized_prompt.shape[-1]:]
         response = tokenizer.decode(response[0], skip_special_tokens=True)
         for check_gen in checkgens: # Fix generation stopping errors
             response = response.split(check_gen)[0]
         responses.append({'prompt':prompts[i],
                             'response1':response})
+    # batches = [(0,10)]
+    # for batch_start,batch_end in batches:
+    #     tokenized_prompt = tokenizer(prompts[batch_start:batch_end], return_tensors = 'pt').input_ids
+    #     tokenized_prompt = tokenized_prompt.to(device)
+    #     response = model.generate(tokenized_prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1,
+    #                                 eos_token_id=period_token_id,
+    #                                 bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+    #                                 )[:, tokenized_prompt.shape[-1]:]
+    #     response = tokenizer.decode(response, skip_special_tokens=True)
+    #     for i,resp in enumerate(response):
+    #         for check_gen in checkgens: # Fix generation stopping errors
+    #             resp = resp.split(check_gen)[0]
+    #         responses.append({'prompt':prompts[batch_start+i],
+    #                         'response1':resp})
     
     print('Saving model responses..')
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{len_dataset}.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{len_dataset}.json', 'w') as outfile:
         for entry in responses:
             json.dump(entry, outfile)
             outfile.write('\n')
@@ -124,7 +137,7 @@ def main():
     labels = []
     rouge = evaluate.load('rouge')
     exact_match_metric = evaluate.load("exact_match")
-    for i,batch in enumerate(list(dataset.take(len_dataset))): # one row at a time
+    for i,batch in enumerate(list(dataset.take(len_dataset))[start_at:]): # one row at a time
         labels_dict = {'exact_match': 0.0,
                         'rouge1_to_target':0.0,
                         'rouge2_to_target':0.0,
@@ -153,7 +166,7 @@ def main():
 
 
     print('Saving labels..')
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{len_dataset}.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{len_dataset}.json', 'w') as outfile:
         for entry in labels:
             json.dump(entry, outfile)
             outfile.write('\n')
