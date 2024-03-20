@@ -55,6 +55,7 @@ def main():
     device = "cuda"
 
     print('Loading data..')
+    print(args.len_dataset,args.start_at,args.use_split)
     # Load data
     len_dataset = args.len_dataset
     start_at = args.start_at
