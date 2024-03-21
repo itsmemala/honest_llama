@@ -139,8 +139,9 @@ def main():
     elif args.dataset_name=='nq_open':
         if args.token=='all':
             # load_ranges = [(a*5,(a*5)+5) for a in range(int(1800/5)+1) if (a*5)+5>860] # 20 upto 540, 10 upto 860, 5 upto 1800
-            load_ranges = [(1380,1385)]
+            # load_ranges = [(1380,1385)]
             # load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20)+1) if (a*20)+20>1700] # mlp_l1
+            load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20))] # alpaca7B
     elif args.dataset_name=='cnn_dailymail':
         if args.token=='prompt_last_onwards':
             load_ranges = [(a*20,(a*20)+20) for a in range(int(1000/20)+1) if (a*20)+20>520]
@@ -194,7 +195,7 @@ def main():
 
         if args.mlp_l1=='Yes':
             print("Saving mlp l1 activations")
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.token}_mlp_l1_{end}.pkl', 'wb') as outfile:
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_l1_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
         else:
             print("Saving layer wise activations")
@@ -204,12 +205,12 @@ def main():
             
             print("Saving head wise activations")
             # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_head_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
             print("Saving mlp wise activations")
             # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
     if 'counselling' not in args.dataset_name and args.dataset_name!='nq_open' and args.dataset_name!='cnn_dailymail' and args.mlp_l1=='No':
