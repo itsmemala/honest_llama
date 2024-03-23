@@ -19,6 +19,7 @@ from baukit import Trace, TraceDict
 import sklearn
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.linear_model import LogisticRegression
+import spacy
 import pickle
 from functools import partial
 
@@ -46,6 +47,41 @@ from truthfulqa.presets import preset_map, COMPARE_PRIMER
 from truthfulqa.models import find_subsequence, set_columns, MC_calcs
 from truthfulqa.evaluate import format_frame, data_to_dict
 
+class FeedforwardNeuralNetModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim1, output_dim):
+        super(FeedforwardNeuralNetModel, self).__init__()
+        # Linear function
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+
+        # Non-linearity
+        self.sigmoid = nn.Sigmoid()
+        # Linear function (readout)
+        # self.fc3 = nn.Linear(hidden_dim, output_dim)
+
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_dim, 128)
+        self.fc3 = nn.Linear(128, 64)
+        # self.fc4 = nn.Linear(64,2)
+        self.fc4 = nn.Linear(64,1)
+
+    def forward(self, x):
+        # Linear function  # LINEAR
+        out = self.fc1(x)
+
+        # # Non-linearity  # NON-LINEAR
+        # out = self.sigmoid(out)
+        # # Linear function (readout)  # LINEAR
+        # out = self.fc2(out)
+
+        out = self.relu(out)
+        out = self.fc2(out)
+        out = self.relu(out)
+        out = self.fc3(out)
+        out = self.relu(out)
+        out = self.fc4(out)
+        # out = self.sigmoid(out)
+
+        return out
 
 def load_nq():
     dataset = load_dataset("OamPatel/iti_nq_open_val")["validation"]
@@ -200,7 +236,7 @@ def tokenized_nq(dataset, tokenizer):
 
 def tokenized_from_file(file_path, tokenizer): 
 
-    all_prompts = []
+    all_prompts, all_tokenized_prompts, resp_tokenized = [], [], []
     answer_token_idxes = []
     with open(file_path, 'r') as read_file:
         data = []
@@ -210,11 +246,13 @@ def tokenized_from_file(file_path, tokenizer):
         question = row['prompt']
         answer = row['response1']
         prompt = question + answer
-        prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
         all_prompts.append(prompt)
+        prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+        all_tokenized_prompts.append(prompt)
+        resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in prompt.input_ids])
         answer_token_idxes.append(len(tokenizer(question, return_tensors = 'pt').input_ids[0]))
         
-    return all_prompts, answer_token_idxes
+    return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
 
 def tokenized_mi(file_path, tokenizer): 
 
@@ -232,6 +270,35 @@ def tokenized_mi(file_path, tokenizer):
         
     return all_prompts
 
+def get_token_tags(responses,resp_tokenized):
+    # Load the small English model
+    nlp = spacy.load("en_core_web_sm")
+    # Tag tokens
+    issues = []
+    tagged_token_idxs = []
+    for i,response in enumerate(responses):
+        doc = nlp(response)
+        text_tokens = [token.text for token in doc if token.pos_ in ['PROPN','NOUN','NUM'] and token.text not in ['bot','questions','Q','*',"'"]] # what about 'A'?
+        cur_idxs = []
+        for text in text_tokens: # This will only find the first mention of the text
+            for j,token in enumerate(resp_tokenized[i]):
+                found = False
+                if token in text: # since llama tokens may be smaller than spacy tokens
+                    # print(text,j)
+                    k = 1
+                    while j+k<=len(resp_tokenized[i]):
+                    if ''.join(resp_tokenized[i][j:j+k])==text:
+                        found=True
+                        cur_idxs.append((j,j+k))
+                        break
+                    k += 1
+                if found==True:
+                    break
+        assert len(cur_idxs)<=len(text_tokens)
+        if len(cur_idxs)<len(text_tokens):
+            issues.append(i)
+        tagged_token_idxs.append(cur_idxs)
+    return tagged_token_idxs
 
 def get_llama_activations_bau(model, prompt, device, mlp_l1='No'): 
 
@@ -264,6 +331,33 @@ def get_llama_activations_bau(model, prompt, device, mlp_l1='No'):
     else:
         return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states
 
+def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, token, answer_token_idx=-1, tagged_token_idxs=[]):
+
+    if using_act=='mlp':
+        ANALYSE = [f"model.layers.{layer}.mlp"]
+    elif using_act=='ah':
+        ANALYSE = [f"model.layers.{layer}.self_attn.head_out"]
+    elif using_act=='mlp_l1':
+        ANALYSE = [f"model.layers.{layer}.mlp.up_proj_out"]
+
+    with torch.no_grad():
+        prompt = prompt.to(device)
+        with TraceDict(model, ANALYSE) as ret:
+            output = model(prompt, output_hidden_states = True)
+        activation = ret[ANALYSE[0]].output.squeeze().detach().cpu().to(torch.float32)
+
+        del output
+
+    if token=='answer_last':
+        return activation[-1,:]
+    elif token=='prompt_last':
+        return activation[token_idx-1,:]
+    elif token=='maxpool_all':
+        return np.max(activation,axis=0)
+    elif token=='tagged_tokens':
+        return np.concatenate([activation[a:b,:] for a,b in tagged_idxs],axis=0)
+    else:
+        return activation
 
 def get_llama_logits(model, prompt, device): 
 
