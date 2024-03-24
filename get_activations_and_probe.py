@@ -10,7 +10,8 @@ import numpy as np
 import statistics
 import pickle
 import json
-from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, FeedforwardNeuralNetModel
+from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
+from utils import LogisticRegression, FeedforwardNeuralNetModel
 import llama
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
@@ -184,8 +185,9 @@ def main():
                 ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                 ds_test = DataLoader(ds_test, batch_size=4)
 
-                model = 
-                criterion = 
+                act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
+                model = LogisticRegression(act_dims[args.using_act], 2)
+                criterion = nn.BCELoss()
                 lr = 0.05
                 
                 iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
@@ -219,11 +221,9 @@ def main():
                     activations = []
                     for idx in batch['inputs_idxs']:
                         activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                    inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
-                    outputs = model(inputs)
-                    predicted = torch.max(outputs.data, 1) if args.token in ['answer_last','prompt_last','maxpool_all'] else 
-                    actual = np.squeeze(batch['labels'])
-                    pred_correct += (predicted == actual).sum()
+                    inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                    predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                    pred_correct += (predicted == batch['labels']).sum()
                     y_val_pred += predicted
                 # print('Validation Acc:',pred_correct/len(X_val))
                 all_val_accs[i].append(pred_correct/len(X_val))
@@ -232,15 +232,14 @@ def main():
                 y_test_pred = []
                 with torch.no_grad():
                 model.eval()
+                use_prompts = prompts if args.num_folds>1 else test_prompts
                 for step,batch in enumerate(ds_test):
                     activations = []
                     for idx in batch['inputs_idxs']:
-                        activations.append(get_llama_activations_bau_custom(model, test_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                    inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
-                    outputs = model(inputs)
-                    # predicted = [1 if pred[0]>0.5 else 0 for pred in nn.Sigmoid()(outputs.data).tolist()]
-                    actual = np.squeeze(batch['labels']).tolist()
-                    pred_correct += sum([1 if p==a else 0 for p,a in zip(predicted, actual)])
+                        activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                    inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                    predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                    pred_correct += sum([1 if p==a else 0 for p,a in zip(predicted, batch['labels'])])
                     y_test_pred += predicted
                 # print('Validation Acc:',pred_correct/len(X_test))
                 all_test_accs[i].append(pred_correct/len(X_test))

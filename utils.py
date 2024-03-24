@@ -47,6 +47,16 @@ from truthfulqa.presets import preset_map, COMPARE_PRIMER
 from truthfulqa.models import find_subsequence, set_columns, MC_calcs
 from truthfulqa.evaluate import format_frame, data_to_dict
 
+class LogisticRegression(torch.nn.Module):    
+    # build the constructor
+    def __init__(self, n_inputs, n_outputs):
+        super().__init__()
+        self.linear = torch.nn.Linear(n_inputs, n_outputs)
+    # make predictions
+    def forward(self, x):
+        y_pred = torch.sigmoid(self.linear(x))
+        return y_pred
+
 class FeedforwardNeuralNetModel(nn.Module):
     def __init__(self, input_dim, hidden_dim1, output_dim):
         super(FeedforwardNeuralNetModel, self).__init__()
