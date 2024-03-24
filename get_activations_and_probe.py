@@ -148,7 +148,7 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    for i in range(num_folds):
+    for i in range(args.num_folds):
         print('Training FOLD',i)
         train_idxs = np.concatenate([fold_idxs[j] for j in range(num_folds) if j != i]) if num_folds>1 else train_idxs
         test_idxs = fold_idxs[i] if num_folds>1 else test_idxs
