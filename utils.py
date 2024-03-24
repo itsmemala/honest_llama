@@ -297,11 +297,11 @@ def get_token_tags(responses,resp_tokenized):
                     # print(text,j)
                     k = 1
                     while j+k<=len(resp_tokenized[i]):
-                    if ''.join(resp_tokenized[i][j:j+k])==text:
-                        found=True
-                        cur_idxs.append((j,j+k))
-                        break
-                    k += 1
+                        if ''.join(resp_tokenized[i][j:j+k])==text:
+                            found=True
+                            cur_idxs.append((j,j+k))
+                            break
+                        k += 1
                 if found==True:
                     break
         assert len(cur_idxs)<=len(text_tokens)
