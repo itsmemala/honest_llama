@@ -130,7 +130,7 @@ def main():
         tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
         test_tagged_token_idxs = get_token_tags(test_prompts,test_prompt_tokens)
     else:
-        tagged_token_idxs,test_tagged_token_idxs = [],[]
+        tagged_token_idxs,test_tagged_token_idxs = [[] for i in range(len(prompts))],[[] for i in range(len(test_prompts))]
     
     # Probe training
     np.random.seed(42)
@@ -202,7 +202,7 @@ def main():
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                                activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs_cur))
                             inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']  
