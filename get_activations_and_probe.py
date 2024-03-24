@@ -204,14 +204,13 @@ def main():
                             activations = []
                             for idx in batch['inputs_idxs']:
                                 activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.concatenate(activations,axis=0)
+                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']
                             elif args.token=='all':
-                                targets = torch.concatenate([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],axis=0)
-                                print(targets.shape)
+                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             if args.token=='tagged_all':
-                                targets = torch.concatenate([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],axis=0)
+                                targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, targets.to(device))
                             train_loss.append(loss)
