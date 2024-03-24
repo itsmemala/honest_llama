@@ -259,7 +259,7 @@ def tokenized_from_file(file_path, tokenizer):
         all_prompts.append(prompt)
         prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
         all_tokenized_prompts.append(prompt)
-        resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in prompt.input_ids])
+        resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in prompt])
         answer_token_idxes.append(len(tokenizer(question, return_tensors = 'pt').input_ids[0]))
         
     return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
