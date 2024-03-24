@@ -202,7 +202,7 @@ def main():
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs_cur))
+                                activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']  
