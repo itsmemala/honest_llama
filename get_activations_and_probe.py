@@ -155,9 +155,9 @@ def main():
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
-        y_train = np.stack([labels[i] for i in train_set_idxs], axis = 0)
-        y_val = np.stack([labels[i] for i in val_set_idxs], axis = 0)
-        y_test = np.stack([labels[i] for i in test_idxs], axis = 0)
+        y_train = torch.stack([labels[i] for i in train_set_idxs], axis = 0)
+        y_val = torch.stack([labels[i] for i in val_set_idxs], axis = 0)
+        y_test = torch.stack([labels[i] for i in test_idxs], axis = 0)
         y_true_test[i] = y_test
         if args.method=='individual_non_linear':
             y_train = np.vstack([[val] for val in y_train], dtype='float32')
@@ -203,13 +203,13 @@ def main():
                             activations = []
                             for idx in batch['inputs_idxs']:
                                 activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                            inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
+                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.concatenate(activations,axis=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']  
                             elif args.token=='all':
-                                targets = np.concatenate([[labels[idx] for j in range(len(prompt_tokens[idx]))] for idx in batch['inputs_idxs']],axis=0)
+                                targets = torch.concatenate([[labels[idx] for j in range(len(prompt_tokens[idx]))] for idx in batch['inputs_idxs']],axis=0)
                             if args.token=='tagged_all':
-                                targets = np.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in batch['inputs_idxs']],axis=0)
+                                targets = torch.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in batch['inputs_idxs']],axis=0)
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, targets)
                             train_loss.append(loss)
@@ -226,7 +226,7 @@ def main():
                             activations = []
                             for idx in batch['inputs_idxs']:
                                 activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                            inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             pred_correct += (predicted == batch['labels']).sum()
                             y_val_pred += predicted
@@ -243,7 +243,7 @@ def main():
                             activations = []
                             for idx in batch['inputs_idxs']:
                                 activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                            inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             pred_correct += sum([1 if p==a else 0 for p,a in zip(predicted, batch['labels'])])
                             y_test_pred += predicted

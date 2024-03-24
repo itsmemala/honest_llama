@@ -354,7 +354,7 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
         prompt = prompt.to(device)
         with TraceDict(model, ANALYSE) as ret:
             output = model(prompt, output_hidden_states = True)
-        activation = ret[ANALYSE[0]].output.squeeze().detach().cpu().to(torch.float32)
+        activation = ret[ANALYSE[0]].output.squeeze().detach().to(torch.float32)
 
         del output
 
@@ -363,9 +363,9 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
     elif token=='prompt_last':
         return activation[token_idx-1,:]
     elif token=='maxpool_all':
-        return np.max(activation,axis=0)
+        return torch.max(activation,axis=0)[0]
     elif token=='tagged_tokens':
-        return np.concatenate([activation[a:b,:] for a,b in tagged_idxs],axis=0)
+        return torch.concatenate([activation[a:b,:] for a,b in tagged_idxs],axis=0)
     else:
         return activation
 
