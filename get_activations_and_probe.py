@@ -150,8 +150,8 @@ def main():
     
     for i in range(args.num_folds):
         print('Training FOLD',i)
-        train_idxs = np.concatenate([fold_idxs[j] for j in range(num_folds) if j != i]) if num_folds>1 else train_idxs
-        test_idxs = fold_idxs[i] if num_folds>1 else test_idxs
+        train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
+        test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
