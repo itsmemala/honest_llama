@@ -213,7 +213,7 @@ def main():
                             if args.token=='tagged_all':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
-                            loss = criterion(outputs, nn.functional.one_hot(targets,num_classes=2).to(device))
+                            loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(device))
                             train_loss.append(loss)
                             iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
