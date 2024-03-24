@@ -187,7 +187,7 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=4)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
-                    model = LogisticRegression(act_dims[args.using_act], 2)
+                    model = LogisticRegression()(act_dims[args.using_act], 2)
                     criterion = nn.BCELoss()
                     lr = 0.05
                     
