@@ -149,6 +149,7 @@ def main():
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
     for i in range(num_folds):
+        print('Training FOLD',i)
         train_idxs = np.concatenate([fold_idxs[j] for j in range(num_folds) if j != i]) if num_folds>1 else train_idxs
         test_idxs = fold_idxs[i] if num_folds>1 else test_idxs
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
@@ -169,7 +170,7 @@ def main():
         all_test_preds[i] = []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
-        for layer in range(num_layers):
+        for layer in tqdm(range(num_layers)):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 if args.method=='individual_linear':
@@ -190,13 +191,14 @@ def main():
                     criterion = nn.BCELoss()
                     lr = 0.05
                     
-                    iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
+                    # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
                     train_loss = []
                     for epoch in range(3):
                         model.train()
                         optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-                        for step,batch in enumerate(iter_bar):
+                        # for step,batch in enumerate(iter_bar):
+                        for step,batch in enumerate(ds_train):
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
