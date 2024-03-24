@@ -188,7 +188,7 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=4)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
-                    linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2)
+                    linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                     criterion = nn.BCELoss()
                     lr = 0.05
                     
