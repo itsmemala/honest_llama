@@ -111,18 +111,20 @@ def main():
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
         labels = []
         with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
                 labels.append(1 if data['rouge1_to_target']>0.3 else 0)
+        labels = labels[:args.len_dataset]
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
         test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer)
         test_labels = []
         with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
-                test_labels.append(1 if data['rouge1_to_target']>0.3 else 0)    
+                test_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
     
     if args.token=='tagged_tokens':
         tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
@@ -134,16 +136,15 @@ def main():
     np.random.seed(42)
 
     # Individual probes
-    all_val_accs = {}
-    all_val_f1s = {}
-    all_test_accs = {}
-    all_test_f1s = {}
+    all_train_loss, all_val_loss = {}, {}
+    all_val_accs, all_val_f1s = {}, {}
+    all_test_accs, all_test_f1s = {}, {}
     all_test_preds = {}
     y_true_test = {}
     if args.num_folds==1: # Use static test data
         sampled_idxs = np.random.choice(np.arange(1800), size=int(1800*(1-0.2)), replace=False) 
         test_idxs = np.array([x for x in np.arange(1800) if x not in sampled_idxs]) # Sampled indexes from 1800 held-out split
-        train_idxs = np.arange(args.len_dataset)
+        train_idxs = sampled_idxs if args.len_dataset==1800 else np.arange(args.len_dataset)
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
@@ -162,10 +163,9 @@ def main():
             y_val = np.vstack([[val] for val in y_val], dtype='float32')
             y_test = np.vstack([[val] for val in y_test], dtype='float32')
 
-        all_val_accs[i] = []
-        all_val_f1s[i] = []
-        all_test_accs[i] = []
-        all_test_f1s[i] = []
+        all_train_loss[i], all_val_loss[i] = [], []
+        all_val_accs[i], all_val_f1s[i] = [], []
+        all_test_accs[i], all_test_f1s[i] = [], []
         all_test_preds[i] = []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
@@ -192,6 +192,7 @@ def main():
                 
                 iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
+                train_loss = []
                 for epoch in range(3):
                     model.train()
                     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
@@ -209,10 +210,12 @@ def main():
                             targets = np.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in enumerate(train_set_idxs)],axis=0)
                         outputs = model(inputs)
                         loss = criterion(outputs, targets)
+                        train_loss.append(loss)
                         iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                         loss.backward()
                         optimizer.step()
                     lr = lr*0.9
+                all_train_loss[i].append(train_loss)
                 pred_correct = 0
                 y_val_pred = []
                 with torch.no_grad():
@@ -230,6 +233,7 @@ def main():
                 all_val_f1s[i].append(f1_score([labels[j] for j in val_set_idxs],y_val_pred))
                 pred_correct = 0
                 y_test_pred = []
+                test_pred = []
                 with torch.no_grad():
                 model.eval()
                 use_prompts = prompts if args.num_folds>1 else test_prompts
@@ -241,10 +245,16 @@ def main():
                     predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                     pred_correct += sum([1 if p==a else 0 for p,a in zip(predicted, batch['labels'])])
                     y_test_pred += predicted
-                # print('Validation Acc:',pred_correct/len(X_test))
+                    test_preds += torch.max(model(inputs).data, axis=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(model(inp).data, axis=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                all_test_preds[i].append(test_preds)
+                # print('Test Acc:',pred_correct/len(X_test))
                 all_test_accs[i].append(pred_correct/len(X_test))
                 all_test_f1s[i].append(f1_score([labels[j] for j in test_idxs],y_test_pred))
-            
+    with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_train_loss.json', 'w') as outfile:
+        json.dump(all_train_loss, outfile)
+    with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_f1.json', 'w') as outfile:
+        json.dump(all_test_f1s, outfile)
+    
 
 if __name__ == '__main__':
     main()
