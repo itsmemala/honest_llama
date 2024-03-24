@@ -11,7 +11,7 @@ import statistics
 import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
-from utils import LogisticRegression, FeedforwardNeuralNetModel
+from utils import LogisticRegression_Torch, FeedforwardNeuralNetModel
 import llama
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
@@ -187,7 +187,7 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=4)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
-                    model = LogisticRegression()(act_dims[args.using_act], 2)
+                    model = LogisticRegression_Torch(act_dims[args.using_act], 2)
                     criterion = nn.BCELoss()
                     lr = 0.05
                     

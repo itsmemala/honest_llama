@@ -47,7 +47,7 @@ from truthfulqa.presets import preset_map, COMPARE_PRIMER
 from truthfulqa.models import find_subsequence, set_columns, MC_calcs
 from truthfulqa.evaluate import format_frame, data_to_dict
 
-class LogisticRegression(torch.nn.Module):    
+class LogisticRegression_Torch(torch.nn.Module):    
     # build the constructor
     def __init__(self, n_inputs, n_outputs):
         super().__init__()
