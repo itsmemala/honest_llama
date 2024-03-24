@@ -202,7 +202,7 @@ def main():
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                                activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']  
@@ -225,7 +225,7 @@ def main():
                         for step,batch in enumerate(ds_val):
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                                activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             pred_correct += (predicted == batch['labels']).sum()
@@ -238,7 +238,7 @@ def main():
                     test_pred = []
                     with torch.no_grad():
                         model.eval()
-                        use_prompts = prompts if args.num_folds>1 else test_prompts
+                        use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
                         for step,batch in enumerate(ds_test):
                             activations = []
                             for idx in batch['inputs_idxs']:
