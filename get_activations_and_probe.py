@@ -215,7 +215,7 @@ def main():
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
                             train_loss.append(loss)
-                            iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
+                            # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
                             optimizer.step()
                         lr = lr*0.9
