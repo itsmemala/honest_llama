@@ -155,9 +155,9 @@ def main():
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
-        y_train = torch.stack([labels[i] for i in train_set_idxs], axis = 0)
-        y_val = torch.stack([labels[i] for i in val_set_idxs], axis = 0)
-        y_test = torch.stack([labels[i] for i in test_idxs], axis = 0)
+        y_train = np.stack([labels[i] for i in train_set_idxs], axis = 0)
+        y_val = np.stack([labels[i] for i in val_set_idxs], axis = 0)
+        y_test = np.stack([labels[i] for i in test_idxs], axis = 0)
         y_true_test[i] = y_test
         if args.method=='individual_non_linear':
             y_train = np.vstack([[val] for val in y_train], dtype='float32')
@@ -170,7 +170,8 @@ def main():
         all_test_preds[i] = []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
-        for layer in tqdm(range(num_layers)):
+        # for layer in tqdm(range(num_layers)):
+        for layer in [0]:
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 if args.method=='individual_linear':
@@ -205,13 +206,13 @@ def main():
                                 activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.concatenate(activations,axis=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
-                                targets = batch['labels']  
+                                targets = batch['labels']
                             elif args.token=='all':
-                                targets = torch.concatenate([[labels[idx] for j in range(len(prompt_tokens[idx]))] for idx in batch['inputs_idxs']],axis=0)
+                                targets = torch.concatenate([[y_label for j in range(len(prompt_tokens[idx]))] for y_label in batch['labels']],axis=0)
                             if args.token=='tagged_all':
-                                targets = torch.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in batch['inputs_idxs']],axis=0)
+                                targets = torch.concatenate([[y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for y_label in batch['labels']],axis=0)
                             outputs = linear_model(inputs)
-                            loss = criterion(outputs, targets)
+                            loss = criterion(outputs, targets.to(device))
                             train_loss.append(loss)
                             iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
@@ -219,7 +220,7 @@ def main():
                         lr = lr*0.9
                     all_train_loss[i].append(train_loss)
                     pred_correct = 0
-                    y_val_pred = []
+                    y_val_pred, y_val_true = [], []
                     with torch.no_grad():
                         linear_model.eval()
                         for step,batch in enumerate(ds_val):
@@ -228,13 +229,14 @@ def main():
                                 activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            pred_correct += (predicted == batch['labels']).sum()
-                            y_val_pred += predicted
+                            # pred_correct += (predicted == batch['labels'].to(device)).sum()
+                            y_val_pred += predicted.cpu().tolist()
+                            y_val_true += batch['labels'].tolist()
                     # print('Validation Acc:',pred_correct/len(X_val))
-                    all_val_accs[i].append(pred_correct/len(X_val))
-                    all_val_f1s[i].append(f1_score([labels[j] for j in val_set_idxs],y_val_pred))
+                    # all_val_accs[i].append(pred_correct/len(X_val))
+                    all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
                     pred_correct = 0
-                    y_test_pred = []
+                    y_test_pred, y_test_true = [], []
                     test_pred = []
                     with torch.no_grad():
                         linear_model.eval()
@@ -245,13 +247,14 @@ def main():
                                 activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            pred_correct += sum([1 if p==a else 0 for p,a in zip(predicted, batch['labels'])])
-                            y_test_pred += predicted
+                            # pred_correct += (predicted == batch['labels'].to(device)).sum()
+                            y_test_pred += predicted.cpu().tolist()
+                            y_test_true += batch['labels'].tolist()
                             test_preds += torch.max(linear_model(inputs).data, axis=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(model(inp).data, axis=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                     all_test_preds[i].append(test_preds)
                     # print('Test Acc:',pred_correct/len(X_test))
-                    all_test_accs[i].append(pred_correct/len(X_test))
-                    all_test_f1s[i].append(f1_score([labels[j] for j in test_idxs],y_test_pred))
+                    # all_test_accs[i].append(pred_correct/len(X_test))
+                    all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
     with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_train_loss.json', 'w') as outfile:
         json.dump(all_train_loss, outfile)
     with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_f1.json', 'w') as outfile:
