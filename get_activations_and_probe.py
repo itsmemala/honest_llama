@@ -207,9 +207,9 @@ def main():
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']  
                             elif args.token=='all':
-                                targets = np.concatenate([[labels[idx] for j in range(len(prompt_tokens[idx]))] for idx in enumerate(train_set_idxs)],axis=0)
+                                targets = np.concatenate([[labels[idx] for j in range(len(prompt_tokens[idx]))] for idx in batch['inputs_idxs']],axis=0)
                             if args.token=='tagged_all':
-                                targets = np.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in enumerate(train_set_idxs)],axis=0)
+                                targets = np.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in batch['inputs_idxs']],axis=0)
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, targets)
                             train_loss.append(loss)
