@@ -208,9 +208,9 @@ def main():
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']
                             elif args.token=='all':
-                                targets = torch.concatenate([[y_label for j in range(len(prompt_tokens[idx]))] for y_label in batch['labels']],axis=0)
+                                targets = torch.concatenate([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for y_label in batch['labels']],axis=0)
                             if args.token=='tagged_all':
-                                targets = torch.concatenate([[y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for y_label in batch['labels']],axis=0)
+                                targets = torch.concatenate([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for y_label in batch['labels']],axis=0)
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, targets.to(device))
                             train_loss.append(loss)
