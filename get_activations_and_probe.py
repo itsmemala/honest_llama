@@ -170,86 +170,86 @@ def main():
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
         for layer in range(num_layers):
-        loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
-        for head in loop_heads:
-            if args.method=='individual_linear':
-                train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
-                class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
-                weight = 1. / class_sample_count
-                samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
-                sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-                ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                ds_train = DataLoader(ds_train, batch_size=4,sampler=sampler)
-                ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-                ds_val = DataLoader(ds_val, batch_size=4)
-                ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                ds_test = DataLoader(ds_test, batch_size=4)
+            loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
+            for head in loop_heads:
+                if args.method=='individual_linear':
+                    train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
+                    class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
+                    weight = 1. / class_sample_count
+                    samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
+                    sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+                    ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
+                    ds_train = DataLoader(ds_train, batch_size=4,sampler=sampler)
+                    ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
+                    ds_val = DataLoader(ds_val, batch_size=4)
+                    ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
+                    ds_test = DataLoader(ds_test, batch_size=4)
 
-                act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
-                model = LogisticRegression(act_dims[args.using_act], 2)
-                criterion = nn.BCELoss()
-                lr = 0.05
-                
-                iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
+                    act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
+                    model = LogisticRegression(act_dims[args.using_act], 2)
+                    criterion = nn.BCELoss()
+                    lr = 0.05
+                    
+                    iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
-                train_loss = []
-                for epoch in range(3):
-                    model.train()
-                    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-                    for step,batch in enumerate(iter_bar):
-                        optimizer.zero_grad()
+                    train_loss = []
+                    for epoch in range(3):
+                        model.train()
+                        optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+                        for step,batch in enumerate(iter_bar):
+                            optimizer.zero_grad()
+                            activations = []
+                            for idx in batch['inputs_idxs']:
+                                activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                            inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
+                            if args.token in ['answer_last','prompt_last','maxpool_all']:
+                                targets = batch['labels']  
+                            elif args.token=='all':
+                                targets = np.concatenate([[labels[idx] for j in range(len(prompt_tokens[idx]))] for idx in enumerate(train_set_idxs)],axis=0)
+                            if args.token=='tagged_all':
+                                targets = np.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in enumerate(train_set_idxs)],axis=0)
+                            outputs = model(inputs)
+                            loss = criterion(outputs, targets)
+                            train_loss.append(loss)
+                            iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
+                            loss.backward()
+                            optimizer.step()
+                        lr = lr*0.9
+                    all_train_loss[i].append(train_loss)
+                    pred_correct = 0
+                    y_val_pred = []
+                    with torch.no_grad():
+                    model.eval()
+                    for step,batch in enumerate(ds_val):
                         activations = []
                         for idx in batch['inputs_idxs']:
                             activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                        inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
-                        if args.token in ['answer_last','prompt_last','maxpool_all']:
-                            targets = batch['labels']  
-                        elif args.token=='all':
-                            targets = np.concatenate([[labels[idx] for j in range(len(prompt_tokens[idx]))] for idx in enumerate(train_set_idxs)],axis=0)
-                        if args.token=='tagged_all':
-                            targets = np.concatenate([[labels[idx] for j in range(num_tagged_tokens(tagged_token_idxs[idx]))] for idx in enumerate(train_set_idxs)],axis=0)
-                        outputs = model(inputs)
-                        loss = criterion(outputs, targets)
-                        train_loss.append(loss)
-                        iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
-                        loss.backward()
-                        optimizer.step()
-                    lr = lr*0.9
-                all_train_loss[i].append(train_loss)
-                pred_correct = 0
-                y_val_pred = []
-                with torch.no_grad():
-                model.eval()
-                for step,batch in enumerate(ds_val):
-                    activations = []
-                    for idx in batch['inputs_idxs']:
-                        activations.append(get_llama_activations_bau_custom(model, prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                    inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                    predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                    pred_correct += (predicted == batch['labels']).sum()
-                    y_val_pred += predicted
-                # print('Validation Acc:',pred_correct/len(X_val))
-                all_val_accs[i].append(pred_correct/len(X_val))
-                all_val_f1s[i].append(f1_score([labels[j] for j in val_set_idxs],y_val_pred))
-                pred_correct = 0
-                y_test_pred = []
-                test_pred = []
-                with torch.no_grad():
-                model.eval()
-                use_prompts = prompts if args.num_folds>1 else test_prompts
-                for step,batch in enumerate(ds_test):
-                    activations = []
-                    for idx in batch['inputs_idxs']:
-                        activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                    inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                    predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                    pred_correct += sum([1 if p==a else 0 for p,a in zip(predicted, batch['labels'])])
-                    y_test_pred += predicted
-                    test_preds += torch.max(model(inputs).data, axis=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(model(inp).data, axis=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                all_test_preds[i].append(test_preds)
-                # print('Test Acc:',pred_correct/len(X_test))
-                all_test_accs[i].append(pred_correct/len(X_test))
-                all_test_f1s[i].append(f1_score([labels[j] for j in test_idxs],y_test_pred))
+                        inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                        predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                        pred_correct += (predicted == batch['labels']).sum()
+                        y_val_pred += predicted
+                    # print('Validation Acc:',pred_correct/len(X_val))
+                    all_val_accs[i].append(pred_correct/len(X_val))
+                    all_val_f1s[i].append(f1_score([labels[j] for j in val_set_idxs],y_val_pred))
+                    pred_correct = 0
+                    y_test_pred = []
+                    test_pred = []
+                    with torch.no_grad():
+                    model.eval()
+                    use_prompts = prompts if args.num_folds>1 else test_prompts
+                    for step,batch in enumerate(ds_test):
+                        activations = []
+                        for idx in batch['inputs_idxs']:
+                            activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                        inputs = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                        predicted = torch.max(model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                        pred_correct += sum([1 if p==a else 0 for p,a in zip(predicted, batch['labels'])])
+                        y_test_pred += predicted
+                        test_preds += torch.max(model(inputs).data, axis=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(model(inp).data, axis=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                    all_test_preds[i].append(test_preds)
+                    # print('Test Acc:',pred_correct/len(X_test))
+                    all_test_accs[i].append(pred_correct/len(X_test))
+                    all_test_f1s[i].append(f1_score([labels[j] for j in test_idxs],y_test_pred))
     with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_train_loss.json', 'w') as outfile:
         json.dump(all_train_loss, outfile)
     with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_f1.json', 'w') as outfile:
