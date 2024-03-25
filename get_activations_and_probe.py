@@ -238,7 +238,7 @@ def main():
                     all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
                     pred_correct = 0
                     y_test_pred, y_test_true = [], []
-                    test_pred = []
+                    test_preds = []
                     with torch.no_grad():
                         linear_model.eval()
                         use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
