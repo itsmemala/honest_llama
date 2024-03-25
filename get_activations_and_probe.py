@@ -170,8 +170,8 @@ def main():
         all_val_preds[i], all_test_preds[i] = [], []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
-        # for layer in tqdm(range(num_layers)):
-        for layer in tqdm([0]):
+        for layer in tqdm(range(num_layers)):
+        # for layer in tqdm([0]):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 if args.method=='individual_linear':
