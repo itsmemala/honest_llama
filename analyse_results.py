@@ -14,8 +14,8 @@ def main():
     for fold in range(len(all_test_f1s)):
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold])
-        # prkint('Best:')
-    
+        # print('Best:')
 
+    
 if __name__ == '__main__':
     main()
