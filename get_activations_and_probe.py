@@ -235,7 +235,7 @@ def main():
                             y_val_pred += predicted.cpu().tolist()
                             y_val_true += batch['labels'].tolist()
                             val_preds += torch.max(linear_model(inputs).data, dim=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                    all_val_preds[i].append(torch.stack(val_preds).numpy())
+                    all_val_preds[i].append(torch.stack(val_preds).cpu().numpy())
                     # print('Validation Acc:',pred_correct/len(X_val))
                     # all_val_accs[i].append(pred_correct/len(X_val))
                     all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
@@ -255,7 +255,7 @@ def main():
                             y_test_pred += predicted.cpu().tolist()
                             y_test_true += batch['labels'].tolist()
                             test_preds += torch.max(linear_model(inputs).data, dim=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                    all_test_preds[i].append(torch.stack(test_preds).numpy())
+                    all_test_preds[i].append(torch.stack(test_preds).cpu().numpy())
                     # print('Test Acc:',pred_correct/len(X_test))
                     # all_test_accs[i].append(pred_correct/len(X_test))
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
