@@ -139,7 +139,7 @@ def main():
     all_train_loss, all_val_loss = {}, {}
     all_val_accs, all_val_f1s = {}, {}
     all_test_accs, all_test_f1s = {}, {}
-    all_test_preds = {}
+    all_val_preds, all_test_preds = {}, {}
     y_true_test = {}
     if args.num_folds==1: # Use static test data
         sampled_idxs = np.random.choice(np.arange(1800), size=int(1800*(1-0.2)), replace=False) 
@@ -167,11 +167,11 @@ def main():
         all_train_loss[i], all_val_loss[i] = [], []
         all_val_accs[i], all_val_f1s[i] = [], []
         all_test_accs[i], all_test_f1s[i] = [], []
-        all_test_preds[i] = []
+        all_val_preds[i], all_test_preds[i] = []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
-        for layer in tqdm(range(num_layers)):
-        # for layer in tqdm([0]):
+        # for layer in tqdm(range(num_layers)):
+        for layer in tqdm([0]):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 if args.method=='individual_linear':
@@ -181,11 +181,11 @@ def main():
                     samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
                     ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train = DataLoader(ds_train, batch_size=4,sampler=sampler)
+                    ds_train = DataLoader(ds_train, batch_size=128,sampler=sampler)
                     ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-                    ds_val = DataLoader(ds_val, batch_size=4)
+                    ds_val = DataLoader(ds_val, batch_size=128)
                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                    ds_test = DataLoader(ds_test, batch_size=4)
+                    ds_test = DataLoader(ds_test, batch_size=128)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
@@ -222,6 +222,7 @@ def main():
                     all_train_loss[i].append(np.array(train_loss))
                     pred_correct = 0
                     y_val_pred, y_val_true = [], []
+                    val_preds = []
                     with torch.no_grad():
                         linear_model.eval()
                         for step,batch in enumerate(ds_val):
@@ -233,6 +234,8 @@ def main():
                             # pred_correct += (predicted == batch['labels'].to(device)).sum()
                             y_val_pred += predicted.cpu().tolist()
                             y_val_true += batch['labels'].tolist()
+                            val_preds += torch.max(linear_model(inputs).data, dim=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                    all_val_preds[i].append(val_preds.numpy())
                     # print('Validation Acc:',pred_correct/len(X_val))
                     # all_val_accs[i].append(pred_correct/len(X_val))
                     all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
@@ -252,12 +255,18 @@ def main():
                             y_test_pred += predicted.cpu().tolist()
                             y_test_true += batch['labels'].tolist()
                             test_preds += torch.max(linear_model(inputs).data, dim=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                    all_test_preds[i].append(test_preds)
+                    all_test_preds[i].append(test_preds.numpy())
                     # print('Test Acc:',pred_correct/len(X_test))
                     # all_test_accs[i].append(pred_correct/len(X_test))
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
     all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)])
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_train_loss.npy', all_train_loss)
+    all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_val_pred.npy', all_val_preds)
+    all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_pred.npy', all_test_preds)
+    all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_val_f1.npy', all_val_f1s)
     all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_f1.npy', all_test_f1s)
     
