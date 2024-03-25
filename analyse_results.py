@@ -20,7 +20,9 @@ def main():
     for fold in range(len(all_test_f1s)):
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
-        # print('Best:')
+        # print('Best:',)
+        for model in range(len(all_train_loss[fold])):
+            print('Train loss:',all_train_loss[fold][model])
 
 
 if __name__ == '__main__':
