@@ -214,12 +214,12 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
-                            train_loss.append(loss)
+                            train_loss.append(loss.item())
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
                             optimizer.step()
                         lr = lr*0.9
-                    all_train_loss[i].append(train_loss)
+                    all_train_loss[i].append(np.array(train_loss))
                     pred_correct = 0
                     y_val_pred, y_val_true = [], []
                     with torch.no_grad():
@@ -256,10 +256,10 @@ def main():
                     # print('Test Acc:',pred_correct/len(X_test))
                     # all_test_accs[i].append(pred_correct/len(X_test))
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-    with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_train_loss.json', 'w') as outfile:
-        json.dump(all_train_loss, outfile)
-    with open(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_f1.json', 'w') as outfile:
-        json.dump(all_test_f1s, outfile)
+    all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_train_loss.npy', all_train_loss)
+    all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_f1.npy', all_test_f1s)
     
 
 if __name__ == '__main__':
