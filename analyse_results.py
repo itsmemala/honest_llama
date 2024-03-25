@@ -17,10 +17,11 @@ def main():
 
     all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy')
     all_test_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_f1.npy')
+    all_val_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_f1.npy')
     for fold in range(len(all_test_f1s)):
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
-        print('Best:',np.max(all_test_f1s[fold])) # TODO: transfer from val
+        print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])]) # TODO: transfer from val
         # for model in range(len(all_train_loss[fold])):
         #     print('Train loss:',all_train_loss[fold][model][-5:])
 
