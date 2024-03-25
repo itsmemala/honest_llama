@@ -20,9 +20,9 @@ def main():
     for fold in range(len(all_test_f1s)):
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
-        # print('Best:',)
-        for model in range(len(all_train_loss[fold])):
-            print('Train loss:',all_train_loss[fold][model][-5:])
+        print('Best:',np.max(all_test_f1s[fold])) # TODO: transfer from val
+        # for model in range(len(all_train_loss[fold])):
+        #     print('Train loss:',all_train_loss[fold][model][-5:])
 
 
 if __name__ == '__main__':
