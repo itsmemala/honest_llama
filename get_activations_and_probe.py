@@ -167,7 +167,7 @@ def main():
         all_train_loss[i], all_val_loss[i] = [], []
         all_val_accs[i], all_val_f1s[i] = [], []
         all_test_accs[i], all_test_f1s[i] = [], []
-        all_val_preds[i], all_test_preds[i] = []
+        all_val_preds[i], all_test_preds[i] = [], []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
         # for layer in tqdm(range(num_layers)):
