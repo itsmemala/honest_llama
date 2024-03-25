@@ -181,11 +181,11 @@ def main():
                     samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
                     ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train = DataLoader(ds_train, batch_size=128,sampler=sampler)
+                    ds_train = DataLoader(ds_train, batch_size=4,sampler=sampler)
                     ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-                    ds_val = DataLoader(ds_val, batch_size=128)
+                    ds_val = DataLoader(ds_val, batch_size=4)
                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                    ds_test = DataLoader(ds_test, batch_size=128)
+                    ds_test = DataLoader(ds_test, batch_size=4)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
@@ -195,7 +195,7 @@ def main():
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
                     train_loss = []
-                    for epoch in range(3):
+                    for epoch in range(10):
                         linear_model.train()
                         optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
                         # for step,batch in enumerate(iter_bar):
