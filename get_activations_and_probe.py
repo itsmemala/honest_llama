@@ -229,7 +229,7 @@ def main():
                             for idx in batch['inputs_idxs']:
                                 activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                            predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, axis=0)[0])[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             # pred_correct += (predicted == batch['labels'].to(device)).sum()
                             y_val_pred += predicted.cpu().tolist()
                             y_val_true += batch['labels'].tolist()
@@ -247,7 +247,7 @@ def main():
                             for idx in batch['inputs_idxs']:
                                 activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, axis=0)[0], axis=1)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                            predicted = torch.max(linear_model(inputs).data, axis=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, axis=0)[0])[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             # pred_correct += (predicted == batch['labels'].to(device)).sum()
                             y_test_pred += predicted.cpu().tolist()
                             y_test_true += batch['labels'].tolist()
