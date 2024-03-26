@@ -210,7 +210,7 @@ def main():
                             elif args.token=='all':
                                 # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
                                 targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
-                            if args.token=='tagged_all':
+                            if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
