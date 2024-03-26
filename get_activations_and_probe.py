@@ -195,7 +195,7 @@ def main():
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
                     train_loss = []
-                    for epoch in range(10):
+                    for epoch in range(3):
                         linear_model.train()
                         optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
                         # for step,batch in enumerate(iter_bar):
