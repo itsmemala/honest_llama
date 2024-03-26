@@ -361,7 +361,7 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
     if token=='answer_last':
         return activation[-1,:]
     elif token=='prompt_last':
-        return activation[token_idx-1,:]
+        return activation[answer_token_idx-1,:]
     elif token=='maxpool_all':
         return torch.max(activation,dim=0)[0]
     elif token=='tagged_tokens':
