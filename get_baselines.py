@@ -63,7 +63,7 @@ def main():
         compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
         for sample_set,use_samples in compute_entropy_with:
             for use_entropy_idx in [0,1]:
-                print(probs[use_samples,use_entropy_idx].shape)
+                print(probs[use_samples,use_entropy_idx].shape,np.count_nonzero(~np.isnan(probs[use_samples,use_entropy_idx])))
                 thresholds = np.histogram_bin_edges(probs[use_samples,use_entropy_idx])
 
                 pr, recall, f1 = [], [], []
