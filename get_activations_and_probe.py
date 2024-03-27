@@ -57,6 +57,8 @@ def main():
     parser.add_argument('--method',type=str, default='individual_linear')
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
+    parser.add_argument('--bs',type=int, default=4)
+    parser.add_argument('--epochs',type=int, default=3)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -181,11 +183,11 @@ def main():
                     samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
                     ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train = DataLoader(ds_train, batch_size=4,sampler=sampler)
+                    ds_train = DataLoader(ds_train, batch_size=args.bs,sampler=sampler)
                     ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-                    ds_val = DataLoader(ds_val, batch_size=4)
+                    ds_val = DataLoader(ds_val, batch_size=args.bs)
                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                    ds_test = DataLoader(ds_test, batch_size=4)
+                    ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
@@ -195,7 +197,7 @@ def main():
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
                     train_loss = []
-                    for epoch in range(3):
+                    for epoch in range(args.epochs):
                         linear_model.train()
                         optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
                         # for step,batch in enumerate(iter_bar):
@@ -260,15 +262,15 @@ def main():
                     # all_test_accs[i].append(pred_correct/len(X_test))
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
     all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_train_loss.npy', all_train_loss)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_train_loss.npy', all_train_loss)
     all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_val_pred.npy', all_val_preds)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_val_pred.npy', all_val_preds)
     all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_pred.npy', all_test_preds)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_test_pred.npy', all_test_preds)
     all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_val_f1.npy', all_val_f1s)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_val_f1.npy', all_val_f1s)
     all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_test_f1.npy', all_test_f1s)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_test_f1.npy', all_test_f1s)
     
 
 if __name__ == '__main__':
