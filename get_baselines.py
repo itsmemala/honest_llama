@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--uncertainty_values_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
     
     test_labels = []
@@ -58,7 +59,7 @@ def main():
         print('baseline f1:',f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs]))
 
         print('\nUncertainty Baselines:')
-        probs = np.load(args.uncertainty_values_file_name)
+        probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.uncertainty_values_file_name}_uncertainty_scores.npy')
         compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
         for sample_set,use_samples in compute_entropy_with:
             for use_entropy_idx in [0,1]:
