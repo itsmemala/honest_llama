@@ -63,13 +63,15 @@ def main():
         compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
         for sample_set,use_samples in compute_entropy_with:
             for use_entropy_idx in [0,1]:
-                print(probs[use_samples,use_entropy_idx].shape,np.count_nonzero(~np.isnan(probs[use_samples,use_entropy_idx])))
-                thresholds = np.histogram_bin_edges(probs[use_samples,use_entropy_idx])
+                # print(probs[use_samples,use_entropy_idx].shape,np.count_nonzero(~np.isnan(probs[use_samples,use_entropy_idx])))
+                threshold_data = probs[use_samples,use_entropy_idx][~np.isnan(probs[use_samples,use_entropy_idx])]
+                threshold_data_labels = [test_labels[i] for i in use_samples[~np.isnan(probs[use_samples,use_entropy_idx])]]
+                thresholds = np.histogram_bin_edges(threshold_data)
 
                 pr, recall, f1 = [], [], []
                 for t in thresholds:
-                    pred = probs[use_samples,use_entropy_idx]<t # accepted/non-hallucinated if below threshold
-                    p, r, f, _ = precision_recall_fscore_support([test_labels[i] for i in use_samples],pred)
+                    pred = threshold_data<t # accepted/non-hallucinated if below threshold
+                    p, r, f, _ = precision_recall_fscore_support(threshold_data_labels,pred)
                     pr.append(list(p))
                     recall.append(list(r))
                     f1.append(list(f))
