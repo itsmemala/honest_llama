@@ -66,7 +66,7 @@ def main():
                 # print(probs[use_samples,use_entropy_idx].shape,np.count_nonzero(~np.isnan(probs[use_samples,use_entropy_idx])))
                 threshold_data = probs[use_samples,use_entropy_idx][~np.isnan(probs[use_samples,use_entropy_idx])]
                 threshold_data_labels = [test_labels[i] for i in use_samples[~np.isnan(probs[use_samples,use_entropy_idx])]]
-                thresholds = np.histogram_bin_edges(threshold_data)
+                thresholds = np.histogram_bin_edges(threshold_data, bins='auto')
 
                 pr, recall, f1 = [], [], []
                 for t in thresholds:
