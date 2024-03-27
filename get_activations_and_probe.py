@@ -159,7 +159,7 @@ def main():
 
         y_train = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_val = np.stack([labels[i] for i in val_set_idxs], axis = 0)
-        y_test = np.stack([labels[i] for i in test_idxs], axis = 0)
+        y_test = np.stack([labels[i] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
         y_true_test[i] = y_test
         if args.method=='individual_non_linear':
             y_train = np.vstack([[val] for val in y_train], dtype='float32')
