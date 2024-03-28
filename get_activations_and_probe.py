@@ -60,6 +60,7 @@ def main():
     parser.add_argument('--bs',type=int, default=4)
     parser.add_argument('--epochs',type=int, default=3)
     parser.add_argument('--lr',type=float, default=0.05)
+    parser.add_argument('--save_probes',type=bool, default=False)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -223,6 +224,9 @@ def main():
                             optimizer.step()
                         lr = lr*0.9
                     all_train_loss[i].append(np.array(train_loss))
+                    if args.save_probes:
+                        probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_model{i}_{layer}_{head}'
+                        torch.save(linear_model, probe_save_path)
                     pred_correct = 0
                     y_val_pred, y_val_true = [], []
                     val_preds = []
