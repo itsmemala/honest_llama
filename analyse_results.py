@@ -21,7 +21,7 @@ def main():
     for fold in range(len(all_test_f1s)):
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
-        print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])]) # TODO: transfer from val
+        print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])])
         # for model in range(len(all_train_loss[fold])):
         #     print('Train loss:',all_train_loss[fold][model][-5:])
 
