@@ -15,6 +15,7 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
+    all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy')
     all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy')
     all_test_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_f1.npy')
     all_val_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_f1.npy')
@@ -37,8 +38,9 @@ def main():
         #     probe_wise_entropy = (-sample_pred*np.log2(sample_pred)).sum(axis=1)[best_probes]
         #     confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         # print('Using most confident probe per sample:',f1_score(all_test_true[fold],confident_sample_pred[fold]))
-        # for model in range(len(all_train_loss[fold])):
-        #     print('Train loss:',all_train_loss[fold][model][-5:])
+        print('\n')
+        for model in range(len(all_val_loss[fold])):
+            print('Val loss model',model,':',all_val_loss[fold][model])
         print('\n')
 
 
