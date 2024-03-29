@@ -203,7 +203,7 @@ def main():
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
                     train_loss, val_loss = [], []
-                    best_val_loss = np.inf
+                    best_val_loss = torch.inf.to(device)
                     best_model_state = linear_model.state_dict()
                     for epoch in range(args.epochs):
                         linear_model.train()
@@ -246,8 +246,8 @@ def main():
                             epoch_val_loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
                             val_loss.append(epoch_val_loss.item())
                         # Choose best model
-                        if val_loss < best_val_loss:
-                            best_val_loss = val_loss
+                        if epoch_val_loss.item() < best_val_loss:
+                            best_val_loss = epoch_val_loss.item()
                             best_model_state = linear_model.state_dict()
                         lr = lr*0.9
                     all_train_loss[i].append(np.array(train_loss))
