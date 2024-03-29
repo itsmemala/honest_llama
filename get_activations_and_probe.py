@@ -103,7 +103,7 @@ def main():
         model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-        # model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+        model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         num_layers = 32
         num_heads = 32
     device = "cuda"
@@ -112,7 +112,7 @@ def main():
     if args.dataset_name == 'counselling':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
-    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail':
+    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
