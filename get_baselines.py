@@ -22,11 +22,19 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
+    parser.add_argument("--train_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
-    parser.add_argument("--uncertainty_values_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--train_uncertainty_values_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--test_uncertainty_values_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
     
+    train_labels = []
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
+        for line in read_file:
+            data = json.loads(line)
+            train_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
+    train_labels = train_labels[:args.len_dataset]
     test_labels = []
     with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
@@ -37,9 +45,13 @@ def main():
     np.random.seed(42)
 
     if args.num_folds==1: # Use static test data
-        sampled_idxs = np.random.choice(np.arange(1800), size=int(1800*(1-0.2)), replace=False) 
-        test_idxs = np.array([x for x in np.arange(1800) if x not in sampled_idxs]) # Sampled indexes from 1800 held-out split
-        train_idxs = sampled_idxs if args.len_dataset==1800 else np.arange(args.len_dataset)
+        if args.len_dataset==1800:
+            sampled_idxs = np.random.choice(np.arange(1800), size=int(1800*(1-0.2)), replace=False) 
+            test_idxs = np.array([x for x in np.arange(1800) if x not in sampled_idxs]) # Sampled indexes from 1800 held-out split
+            train_idxs = sampled_idxs
+        else:
+            test_idxs = np.arange(len(test_labels))
+            train_idxs = np.arange(args.len_dataset)
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
@@ -59,13 +71,16 @@ def main():
         print('baseline f1:',f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs]))
 
         print('\nUncertainty Baselines:')
-        probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.uncertainty_values_file_name}_uncertainty_scores.npy')
+        train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_uncertainty_scores.npy')
+        test_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.test_uncertainty_values_file_name}_uncertainty_scores.npy')
         compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
         for sample_set,use_samples in compute_entropy_with:
             for use_entropy_idx in [0,1]:
                 # print(probs[use_samples,use_entropy_idx].shape,np.count_nonzero(~np.isnan(probs[use_samples,use_entropy_idx])))
+                probs = train_probs if sample_set=='train' else test_probs
+                labels = train_labels if sample_set=='train' else test_labels
                 threshold_data = probs[use_samples,use_entropy_idx][~np.isnan(probs[use_samples,use_entropy_idx])]
-                threshold_data_labels = [test_labels[i] for i in use_samples[~np.isnan(probs[use_samples,use_entropy_idx])]]
+                threshold_data_labels = [labels[i] for i in use_samples[~np.isnan(probs[use_samples,use_entropy_idx])]]
                 thresholds = np.histogram_bin_edges(threshold_data, bins='auto')
 
                 pr, recall, f1 = [], [], []
@@ -77,7 +92,7 @@ def main():
                     f1.append(list(f))
                 idx_best_f1 = np.argmax(np.array(f1)[:,1]) # threshold for best f1 for class 1
                 
-                threshold_pred = probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1]
+                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1]
                 print('Computing with',sample_set,'samples and entropy idx',use_entropy_idx,':',f1_score([test_labels[i] for i in test_idxs],threshold_pred))
     
 
