@@ -103,10 +103,11 @@ def main():
         model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-        model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+        # model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         num_layers = 32
         num_heads = 32
-    device = "cuda"
+    # device = "cuda"
+    device='cpu'
 
     print("Loading prompts and model responses..")
     if args.dataset_name == 'counselling':
@@ -144,7 +145,7 @@ def main():
     all_val_accs, all_val_f1s = {}, {}
     all_test_accs, all_test_f1s = {}, {}
     all_val_preds, all_test_preds = {}, {}
-    y_true_test = {}
+    all_y_true_val, all_y_true_test = {}, {}
     if args.num_folds==1: # Use static test data
         sampled_idxs = np.random.choice(np.arange(1800), size=int(1800*(1-0.2)), replace=False) 
         test_idxs = np.array([x for x in np.arange(1800) if x not in sampled_idxs]) # Sampled indexes from 1800 held-out split
@@ -162,7 +163,6 @@ def main():
         y_train = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_val = np.stack([labels[i] for i in val_set_idxs], axis = 0)
         y_test = np.stack([labels[i] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
-        y_true_test[i] = y_test
         if args.method=='individual_non_linear':
             y_train = np.vstack([[val] for val in y_train], dtype='float32')
             y_val = np.vstack([[val] for val in y_val], dtype='float32')
@@ -172,6 +172,7 @@ def main():
         all_val_accs[i], all_val_f1s[i] = [], []
         all_test_accs[i], all_test_f1s[i] = [], []
         all_val_preds[i], all_test_preds[i] = [], []
+        all_y_true_val[i], all_y_true_test[i] = [], []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
         for layer in tqdm(range(num_layers)):
@@ -185,7 +186,7 @@ def main():
                     samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
                     ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train = DataLoader(ds_train, batch_size=args.bs,sampler=sampler)
+                    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
                     ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                     ds_val = DataLoader(ds_val, batch_size=args.bs)
                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
@@ -198,54 +199,52 @@ def main():
                     
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
-                    train_loss = []
-                    for epoch in range(args.epochs):
-                        linear_model.train()
-                        optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
-                        # for step,batch in enumerate(iter_bar):
-                        for step,batch in enumerate(ds_train):
-                            optimizer.zero_grad()
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']:
-                                targets = batch['labels']
-                            elif args.token=='all':
-                                # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
-                            if args.token=='tagged_tokens':
-                                targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
-                            outputs = linear_model(inputs)
-                            loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
-                            train_loss.append(loss.item())
-                            # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
-                            loss.backward()
-                            optimizer.step()
-                        lr = lr*0.9
-                    all_train_loss[i].append(np.array(train_loss))
-                    if args.save_probes:
-                        probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_model{i}_{layer}_{head}'
-                        torch.save(linear_model, probe_save_path)
+                    # train_loss = []
+                    # for epoch in range(args.epochs):
+                    #     linear_model.train()
+                    #     optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
+                    #     # for step,batch in enumerate(iter_bar):
+                    #     for step,batch in enumerate(ds_train):
+                    #         optimizer.zero_grad()
+                    #         activations = []
+                    #         for idx in batch['inputs_idxs']:
+                    #             activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                    #         inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+                    #         if args.token in ['answer_last','prompt_last','maxpool_all']:
+                    #             targets = batch['labels']
+                    #         elif args.token=='all':
+                    #             # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
+                    #             targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
+                    #         if args.token=='tagged_tokens':
+                    #             targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
+                    #         outputs = linear_model(inputs)
+                    #         loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
+                    #         train_loss.append(loss.item())
+                    #         # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
+                    #         loss.backward()
+                    #         optimizer.step()
+                    #     lr = lr*0.9
+                    # all_train_loss[i].append(np.array(train_loss))
+                    # if args.save_probes:
+                    #     probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_model{i}_{layer}_{head}'
+                    #     torch.save(linear_model, probe_save_path)
                     pred_correct = 0
                     y_val_pred, y_val_true = [], []
                     val_preds = []
                     with torch.no_grad():
                         linear_model.eval()
                         for step,batch in enumerate(ds_val):
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            # pred_correct += (predicted == batch['labels'].to(device)).sum()
-                            y_val_pred += predicted.cpu().tolist()
+                            # activations = []
+                            # for idx in batch['inputs_idxs']:
+                            #     activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                            # inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                            # predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                            # y_val_pred += predicted.cpu().tolist()
                             y_val_true += batch['labels'].tolist()
-                            val_preds += torch.max(linear_model(inputs).data, dim=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                    all_val_preds[i].append(torch.stack(val_preds).cpu().numpy())
-                    # print('Validation Acc:',pred_correct/len(X_val))
-                    # all_val_accs[i].append(pred_correct/len(X_val))
-                    all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+                            # val_preds += linear_model(inputs).data.tolist() if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]).tolist() # For each sample, get max prob per class across tokens
+                    # all_val_preds[i].append(torch.stack(val_preds).cpu().numpy())
+                    all_y_true_val[i].append(y_val_true)
+                    # all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
                     pred_correct = 0
                     y_test_pred, y_test_true = [], []
                     test_preds = []
@@ -253,30 +252,31 @@ def main():
                         linear_model.eval()
                         use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
                         for step,batch in enumerate(ds_test):
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            # pred_correct += (predicted == batch['labels'].to(device)).sum()
-                            y_test_pred += predicted.cpu().tolist()
+                            # activations = []
+                            # for idx in batch['inputs_idxs']:
+                            #     activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                            # inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                            # predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                            # y_test_pred += predicted.cpu().tolist()
                             y_test_true += batch['labels'].tolist()
-                            test_preds += torch.max(linear_model(inputs).data, dim=1)[0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                    all_test_preds[i].append(torch.stack(test_preds).cpu().numpy())
-                    # print('Test Acc:',pred_correct/len(X_test))
-                    # all_test_accs[i].append(pred_correct/len(X_test))
-                    all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-    all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_train_loss.npy', all_train_loss)
-    all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_pred.npy', all_val_preds)
-    all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_pred.npy', all_test_preds)
-    all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_f1.npy', all_val_f1s)
-    all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_f1.npy', all_test_f1s)
-    
+                            # test_preds += linear_model(inputs).data.tolist() if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]).tolist() # For each sample, get max prob per class across tokens
+                    # all_test_preds[i].append(torch.stack(test_preds).cpu().numpy())
+                    all_y_true_test[i].append(y_test_true)
+                    # all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+    # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)])
+    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_train_loss.npy', all_train_loss)
+    # all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
+    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_pred.npy', all_val_preds)
+    # all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
+    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_pred.npy', all_test_preds)
+    # all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
+    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_f1.npy', all_val_f1s)
+    # all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
+    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_f1.npy', all_test_f1s)
+    all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_true.npy', all_y_true_val)
+    all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_true.npy', all_y_true_test)
 
 if __name__ == '__main__':
     main()
