@@ -213,7 +213,14 @@ def main():
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                                if args.load_act:
+                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
+                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                else:
+                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                                activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']
@@ -235,7 +242,14 @@ def main():
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                                if args.load_act:
+                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
+                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                else:
+                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                                activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
                             if args.token in ['answer_last','prompt_last','maxpool_all']:
                                 targets = batch['labels']
@@ -268,7 +282,14 @@ def main():
                         for step,batch in enumerate(ds_val):
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]))
+                                if args.load_act:
+                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
+                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                else:
+                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                                activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_val_pred += predicted.cpu().tolist()
@@ -289,7 +310,14 @@ def main():
                         for step,batch in enumerate(ds_test):
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                activations.append(get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx]))
+                                if args.load_act:
+                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
+                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                else:
+                                    act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
+                                activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_test_pred += predicted.cpu().tolist()

@@ -167,7 +167,7 @@ def main():
                 elif args.token=='prompt_last':
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='maxpool_all':
-                    all_mlp_wise_activations.append(torch.max(mlp_wise_activations,dim=1)[0])
+                    all_mlp_wise_activations.append(np.max(mlp_wise_activations,axis=1))
                 elif 'answer_all' in args.token:
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
                 elif args.token=='all':
@@ -188,9 +188,9 @@ def main():
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='maxpool_all':
-                    all_layer_wise_activations.append(torch.max(layer_wise_activations,dim=1)[0])
-                    all_head_wise_activations.append(torch.max(head_wise_activations,dim=1)[0])
-                    all_mlp_wise_activations.append(torch.max(mlp_wise_activations,dim=1)[0])
+                    all_layer_wise_activations.append(np.max(layer_wise_activations,axis=1))
+                    all_head_wise_activations.append(np.max(head_wise_activations,axis=1))
+                    all_mlp_wise_activations.append(np.max(mlp_wise_activations,axis=1))
                 elif 'answer_first' in args.token:
                     all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
