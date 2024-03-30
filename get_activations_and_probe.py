@@ -216,9 +216,9 @@ def main():
                             for idx in batch['inputs_idxs']:
                                 if args.load_act:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
-                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer])
                                 else:
                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                                 activations.append(act)
@@ -245,9 +245,9 @@ def main():
                             for idx in batch['inputs_idxs']:
                                 if args.load_act:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
-                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer])
                                 else:
                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                                 activations.append(act)
@@ -285,9 +285,9 @@ def main():
                             for idx in batch['inputs_idxs']:
                                 if args.load_act:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
-                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer])
                                 else:
                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                                 activations.append(act)
@@ -313,9 +313,9 @@ def main():
                             for idx in batch['inputs_idxs']:
                                 if args.load_act:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
-                                    file_end = 100*(idx%100+1) # 487: 100*(4+1)
+                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx-100*(idx%100)][layer]) # 487: 487-100*(4)
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer])
                                 else:
                                     act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
                                 activations.append(act)
