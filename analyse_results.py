@@ -26,7 +26,7 @@ def main():
         print('Average:',np.mean(all_test_f1s[fold]))
         print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])])
         confident_sample_pred = []
-        print(all_test_pred[fold].shape)
+        # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.log2(sample_pred)).sum(axis=1)
