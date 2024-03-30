@@ -24,12 +24,12 @@ def main():
     for fold in range(len(all_test_f1s)):
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
-        print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])])
+        print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])],np.argmax(all_val_f1s[fold]))
         confident_sample_pred = []
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            probe_wise_entropy = (-sample_pred*np.log2(sample_pred)).sum(axis=1)
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred))
         # best_probes = np.array([])
