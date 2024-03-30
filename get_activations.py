@@ -159,7 +159,7 @@ def main():
         all_mlp_wise_activations = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for prompt,token_idx in tqdm(zip(prompts[start:end],answer_token_idxes[start:end])):
+        for prompt,token_idx in tqdm(zip(tokenized_prompts[start:end],answer_token_idxes[start:end])):
             if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
                 if args.token=='answer_last': #last
