@@ -246,7 +246,7 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
                             epoch_val_loss += criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
-                        val_loss.append(epoch_val_loss.cpu())
+                        val_loss.append(epoch_val_loss.item())
                         # Choose best model
                         if epoch_val_loss.item() < best_val_loss:
                             best_val_loss = epoch_val_loss.item()
