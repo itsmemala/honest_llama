@@ -27,6 +27,7 @@ def main():
         print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])])
         confident_sample_pred = []
         for i in range(all_test_pred[fold].shape[1]):
+            print(all_test_pred[fold].shape)
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.log2(sample_pred)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
@@ -38,10 +39,10 @@ def main():
         #     probe_wise_entropy = (-sample_pred*np.log2(sample_pred)).sum(axis=1)[best_probes]
         #     confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         # print('Using most confident probe per sample:',f1_score(all_test_true[fold],confident_sample_pred[fold]))
-        print('\n')
-        for model in range(len(all_val_loss[fold])):
-            print('Val loss model',model,':',all_val_loss[fold][model])
-        print('\n')
+        # print('\n')
+        # for model in range(len(all_val_loss[fold])):
+        #     print('Val loss model',model,':',all_val_loss[fold][model])
+        # print('\n')
 
 
 if __name__ == '__main__':
