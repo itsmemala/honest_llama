@@ -101,7 +101,7 @@ def main():
     elif args.dataset_name == 'nq': 
         dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
         formatter = tokenized_nq
-    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail':
+    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
         pass
     else: 
         raise ValueError("Invalid dataset name")
@@ -116,9 +116,9 @@ def main():
     elif args.dataset_name == 'counselling':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
-    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail':
+    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
-        prompts, token_idxes = tokenized_from_file(file_path, tokenizer)
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', token_idxes)
     else: 
         prompts, labels = formatter(dataset, tokenizer)
@@ -147,6 +147,11 @@ def main():
             load_ranges = [(a*20,(a*20)+20) for a in range(int(1000/20)+1) if (a*20)+20>520]
         else:
             load_ranges = [(0,1000)]
+    elif args.dataset_name == 'trivia_qa':
+        if '5000' in args.file_name:
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
+        else:
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
@@ -154,11 +159,15 @@ def main():
         all_mlp_wise_activations = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for prompt,token_idx in tqdm(zip(prompts[start:end],token_idxes[start:end])):
+        for prompt,token_idx in tqdm(zip(prompts[start:end],answer_token_idxes[start:end])):
             if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
-                if args.token=='last':
+                if args.token=='answer_last': #last
                     all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+                elif args.token=='prompt_last':
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
+                elif args.token=='maxpool_all':
+                    all_mlp_wise_activations.append(torch.max(mlp_wise_activations,dim=1)[0])
                 elif 'answer_all' in args.token:
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
                 elif args.token=='all':
@@ -170,10 +179,18 @@ def main():
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
                 else:
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-                if args.token=='last':
+                if args.token=='answer_last': #last
                     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+                elif args.token=='prompt_last':
+                    all_layer_wise_activations.append(layer_wise_activations[:,token_idx-1,:])
+                    all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
+                elif args.token=='maxpool_all':
+                    all_layer_wise_activations.append(torch.max(layer_wise_activations,dim=1)[0])
+                    all_head_wise_activations.append(torch.max(head_wise_activations,dim=1)[0])
+                    all_mlp_wise_activations.append(torch.max(mlp_wise_activations,dim=1)[0])
                 elif 'answer_first' in args.token:
                     all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
