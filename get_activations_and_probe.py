@@ -203,7 +203,7 @@ def main():
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
                     train_loss, val_loss = [], []
-                    best_val_loss = torch.inf.to(device)
+                    best_val_loss = torch.inf
                     best_model_state = linear_model.state_dict()
                     for epoch in range(args.epochs):
                         linear_model.train()
