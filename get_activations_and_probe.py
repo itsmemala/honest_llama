@@ -61,6 +61,7 @@ def main():
     parser.add_argument('--epochs',type=int, default=3)
     parser.add_argument('--lr',type=float, default=0.05)
     parser.add_argument('--load_act',type=bool, default=True)
+    parser.add_argument('--use_class_wgt',type=bool, default=True)
     parser.add_argument('--save_probes',type=bool, default=False)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
@@ -167,10 +168,10 @@ def main():
         y_train = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_val = np.stack([labels[i] for i in val_set_idxs], axis = 0)
         y_test = np.stack([labels[i] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
-        if args.method=='individual_non_linear':
-            y_train = np.vstack([[val] for val in y_train], dtype='float32')
-            y_val = np.vstack([[val] for val in y_val], dtype='float32')
-            y_test = np.vstack([[val] for val in y_test], dtype='float32')
+        # if args.method=='individual_non_linear':
+        #     y_train = np.vstack([[val] for val in y_train], dtype='float32')
+        #     y_val = np.vstack([[val] for val in y_val], dtype='float32')
+        #     y_test = np.vstack([[val] for val in y_test], dtype='float32')
 
         all_train_loss[i], all_val_loss[i] = [], []
         all_val_accs[i], all_val_f1s[i] = [], []
@@ -198,7 +199,8 @@ def main():
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
-                    criterion = nn.BCELoss()
+                    wgt_0 = np.sum(y_train)/len(y_train)
+                    criterion = nn.CrossEntropyLoss(weight={0:wgt_0,1:1-wgt_0}) if args.use_class_wgt else nn.CrossEntropyLoss()
                     lr = args.lr
                     
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
@@ -231,7 +233,7 @@ def main():
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
-                            loss = criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
+                            loss = criterion(outputs, targets.to(torch.float32).to(device))
                             train_loss.append(loss.item())
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
@@ -260,7 +262,7 @@ def main():
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
-                            epoch_val_loss += criterion(outputs, nn.functional.one_hot(targets.to(torch.int64),num_classes=2).to(torch.float32).to(device))
+                            epoch_val_loss += criterion(outputs, targets.to(torch.float32).to(device))
                         val_loss.append(epoch_val_loss.item())
                         # Choose best model
                         if epoch_val_loss.item() < best_val_loss:
@@ -330,21 +332,21 @@ def main():
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
     
     all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_loss.npy', all_val_loss)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
     all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_train_loss.npy', all_train_loss)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_train_loss.npy', all_train_loss)
     all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_pred.npy', all_val_preds)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_pred.npy', all_val_preds)
     all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_pred.npy', all_test_preds)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_pred.npy', all_test_preds)
     all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_f1.npy', all_val_f1s)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_f1.npy', all_val_f1s)
     all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_f1.npy', all_test_f1s)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_f1.npy', all_test_f1s)
     all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_val_true.npy', all_y_true_val)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_true.npy', all_y_true_val)
     all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_test_true.npy', all_y_true_test)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
 
 if __name__ == '__main__':
     main()

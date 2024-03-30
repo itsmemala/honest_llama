@@ -54,7 +54,7 @@ class LogisticRegression_Torch(torch.nn.Module):
         self.linear = torch.nn.Linear(n_inputs, n_outputs)
     # make predictions
     def forward(self, x):
-        y_pred = torch.sigmoid(self.linear(x))
+        y_pred = self.linear(x)
         return y_pred
 
 class FeedforwardNeuralNetModel(nn.Module):
