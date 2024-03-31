@@ -89,7 +89,7 @@ def main():
         # Fixing some of the early LLaMA HF conversion issues.
         tokenizer.bos_token_id = 1
 
-        if args.load_act==False: # Only load model if we need activations on the fly
+        if args.load_act==True: # Only load model if we need activations on the fly
             # Load the model (use bf16 for faster inference)
             base_model = llama.LlamaForCausalLM.from_pretrained(
                 model_name_or_path,
@@ -107,7 +107,7 @@ def main():
             model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-        if args.load_act==False: # Only load model if we need activations on the fly
+        if args.load_act==True: # Only load model if we need activations on the fly
             model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         num_layers = 32
         num_heads = 32
@@ -219,7 +219,7 @@ def main():
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                if args.load_act:
+                                if args.load_act==False:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
                                     file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
@@ -248,7 +248,7 @@ def main():
                             optimizer.zero_grad()
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                if args.load_act:
+                                if args.load_act==False:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
                                     file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
@@ -288,7 +288,7 @@ def main():
                         for step,batch in enumerate(ds_val):
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                if args.load_act:
+                                if args.load_act==False:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
                                     file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
@@ -316,7 +316,7 @@ def main():
                         for step,batch in enumerate(ds_test):
                             activations = []
                             for idx in batch['inputs_idxs']:
-                                if args.load_act:
+                                if args.load_act==False:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
                                     file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
