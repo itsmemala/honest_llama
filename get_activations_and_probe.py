@@ -276,7 +276,7 @@ def main():
                     all_val_loss[i].append(np.array(val_loss))
                     linear_model.load_state_dict(best_model_state)
                     if args.save_probes:
-                        probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_model{i}_{layer}_{head}'
+                        probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}_{layer}_{head}'
                         torch.save(linear_model, probe_save_path)
                     
                     # Val and Test performance
