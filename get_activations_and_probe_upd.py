@@ -232,10 +232,9 @@ def main():
                                 targets = batch['labels']
                             elif args.token=='all':
                                 # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
-                                print(targets)
+                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).to(torch.int32)
                             if args.token=='tagged_tokens':
-                                targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
+                                targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).to(torch.int32)
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, targets.to(device))
                             train_loss.append(loss.item())
@@ -262,9 +261,9 @@ def main():
                                 targets = batch['labels']
                             elif args.token=='all':
                                 # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
+                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).to(torch.int32)
                             if args.token=='tagged_tokens':
-                                targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
+                                targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).to(torch.int32)
                             outputs = linear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device))
                         val_loss.append(epoch_val_loss.item())
