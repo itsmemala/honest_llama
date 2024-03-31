@@ -234,7 +234,7 @@ def main():
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
-                            loss = criterion(outputs, targets.to(torch.float32).to(device))
+                            loss = criterion(outputs, targets.to(device))
                             train_loss.append(loss.item())
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
@@ -263,7 +263,7 @@ def main():
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0)
                             outputs = linear_model(inputs)
-                            epoch_val_loss += criterion(outputs, targets.to(torch.float32).to(device))
+                            epoch_val_loss += criterion(outputs, targets.to(device))
                         val_loss.append(epoch_val_loss.item())
                         # Choose best model
                         if epoch_val_loss.item() < best_val_loss:
