@@ -201,7 +201,7 @@ def main():
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
-                    criterion = nn.CrossEntropyLoss(weight=[0:wgt_0,1:1-wgt_0]) if args.use_class_wgt else nn.CrossEntropyLoss()
+                    criterion = nn.CrossEntropyLoss(weight=[wgt_0,1-wgt_0]) if args.use_class_wgt else nn.CrossEntropyLoss()
                     lr = args.lr
                     
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
