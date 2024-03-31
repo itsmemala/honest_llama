@@ -89,24 +89,26 @@ def main():
         # Fixing some of the early LLaMA HF conversion issues.
         tokenizer.bos_token_id = 1
 
-        # Load the model (use bf16 for faster inference)
-        base_model = llama.LlamaForCausalLM.from_pretrained(
-            model_name_or_path,
-            torch_dtype=torch.bfloat16,
-            device_map={"": 0},
-            # load_in_4bit=True,
-            quantization_config=BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.bfloat16,
-                bnb_4bit_use_double_quant=True,
-                bnb_4bit_quant_type='nf4',
-            ),
-            cache_dir=args.save_path+"/"+args.model_cache_dir
-        )
-        model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
+        if args.load_act==False: # Only load model if we need activations on the fly
+            # Load the model (use bf16 for faster inference)
+            base_model = llama.LlamaForCausalLM.from_pretrained(
+                model_name_or_path,
+                torch_dtype=torch.bfloat16,
+                device_map={"": 0},
+                # load_in_4bit=True,
+                quantization_config=BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type='nf4',
+                ),
+                cache_dir=args.save_path+"/"+args.model_cache_dir
+            )
+            model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-        model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+        if args.load_act==False: # Only load model if we need activations on the fly
+            model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         num_layers = 32
         num_heads = 32
     device = "cuda"
