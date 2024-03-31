@@ -62,7 +62,7 @@ def main():
     parser.add_argument('--epochs',type=int, default=3)
     parser.add_argument('--lr',type=float, default=0.05)
     parser.add_argument('--load_act',type=bool, default=True)
-    parser.add_argument('--use_class_wgt',type=bool, default=True)
+    parser.add_argument('--use_class_wgt',type=bool, default=False)
     parser.add_argument('--save_probes',type=bool, default=False)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
@@ -201,7 +201,7 @@ def main():
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
-                    criterion = nn.CrossEntropyLoss(weight=[wgt_0,1-wgt_0]) if args.use_class_wgt else nn.CrossEntropyLoss()
+                    criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
                     lr = args.lr
                     
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
