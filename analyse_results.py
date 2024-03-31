@@ -39,10 +39,10 @@ def main():
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[:27]
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample (excl. 28-32):',f1_score(all_test_true[fold][0],confident_sample_pred))
-        # print('\n')
-        # for model in range(len(all_val_loss[fold])):
-        #     print('Val loss model',model,':',all_val_loss[fold][model])
-        # print('\n')
+        print('\n')
+        for model in range(len(all_val_loss[fold])):
+            print('Val loss model',model,':',all_val_loss[fold][model])
+        print('\n')
 
 
 if __name__ == '__main__':
