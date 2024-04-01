@@ -41,7 +41,7 @@ def boolean_string(s):
     return s == 'True'
 
 def num_tagged_tokens(tagged_token_idxs_prompt):
-    return sum([b-a for a,b in tagged_token_idxs_prompt])
+    return sum([b-a+1 for a,b in tagged_token_idxs_prompt])
 
 def main(): 
     """
