@@ -365,6 +365,7 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
     elif token=='maxpool_all':
         return torch.max(activation,dim=0)[0]
     elif token=='tagged_tokens':
+        tagged_token_idxs = tagged_token_idxs if len(tagged_token_idxs)>0 else [(1,activation.shape[0])] # Skip the first token
         return torch.cat([activation[a:b,:] for a,b in tagged_token_idxs],dim=0)
     else:
         return activation
