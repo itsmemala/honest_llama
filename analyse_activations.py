@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--len_dataset',type=int, default=5000)
+    parser.add_argument('--device',type=int, default=0)
     parser.add_argument("--activations_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
