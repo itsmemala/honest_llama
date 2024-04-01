@@ -22,6 +22,7 @@ def main():
     all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_val_true.npy')
     for fold in range(len(all_test_f1s)):
+        assert all_test_true[fold][0]==all_test_true[fold][1] # check all models have same batch order
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
         print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])],np.argmax(all_val_f1s[fold]))
@@ -32,13 +33,15 @@ def main():
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred))
+        baseline_f1 = f1_score(all_test_true[fold][0],[1 for i in all_test_true[fold][0]])        
+        best_probes = np.argwhere(all_val_f1s[fold]>baseline_f1)
+        print('Baseline:',baseline_f1,'Num of probes > baseline:',len(best_probes))
         confident_sample_pred = []
-        # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[:27]
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[best_probes]
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-        print('Using most confident probe per sample (excl. 28-32):',f1_score(all_test_true[fold][0],confident_sample_pred))
+        print('Using most confident probe per sample (best probes):',f1_score(all_test_true[fold][0],confident_sample_pred))
         print('\n')
         for model in range(len(all_val_loss[fold])):
             print('Val loss model',model,':',all_val_loss[fold][model])
