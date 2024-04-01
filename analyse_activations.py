@@ -25,6 +25,7 @@ def main():
     args = parser.parse_args()
 
     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
+    device=args.device
 
     # Load labels
     labels = []
