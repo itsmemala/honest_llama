@@ -22,7 +22,7 @@ def main():
     all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_val_true.npy')
     for fold in range(len(all_test_f1s)):
-        assert all_test_true[fold][0]==all_test_true[fold][1] # check all models have same batch order
+        assert sum(all_test_true[fold][0]==all_test_true[fold][1])==len(all_test_true[fold][0]) # check all models have same batch order
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
         print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])],np.argmax(all_val_f1s[fold]))
