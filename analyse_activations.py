@@ -19,23 +19,34 @@ def main():
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument("--activations_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
 
+    # Load labels
+    labels = []
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.labels_file_name}.json', 'r') as read_file:
+            for line in read_file:
+                data = json.loads(line)
+                labels.append(1 if data['rouge1_to_target']>0.3 else 0)
+
     # Load activations
+    print('\nLoading activations..')
     layer=31
-    activatiions = []
+    activations = []
     for file_end in [(a*100,(a*100)+100) for a in range(int(args.len_dataset/100))]:    
         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.activations_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
         act = torch.from_numpy(np.load(file_path,allow_pickle=True)[:,layer,:]).to(device)
         activations.append(act)
+    activations = [act for i,act in activations if labels[i]==0]
     activations = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
 
     # Elbow plot for optimum number of clusters
+    print('\nCreating clusters..')
     Sum_of_squared_distances = []
-    for num_clusters in [5,10,25,50,100,250,500,1000,2500,5000]:
+    for num_clusters in [5,10,25,50,100,250,500,1000]:
         kmeans = KMeans(n_clusters=num_clusters)
         kmeans.fit(activations)
         Sum_of_squared_distances.append(kmeans.inertia_)
