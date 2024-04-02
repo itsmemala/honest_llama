@@ -41,9 +41,9 @@ def main():
     for idx in [i for i in labels if i==0]:
         file_end = idx-(idx%100)+100 # 487: 487-(87)+100
         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.activations_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
+        act = np.load(file_path,allow_pickle=True)[idx%100][layer]
         activations.append(act)
-    activations = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+    activations = np.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else np.concatenate(activations,axis=0)
 
     # Elbow plot for optimum number of clusters
     print('\nCreating clusters..')
