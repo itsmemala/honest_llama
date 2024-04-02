@@ -49,7 +49,7 @@ def main():
     print('\nCreating clusters..')
     Sum_of_squared_distances = []
     for num_clusters in [5,10,25,50,100,250,500,1000]:
-        kmeans = KMeans(n_clusters=num_clusters)
+        kmeans = KMeans(n_clusters=num_clusters, random_state=42)
         kmeans.fit(activations)
         Sum_of_squared_distances.append(kmeans.inertia_)
     plt.plot(K,Sum_of_squared_distances,'bx-')
