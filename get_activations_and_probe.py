@@ -278,10 +278,11 @@ def main():
                             best_val_loss = epoch_val_loss.item()
                             best_model_state = linear_model.state_dict()
                         # Early stopping
-                        patience=3, min_val_loss_drop=1, is_not_decreasing=0
+                        patience, min_val_loss_drop, is_not_decreasing = 3, 1, 0
                         if len(val_loss)>=patience:
                             for i in range(1,patience,1):
-                                if val_loss[-(i+1)]-val_loss[-i] < min_val_loss_drop: is_not_decreasing += 1
+                                val_loss_drop = val_loss[-(i+1)]-val_loss[-i]
+                                if val_loss_drop > 0 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
                             if is_not_decreasing==patience-1: break
                         if args.optimizer=='SGD': lr = lr*0.75
                         if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
