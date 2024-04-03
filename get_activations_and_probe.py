@@ -61,8 +61,9 @@ def main():
     parser.add_argument('--bs',type=int, default=4)
     parser.add_argument('--epochs',type=int, default=3)
     parser.add_argument('--lr',type=float, default=0.05)
-    parser.add_argument('--load_act',type=bool, default=False)
+    parser.add_argument('--optimizer',type=str, default='SGD')
     parser.add_argument('--use_class_wgt',type=bool, default=False)
+    parser.add_argument('--load_act',type=bool, default=False)
     parser.add_argument('--save_probes',type=bool, default=False)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
@@ -211,9 +212,12 @@ def main():
                     train_loss, val_loss = [], []
                     best_val_loss = torch.inf
                     best_model_state = linear_model.state_dict()
+                    if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch':
+                        optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
+                        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
                     for epoch in range(args.epochs):
                         linear_model.train()
-                        optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
+                        if args.optimizer=='SGD': optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
                         # for step,batch in enumerate(iter_bar):
                         for step,batch in enumerate(ds_train):
                             optimizer.zero_grad()
@@ -273,7 +277,14 @@ def main():
                         if epoch_val_loss.item() < best_val_loss:
                             best_val_loss = epoch_val_loss.item()
                             best_model_state = linear_model.state_dict()
-                        lr = lr*0.75
+                        # Early stopping
+                        patience=3, min_val_loss_drop=1, is_not_decreasing=0
+                        if len(val_loss)>=patience:
+                            for i in range(1,patience,1):
+                                if val_loss[-i]-val_loss[-(i+1)] < min_val_loss_drop: is_not_decreasing += 1
+                            if is_not_decreasing==patience-1: break
+                        if args.optimizer=='SGD': lr = lr*0.75
+                        if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
                     all_train_loss[i].append(np.array(train_loss))
                     all_val_loss[i].append(np.array(val_loss))
                     linear_model.load_state_dict(best_model_state)
