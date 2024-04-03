@@ -15,8 +15,8 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
-    all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy')
-    all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy')
+    all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy',allow_pickle=True)
+    all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy',allow_pickle=True)
     all_test_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_f1.npy')
     all_val_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_f1.npy')
     all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
