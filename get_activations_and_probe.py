@@ -144,6 +144,8 @@ def main():
     
     # Probe training
     np.random.seed(42)
+    torch.manual_seed(42)
+    if torch.cuda.is_available(): torch.cuda.manual_seed(42)
 
     # Individual probes
     all_train_loss, all_val_loss = {}, {}
@@ -282,7 +284,7 @@ def main():
                         if len(val_loss)>=patience:
                             for epoch_id in range(1,patience,1):
                                 val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
-                                if val_loss_drop > 0 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+                                if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
                             if is_not_decreasing==patience-1: break
                         if args.optimizer=='SGD': lr = lr*0.75
                         if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
