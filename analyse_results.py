@@ -15,8 +15,8 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
-    all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy',allow_pickle=True)
-    all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy',allow_pickle=True)
+    all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy',allow_pickle=True).item()
+    all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy',allow_pickle=True).item()
     all_test_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_f1.npy')
     all_val_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_f1.npy')
     all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
@@ -44,7 +44,7 @@ def main():
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[best_probes]
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample (best probes by f1):',f1_score(all_test_true[fold][0],confident_sample_pred))
-        print(all_val_loss[fold])
+        # print(all_val_loss[fold])
         best_val_loss_by_model = [np.min(model_losses) for model_losses in all_val_loss[fold]]
         best_probes = np.argwhere(best_val_loss_by_model<=np.mean(best_val_loss_by_model))
         print('Num of probes < avg:',len(best_probes))
