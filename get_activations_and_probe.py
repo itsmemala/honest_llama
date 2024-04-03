@@ -281,7 +281,7 @@ def main():
                         patience=3, min_val_loss_drop=1, is_not_decreasing=0
                         if len(val_loss)>=patience:
                             for i in range(1,patience,1):
-                                if val_loss[-i]-val_loss[-(i+1)] < min_val_loss_drop: is_not_decreasing += 1
+                                if val_loss[-(i+1)]-val_loss[-i] < min_val_loss_drop: is_not_decreasing += 1
                             if is_not_decreasing==patience-1: break
                         if args.optimizer=='SGD': lr = lr*0.75
                         if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
