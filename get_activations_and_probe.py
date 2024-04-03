@@ -280,8 +280,8 @@ def main():
                         # Early stopping
                         patience, min_val_loss_drop, is_not_decreasing = 3, 1, 0
                         if len(val_loss)>=patience:
-                            for i in range(1,patience,1):
-                                val_loss_drop = val_loss[-(i+1)]-val_loss[-i]
+                            for epoch_id in range(1,patience,1):
+                                val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
                                 if val_loss_drop > 0 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
                             if is_not_decreasing==patience-1: break
                         if args.optimizer=='SGD': lr = lr*0.75
