@@ -60,7 +60,7 @@ def main():
         print('Using most confident probe per sample (best probes by loss):',f1_score(all_test_true[fold][0],confident_sample_pred))
         print('\n')
         for model in range(len(all_val_loss[fold])):
-            print('Val loss model',model,':',all_val_loss[fold][model])
+            print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',all_val_f1s[fold][model],'Test F1:',all_test_f1s[fold][model])
         print('\n')
 
 
