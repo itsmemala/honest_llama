@@ -61,7 +61,7 @@ def main():
         print('\n')
         np.set_printoptions(precision=4)
         for model in range(len(all_val_loss[fold])):
-            print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',all_val_f1s[fold][model],'Test F1:',all_test_f1s[fold][model])
+            print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
         print('\n')
         print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
 
