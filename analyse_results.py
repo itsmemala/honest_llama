@@ -59,7 +59,7 @@ def main():
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample (best probes by loss):',f1_score(all_test_true[fold][0],confident_sample_pred))
         print('\n')
-        np.set_printoptions(precision=4)
+        np.set_printoptions(precision=2)
         for model in range(len(all_val_loss[fold])):
             print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
         print('\n')
