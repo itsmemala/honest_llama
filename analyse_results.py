@@ -62,7 +62,7 @@ def main():
         for model in range(len(all_val_loss[fold])):
             print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',all_val_f1s[fold][model],'Test F1:',all_test_f1s[fold][model])
         print('\n')
-        print('Val and Test f1 correlation across probes:',np.correlation(all_val_f1s[fold],all_test_f1s[fold]))
+        print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold]))
 
 
 if __name__ == '__main__':
