@@ -12,7 +12,7 @@ import statistics
 import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
-from utils import LogisticRegression_Torch, FeedforwardNeuralNetModel
+from utils import MIND_Classifier
 import llama
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
