@@ -48,11 +48,12 @@ def main():
     # Elbow plot for optimum number of clusters
     print('\nCreating clusters..')
     Sum_of_squared_distances = []
-    for num_clusters in [5,10,25,50,100,250,500,1000]:
+    num_clusters_all = [5,10,25,50,100,250,500]
+    for num_clusters in num_clusters_all:
         kmeans = KMeans(n_clusters=num_clusters, random_state=42)
         kmeans.fit(activations)
         Sum_of_squared_distances.append(kmeans.inertia_)
-    plt.plot(K,Sum_of_squared_distances,'bx-')
+    plt.plot(num_clusters_all,Sum_of_squared_distances,'bx-')
     plt.xlabel('Number of clusters') 
     plt.ylabel('Sum of squared distances/Inertia') 
     plt.title('Elbow curve - Cluster analysis')

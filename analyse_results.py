@@ -12,8 +12,21 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--results_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
+
+    if args.responses_file_name is not None:
+        file_path = f'{args.save_path}/responses/{args.responses_file_name}.json'
+        prompts, _, _, _ = tokenized_from_file(file_path, tokenizer)
+        catg = {}
+        for i in range(4):
+            catg[i] = []
+        for idx,prompt in enumerate(prompts):
+            if 'who' in prompt: catg[0].append(idx)
+            if 'when' in prompt: catg[1].append(idx)
+            if 'where' in prompt: catg[2].append(idx)
+            if 'what' in prompt or 'which' in prompt: catg[3].append(idx)
 
     try:
         all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy')
