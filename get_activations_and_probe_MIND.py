@@ -196,7 +196,7 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
-                    linear_model = MIND_Classifier(input_size=act_dims[args.using_act]).to(device)
+                    linear_model = MIND_Classifier(input_size=act_dims[args.using_act]).model.to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
                     criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
 
