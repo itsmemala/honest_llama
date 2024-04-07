@@ -93,6 +93,25 @@ class FeedforwardNeuralNetModel(nn.Module):
 
         return out
 
+class MIND_Classifier():
+    def __init__(self, input_size, path=None):
+        # self.args = args
+        # input_size = (4096*2 if "falcon" not in args.model_name else 4544*2) if "7b" in args.model_name else (5120*2 if "13b" in args.model_name else 8192*2)
+        input_size = input_size
+        self.model = nn.Sequential()
+        # self.model.add_module("dropout", nn.Dropout(args.dropout))
+        self.model.add_module("dropout", nn.Dropout(0.2))
+        self.model.add_module(f"linear1", nn.Linear(input_size, 256))
+        self.model.add_module(f"relu1", nn.ReLU())
+        self.model.add_module(f"linear2", nn.Linear(256, 128))
+        self.model.add_module(f"relu2", nn.ReLU())
+        self.model.add_module(f"linear3", nn.Linear(128, 64))
+        self.model.add_module(f"relu3", nn.ReLU())
+        self.model.add_module(f"linear4", nn.Linear(64, 2))
+        if path is not None:
+            self.model.load_state_dict(torch.load(path, map_location = "cpu")["model_state_dict"])
+        # self.model.to(args.device)
+
 def load_nq():
     dataset = load_dataset("OamPatel/iti_nq_open_val")["validation"]
     df = pd.DataFrame(columns=["question", "answer", "false_answer"])
