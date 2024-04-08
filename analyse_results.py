@@ -61,7 +61,7 @@ def main():
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
         counts, bins = np.histogram(num_correct_probes)
         plt.stairs(counts, bins)
-        lt.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
+        plt.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
         print('\n')
         confident_sample_pred = []
