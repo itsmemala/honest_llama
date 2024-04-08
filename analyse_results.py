@@ -117,7 +117,7 @@ def main():
 
         print('\n')
         best_sample_pred =[]
-        best_probe_idxs = np.argpartition(np.array(all_val_loss[fold]), -5)[-5:]
+        best_probe_idxs = np.argpartition(all_val_loss[fold], -5)[-5:]
         top_5_lower_bound_val = np.min(all_val_loss[fold][best_probe_idxs])
         print('Best probes:',best_probe_idxs)
         for i in range(all_test_pred[fold].shape[1]):
