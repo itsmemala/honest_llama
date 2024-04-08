@@ -49,6 +49,7 @@ def main():
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred = np.argmax(sample_pred,axis=1)
+            print(sample_pred.shape)
             assert sample_pred.shape==32 # num_layers
             correct_answer = all_test_true[fold][0][i]
             num_correct_probes.append(sum(sample_pred==correct_answer))
