@@ -112,7 +112,24 @@ def main():
         axs[1].title.set_text('Hallucinated')
         axs[1].set_xlabel('probe idx')
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_top5oracle_hist.png')
-        print('Oracle (using most confident):',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('Oracle (using 5 most confident):',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('\n')
+
+        print('\n')
+        best_sample_pred =[]
+        best_probe_idxs = np.argpartition(np.array(all_val_loss[fold]), -5)[-5:]
+        top_5_lower_bound_val = np.min(all_val_loss[fold][best_probe_idxs])
+        print('Best probes:',best_probe_idxs)
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            sample_pred = sample_pred[all_val_loss[fold]>=top_5_lower_bound_val]
+            sample_pred = np.argmax(sample_pred,axis=1)
+            correct_answer = all_test_true[fold][0][i]
+            if sum(sample_pred==correct_answer)>0:
+                best_sample_pred.append(correct_answer)
+            else:
+                best_sample_pred.append(1 if correct_answer==0 else 0)
+        print('Oracle (using 5 most accurate):',f1_score(all_test_true[fold][0],best_sample_pred))
         print('\n')
         
         confident_sample_pred = []
