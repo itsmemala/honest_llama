@@ -46,6 +46,7 @@ def main():
         print('\n')
         best_sample_pred =[]
         num_correct_probes = []
+        num_correct_probes_hallu = []
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -53,6 +54,7 @@ def main():
             assert sample_pred.shape==(32,) # num_layers
             correct_answer = all_test_true[fold][0][i]
             num_correct_probes.append(sum(sample_pred==correct_answer))
+            if correct_answer==0: num_correct_probes_hallu.append(sum(sample_pred==correct_answer))
             # if i==0: print(sample_pred==correct_answer,sum(sample_pred==correct_answer))
             if sum(sample_pred==correct_answer)>0:
                 best_sample_pred.append(correct_answer)
@@ -62,6 +64,9 @@ def main():
         counts, bins = np.histogram(num_correct_probes)
         plt.stairs(counts, bins)
         plt.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
+        counts, bins = np.histogram(num_correct_probes_hallu)
+        plt.stairs(counts, bins)
+        plt.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist_hallu.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
         print('\n')
         confident_sample_pred = []
