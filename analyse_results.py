@@ -92,14 +92,14 @@ def main():
             best_probe_idxs = np.argpartition(probe_wise_entropy, -5)[-5:]
             top_5_lower_bound_val = np.min(probe_wise_entropy[best_probe_idxs])
             best_probe_idxs = probe_wise_entropy>=top_5_lower_bound_val
-            sample_pred = sample_pred[best_probe_idxs]
-            sample_pred = np.argmax(sample_pred,axis=1)
+            sample_pred_chosen = sample_pred[best_probe_idxs]
+            sample_pred_chosen = np.argmax(sample_pred_chosen,axis=1)
             correct_answer = all_test_true[fold][0][i]
             if correct_answer==1: best_probes_nonhallu += best_probe_idxs.tolist()
-            if correct_answer==1: correct_probes_nonhallu += [idx for idx in best_probe_idxs if sample_pred[best_probe_idxs]==correct_answer]
+            if correct_answer==1: correct_probes_nonhallu += [idx for idx,is_best in enumerate(best_probe_idxs) if is_best and sample_pred[idx]==correct_answer]
             if correct_answer==0: best_probes_hallu += best_probe_idxs.tolist()
-            if correct_answer==0: correct_probes_hallu += [idx for idx in best_probe_idxs if sample_pred[best_probe_idxs]==correct_answer]
-            if sum(sample_pred==correct_answer)>0:
+            if correct_answer==0: correct_probes_hallu += [idx for idx,is_best in enumerate(best_probe_idxs) if is_best and sample_pred[idx]==correct_answer]
+            if sum(sample_pred_chosen==correct_answer)>0:
                 best_sample_pred.append(correct_answer)
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
