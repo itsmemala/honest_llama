@@ -61,7 +61,7 @@ def main():
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
-        fig, axs = pyplot.subplots(1,2)
+        fig, axs = plt.subplots(1,2)
         counts, bins = np.histogram(num_correct_probes_nonhallu)
         axs[0].stairs(counts, bins)
         counts, bins = np.histogram(num_correct_probes_hallu)
