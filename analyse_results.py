@@ -43,6 +43,7 @@ def main():
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]))
         print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])],np.argmax(all_val_f1s[fold]))
+        print('\n')
         best_sample_pred =[]
         num_correct_probes = []
         # print(all_test_pred[fold].shape)
@@ -52,12 +53,14 @@ def main():
             assert sample_pred.shape==(32,) # num_layers
             correct_answer = all_test_true[fold][0][i]
             num_correct_probes.append(sum(sample_pred==correct_answer))
+            if i==0: print(sample_pred==correct_answer,sum(sample_pred==correct_answer))
             if sum(sample_pred==correct_answer)>0:
                 best_sample_pred.append(correct_answer)
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('\n')
         confident_sample_pred = []
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
