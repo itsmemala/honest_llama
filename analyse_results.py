@@ -69,7 +69,6 @@ def main():
         counts, bins = np.histogram(num_correct_probes_hallu)
         axs[1].stairs(counts, bins)
         axs[1].title.set_text('Hallucinated')
-        axs[1].set_ylabel('# probes classifying correctly')
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
         print('\n')
