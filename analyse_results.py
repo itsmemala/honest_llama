@@ -81,23 +81,27 @@ def main():
         print('# Hallucinated samples:',sum(all_test_true[fold][0]==0))
         print('\n')
         
-        # best_sample_pred =[]
-        # num_correct_probes_nonhallu = []
-        # num_correct_probes_hallu = []
-        # # print(all_test_pred[fold].shape)
-        # for i in range(all_test_pred[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     sample_pred = np.argmax(sample_pred,axis=1)
-        #     assert sample_pred.shape==(32,) # num_layers
-        #     correct_answer = all_test_true[fold][0][i]
-        #     if correct_answer==1: num_correct_probes_nonhallu.append(sum(sample_pred==correct_answer))
-        #     if correct_answer==0: num_correct_probes_hallu.append(sum(sample_pred==correct_answer))
-        #     if sum(sample_pred==correct_answer)>0:
-        #         best_sample_pred.append(correct_answer)
-        #     else:
-        #         best_sample_pred.append(1 if correct_answer==0 else 0)
-        # print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('\n')
+        best_sample_pred =[]
+        num_correct_probes_nonhallu = []
+        num_correct_probes_hallu = []
+        # print(all_test_pred[fold].shape)
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            top_5_lower_bound_val = np.min(probe_wise_entropy[np.argpartition(probe_wise_entropy, -5)[-5:]])
+            sample_pred = sample_pred[probe_wise_entropy>top_5_lower_bound_val]
+            sample_pred = np.argmax(sample_pred,axis=1)
+            print('Number of probes with top 5 values:',sample_pred.shape) # num probes chosen          
+            correct_answer = all_test_true[fold][0][i]
+            if correct_answer==1: num_correct_probes_nonhallu.append(sum(sample_pred==correct_answer))
+            if correct_answer==0: num_correct_probes_hallu.append(sum(sample_pred==correct_answer))
+            if sum(sample_pred==correct_answer)>0:
+                best_sample_pred.append(correct_answer)
+            else:
+                best_sample_pred.append(1 if correct_answer==0 else 0)
+        print('Oracle (using most confident):',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('\n')
         
         confident_sample_pred = []
         # print(all_test_pred[fold].shape)
