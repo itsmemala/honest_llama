@@ -90,9 +90,9 @@ def main():
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             top_5_lower_bound_val = np.min(probe_wise_entropy[np.argpartition(probe_wise_entropy, -5)[-5:]])
-            sample_pred = sample_pred[probe_wise_entropy>top_5_lower_bound_val]
+            sample_pred = sample_pred[probe_wise_entropy>=top_5_lower_bound_val]
             sample_pred = np.argmax(sample_pred,axis=1)
-            print('Number of probes with top 5 values:',sample_pred.shape) # num probes chosen          
+            # print('Number of probes with top 5 values:',sample_pred.shape) # num probes chosen          
             correct_answer = all_test_true[fold][0][i]
             if correct_answer==1: num_correct_probes_nonhallu.append(sum(sample_pred==correct_answer))
             if correct_answer==0: num_correct_probes_hallu.append(sum(sample_pred==correct_answer))
