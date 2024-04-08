@@ -73,6 +73,8 @@ def main():
         axs[1].set_xlabel('# probes classifying correctly')
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('Non-Hallucinated hard samples:',sum(num_correct_probes_nonhallu[num_correct_probes_nonhallu<20]),sum(num_correct_probes_nonhallu[num_correct_probes_nonhallu<10]))
+        print('Non-Hallucinated hard samples:',sum(num_correct_probes_hallu[num_correct_probes_hallu<20]),sum(num_correct_probes_hallu[num_correct_probes_hallu<10]))
         print('\n')
         confident_sample_pred = []
         # print(all_test_pred[fold].shape)
