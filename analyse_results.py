@@ -95,8 +95,8 @@ def main():
             sample_pred = np.argmax(sample_pred,axis=1)
             # print('Number of probes with top 5 values:',sample_pred.shape) # num probes chosen       
             correct_answer = all_test_true[fold][0][i]
-            if correct_answer==1: best_probes_nonhallu += best_probe_idxs
-            if correct_answer==0: best_probes_hallu += best_probe_idxs
+            if correct_answer==1: best_probes_nonhallu += best_probe_idxs.tolist()
+            if correct_answer==0: best_probes_hallu += best_probe_idxs.tolist()
             if sum(sample_pred==correct_answer)>0:
                 best_sample_pred.append(correct_answer)
             else:
