@@ -117,12 +117,12 @@ def main():
 
         print('\n')
         best_sample_pred =[]
-        best_probe_idxs = np.argpartition(all_val_loss[fold], -5)[-5:]
-        top_5_lower_bound_val = np.min(all_val_loss[fold][best_probe_idxs])
+        best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
+        top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
         print('Best probes:',best_probe_idxs)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred = sample_pred[all_val_loss[fold]>=top_5_lower_bound_val]
+            sample_pred = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
             sample_pred = np.argmax(sample_pred,axis=1)
             correct_answer = all_test_true[fold][0][i]
             if sum(sample_pred==correct_answer)>0:
