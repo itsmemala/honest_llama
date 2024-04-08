@@ -53,12 +53,15 @@ def main():
             assert sample_pred.shape==(32,) # num_layers
             correct_answer = all_test_true[fold][0][i]
             num_correct_probes.append(sum(sample_pred==correct_answer))
-            if i==0: print(sample_pred==correct_answer,sum(sample_pred==correct_answer))
+            # if i==0: print(sample_pred==correct_answer,sum(sample_pred==correct_answer))
             if sum(sample_pred==correct_answer)>0:
                 best_sample_pred.append(correct_answer)
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
+        counts, bins = np.histogram(num_correct_probes)
+        plt.stairs(counts, bins)
+        lt.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
         print('\n')
         confident_sample_pred = []
