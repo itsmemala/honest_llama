@@ -45,7 +45,7 @@ def main():
         print('Best:',all_test_f1s[fold][np.argmax(all_val_f1s[fold])],np.argmax(all_val_f1s[fold]))
         print('\n')
         best_sample_pred =[]
-        num_correct_probes = []
+        num_correct_probes_nonhallu = []
         num_correct_probes_hallu = []
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
@@ -53,7 +53,7 @@ def main():
             sample_pred = np.argmax(sample_pred,axis=1)
             assert sample_pred.shape==(32,) # num_layers
             correct_answer = all_test_true[fold][0][i]
-            num_correct_probes.append(sum(sample_pred==correct_answer))
+            if correct_answer==1: num_correct_probes_nonhallu.append(sum(sample_pred==correct_answer))
             if correct_answer==0: num_correct_probes_hallu.append(sum(sample_pred==correct_answer))
             # if i==0: print(sample_pred==correct_answer,sum(sample_pred==correct_answer))
             if sum(sample_pred==correct_answer)>0:
@@ -61,12 +61,12 @@ def main():
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
-        counts, bins = np.histogram(num_correct_probes)
-        plt.stairs(counts, bins)
-        plt.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
+        fig, axs = pyplot.subplots(1,2)
+        counts, bins = np.histogram(num_correct_probes_nonhallu)
+        axs[0].stairs(counts, bins)
         counts, bins = np.histogram(num_correct_probes_hallu)
-        plt.stairs(counts, bins)
-        plt.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist_hallu.png')
+        axs[1].stairs(counts, bins)
+        fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
         print('\n')
         confident_sample_pred = []
