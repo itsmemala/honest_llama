@@ -146,27 +146,24 @@ def main():
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred))
-        # baseline_f1 = f1_score(all_test_true[fold][0],[1 for i in all_test_true[fold][0]])        
-        # best_probes = np.argwhere(all_val_f1s[fold]>baseline_f1)
-        # print('Baseline:',baseline_f1,'Num of probes > baseline:',len(best_probes))
-        best_probes = np.argwhere(all_val_f1s[fold]>=np.mean(all_val_f1s[fold]))
-        print('Num of probes > avg:',len(best_probes))
-        confident_sample_pred = []
-        for i in range(all_test_pred[fold].shape[1]):
-            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[best_probes]
-            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-        print('Using most confident probe per sample (best probes by f1):',f1_score(all_test_true[fold][0],confident_sample_pred))
-        # print(all_val_loss[fold])
-        best_val_loss_by_model = [np.min(model_losses) for model_losses in all_val_loss[fold]]
-        best_probes = np.argwhere(best_val_loss_by_model<=np.mean(best_val_loss_by_model))
-        print('Num of probes < avg:',len(best_probes))
-        confident_sample_pred = []
-        for i in range(all_test_pred[fold].shape[1]):
-            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[best_probes]
-            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-        print('Using most confident probe per sample (best probes by loss):',f1_score(all_test_true[fold][0],confident_sample_pred))
+        # best_probes = np.argwhere(all_val_f1s[fold]>=np.mean(all_val_f1s[fold]))
+        # print('Num of probes > avg:',len(best_probes))
+        # confident_sample_pred = []
+        # for i in range(all_test_pred[fold].shape[1]):
+        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[best_probes]
+        #     confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+        # print('Using most confident probe per sample (best probes by f1):',f1_score(all_test_true[fold][0],confident_sample_pred))
+        # best_val_loss_by_model = [np.min(model_losses) for model_losses in all_val_loss[fold]]
+        # best_probes = np.argwhere(best_val_loss_by_model<=np.mean(best_val_loss_by_model))
+        # print('Num of probes < avg:',len(best_probes))
+        # confident_sample_pred = []
+        # for i in range(all_test_pred[fold].shape[1]):
+        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[best_probes]
+        #     confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+        # print('Using most confident probe per sample (best probes by loss):',f1_score(all_test_true[fold][0],confident_sample_pred))
+        
         
         print('\n')
         np.set_printoptions(precision=2)
@@ -174,6 +171,8 @@ def main():
             print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
         print('\n')
         print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
+        best_val_loss_by_model = [np.min(model_losses) for model_losses in all_val_loss[fold]]
+        print('Avg val loss across probes:',np.mean(best_val_loss_by_model))
         print('\n')
 
 
