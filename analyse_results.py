@@ -46,8 +46,8 @@ def main():
         
         print('\n')
         best_sample_pred =[]
-        num_correct_probes_nonhallu = []
-        num_correct_probes_hallu = []
+        num_correct_probes_nonhallu, correct_probes_nonhallu = [], []
+        num_correct_probes_hallu, correct_probes_hallu = [], []
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -55,23 +55,32 @@ def main():
             assert sample_pred.shape==(32,) # num_layers
             correct_answer = all_test_true[fold][0][i]
             if correct_answer==1: num_correct_probes_nonhallu.append(sum(sample_pred==correct_answer))
+            if correct_answer==1 and sum(sample_pred==correct_answer)<20: correct_probes_nonhallu += [idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]
             if correct_answer==0: num_correct_probes_hallu.append(sum(sample_pred==correct_answer))
+            if correct_answer==0 and sum(sample_pred==correct_answer)<20: correct_probes_hallu += [idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]
             # if i==0: print(sample_pred==correct_answer,sum(sample_pred==correct_answer))
             if sum(sample_pred==correct_answer)>0:
                 best_sample_pred.append(correct_answer)
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
-        fig, axs = plt.subplots(1,2)
+        fig, axs = plt.subplots(2,2)
         counts, bins = np.histogram(num_correct_probes_nonhallu)
-        axs[0].stairs(counts, bins)
-        axs[0].title.set_text('Non-Hallucinated')
-        axs[0].set_xlabel('# probes classifying correctly')
-        axs[0].set_ylabel('# samples')
+        axs[0,0].stairs(counts, bins)
+        axs[0,0].title.set_text('Non-Hallucinated')
+        axs[0,0].set_xlabel('# probes classifying correctly')
+        axs[0,0].set_ylabel('# samples')
         counts, bins = np.histogram(num_correct_probes_hallu)
-        axs[1].stairs(counts, bins)
-        axs[1].title.set_text('Hallucinated')
-        axs[1].set_xlabel('# probes classifying correctly')
+        axs[0,1].stairs(counts, bins)
+        axs[0,1].title.set_text('Hallucinated')
+        axs[0,1].set_xlabel('# probes classifying correctly')
+        counts, bins = np.histogram(correct_probes_nonhallu)
+        axs[1,0].stairs(counts, bins)
+        axs[1,0].set_xlabel('probe idx')
+        axs[1,0].set_ylabel('# samples correct (when num_correct_probes<20)')
+        counts, bins = np.histogram(correct_probes_hallu)
+        axs[1,1].stairs(counts, bins)
+        axs[1,1].set_xlabel('probe idx')
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
         num_correct_probes_nonhallu = np.array(num_correct_probes_nonhallu)
@@ -163,7 +172,6 @@ def main():
         #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)[best_probes]
         #     confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         # print('Using most confident probe per sample (best probes by loss):',f1_score(all_test_true[fold][0],confident_sample_pred))
-        
         
         print('\n')
         np.set_printoptions(precision=2)

@@ -350,6 +350,13 @@ def main():
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
     
+        # if args.classifier_on_probes:
+        #     logits = []
+        #         # Load probe
+        #         probe_save_path = f'{args.save_path}/probes/models/{args.results_file_name}_model{model_num}_{layer}_{head}'
+        #         linear_model = 
+        #         logits.append()
+
     # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
     # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
