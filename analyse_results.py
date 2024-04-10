@@ -65,6 +65,7 @@ def main():
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
         fig, axs = plt.subplots(2,2)
+        fig.tight_layout()
         counts, bins = np.histogram(num_correct_probes_nonhallu)
         axs[0,0].stairs(counts, bins)
         axs[0,0].title.set_text('Non-Hallucinated')
@@ -77,7 +78,7 @@ def main():
         counts, bins = np.histogram(correct_probes_nonhallu)
         axs[1,0].stairs(counts, bins)
         axs[1,0].set_xlabel('probe idx')
-        axs[1,0].set_ylabel('# samples correct (when num_correct_probes<20)')
+        axs[1,0].set_ylabel('# samples correct\n(when num_correct_probes<20)')
         counts, bins = np.histogram(correct_probes_hallu)
         axs[1,1].stairs(counts, bins)
         axs[1,1].set_xlabel('probe idx')
