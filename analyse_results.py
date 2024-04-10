@@ -65,7 +65,6 @@ def main():
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         assert f1_score(all_test_true[fold][0],all_test_true[fold][0])==1
         fig, axs = plt.subplots(2,2)
-        fig.tight_layout()
         counts, bins = np.histogram(num_correct_probes_nonhallu)
         axs[0,0].stairs(counts, bins)
         axs[0,0].title.set_text('Non-Hallucinated')
@@ -82,6 +81,7 @@ def main():
         counts, bins = np.histogram(correct_probes_hallu)
         axs[1,1].stairs(counts, bins)
         axs[1,1].set_xlabel('probe idx')
+        fig.tight_layout()
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
         print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
         num_correct_probes_nonhallu = np.array(num_correct_probes_nonhallu)
