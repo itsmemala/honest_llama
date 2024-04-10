@@ -219,7 +219,7 @@ def main():
                         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
                     for epoch in range(args.epochs):
                         linear_model.train()
-                        if args.optimizer=='SGD': optimizer = torch.optim.SGD(linear_model.parameters(), lr=lr)
+                        if args.optimizer=='Adam' or args.optimizer=='SGD': optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
                         # for step,batch in enumerate(iter_bar):
                         for step,batch in enumerate(ds_train):
                             optimizer.zero_grad()
@@ -280,13 +280,13 @@ def main():
                             best_val_loss = epoch_val_loss.item()
                             best_model_state = linear_model.state_dict()
                         # Early stopping
-                        patience, min_val_loss_drop, is_not_decreasing = 3, 1, 0
+                        patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0
                         if len(val_loss)>=patience:
                             for epoch_id in range(1,patience,1):
                                 val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
                                 if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
                             if is_not_decreasing==patience-1: break
-                        if args.optimizer=='SGD': lr = lr*0.75
+                        if args.optimizer=='SGD': lr = lr*0.75 # No decay for Adam
                         if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
                     all_train_loss[i].append(np.array(train_loss))
                     all_val_loss[i].append(np.array(val_loss))
