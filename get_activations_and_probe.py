@@ -124,6 +124,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     linear_model.load_state_dict(best_model_state)
     
     # Val and Test performance
+    y_val_pred, y_val_true = [], []
     pred_correct = 0
     with torch.no_grad():
         linear_model.eval()
@@ -132,6 +133,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
             y_val_pred += predicted.cpu().tolist()
             y_val_true += batch['labels'].to(device).tolist()
     print('Val F1:',f1_score(y_val_true,y_val_pred))
+    y_test_pred, y_test_true = [], []
     pred_correct = 0
     with torch.no_grad():
         linear_model.eval()
