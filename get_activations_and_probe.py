@@ -70,11 +70,11 @@ def get_logits(ds_train_fixed,layer,linear_model,device,args):
 
 def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,device,args):
     ds_train = Dataset.from_dict({"inputs": train_logits, "labels": y_train}).with_format("torch")
-    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
+    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler).to(device)
     ds_val = Dataset.from_dict({"inputs": val_logits, "labels": y_val}).with_format("torch")
-    ds_val = DataLoader(ds_val, batch_size=args.bs)
+    ds_val = DataLoader(ds_val, batch_size=args.bs).to(device)
     ds_test = Dataset.from_dict({"inputs": test_logits, "labels": y_test}).with_format("torch")
-    ds_test = DataLoader(ds_test, batch_size=args.bs)
+    ds_test = DataLoader(ds_test, batch_size=args.bs).to(device)
 
     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
