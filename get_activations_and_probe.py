@@ -70,7 +70,7 @@ def get_logits(ds_train_fixed,layer,linear_model,device,args):
 
 def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,device,args):
     
-    print(train_logits.shape)
+    # print(train_logits.shape)
     ds_train = Dataset.from_dict({"inputs": train_logits, "labels": y_train}).with_format("torch")
     ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
     ds_val = Dataset.from_dict({"inputs": val_logits, "labels": y_val}).with_format("torch")
@@ -98,7 +98,6 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
             optimizer.zero_grad()
             outputs = linear_model(batch['inputs'].to(device))
             loss = criterion(outputs, batch['labels'].to(device))
-            train_loss.append(loss.item())
             loss.backward()
             optimizer.step()
         # Get val loss
