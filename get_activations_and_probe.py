@@ -71,7 +71,6 @@ def get_logits(ds_train_fixed,layer,linear_model,device,args):
 def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,device,args):
     
     print(train_logits.shape)
-    train_logits, val_logits, test_logits = train_logits[:,0,:], val_logits[:,0,:], test_logits[:,0,:] # get logits of just one class
     ds_train = Dataset.from_dict({"inputs": train_logits, "labels": y_train}).with_format("torch")
     ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
     ds_val = Dataset.from_dict({"inputs": val_logits, "labels": y_val}).with_format("torch")
