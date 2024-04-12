@@ -76,6 +76,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     ds_test = Dataset.from_dict({"inputs": test_logits, "labels": y_test}).with_format("torch")
     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
+    num_layers = 32 if '7B' in args.model_name else 60
     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
     wgt_0 = np.sum(y_train)/len(y_train)
@@ -207,6 +208,8 @@ def main():
                 cache_dir=args.save_path+"/"+args.model_cache_dir
             )
             model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
+        num_layers = 60
+        num_heads = 52
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         if args.load_act==True: # Only load model if we need activations on the fly
