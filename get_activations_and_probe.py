@@ -70,7 +70,7 @@ def get_logits(ds_train_fixed,layer,linear_model,device,args):
 
 def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,device,args):
     
-    train_logits, val_logits, test_logits = train_logits[:,0], val_logits[:,0], test_logits[:,0] # get logits of just one class
+    train_logits, val_logits, test_logits = train_logits[:,0,:], val_logits[:,0,:], test_logits[:,0,:] # get logits of just one class
     ds_train = Dataset.from_dict({"inputs": train_logits, "labels": y_train}).with_format("torch")
     ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
     ds_val = Dataset.from_dict({"inputs": val_logits, "labels": y_val}).with_format("torch")
@@ -78,7 +78,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     ds_test = Dataset.from_dict({"inputs": test_logits, "labels": y_test}).with_format("torch")
     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-    linear_model = LogisticRegression_Torch(train_logits.shape[0], 2).to(device)
+    linear_model = LogisticRegression_Torch(train_logits.shape[1], 2).to(device)
     wgt_0 = np.sum(y_train)/len(y_train)
     criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
     lr = args.lr
