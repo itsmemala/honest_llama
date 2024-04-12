@@ -43,6 +43,106 @@ def boolean_string(s):
 def num_tagged_tokens(tagged_token_idxs_prompt):
     return sum([b-a+1 for a,b in tagged_token_idxs_prompt])
 
+def get_logits(linear_model,ds_train_fixed,args):
+    logits = []
+    linear_model.eval()
+    for step,batch in enumerate(ds_train_fixed):
+        activations = []
+        for idx in batch['inputs_idxs']:
+            if args.load_act==False:
+                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
+                file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
+            else:
+                act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+            activations.append(act)
+        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+        if args.token in ['answer_last','prompt_last','maxpool_all']:
+            targets = batch['labels']
+        elif args.token=='all':
+            targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+        if args.token=='tagged_tokens':
+            targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+        logits.append(linear_model(inputs))
+    return logits
+
+
+def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,args):
+    ds_train = Dataset.from_dict({"inputs": train_logits, "labels": y_train}).with_format("torch")
+    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
+    ds_val = Dataset.from_dict({"inputs": val_logits, "labels": y_val}).with_format("torch")
+    ds_val = DataLoader(ds_val, batch_size=args.bs)
+    ds_test = Dataset.from_dict({"inputs": test_logits, "labels": y_test}).with_format("torch")
+    ds_test = DataLoader(ds_test, batch_size=args.bs)
+
+    act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
+    linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
+    wgt_0 = np.sum(y_train)/len(y_train)
+    criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
+    lr = args.lr
+    
+    # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
+
+    val_loss = []
+    best_val_loss = torch.inf
+    best_model_state = linear_model.state_dict()
+    if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch':
+        optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    for epoch in range(args.epochs):
+        linear_model.train()
+        if args.optimizer=='Adam' or args.optimizer=='SGD': optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
+        for step,batch in enumerate(ds_train):
+            optimizer.zero_grad()
+            outputs = linear_model(batch['inputs'])
+            loss = criterion(outputs, batch['labels'])
+            train_loss.append(loss.item())
+            loss.backward()
+            optimizer.step()
+        # Get val loss
+        linear_model.eval()
+        epoch_val_loss = 0
+        for step,batch in enumerate(ds_val):
+            optimizer.zero_grad()
+            outputs = linear_model(batch['inputs'])
+            epoch_val_loss += criterion(outputs, batch['labels'])
+        val_loss.append(epoch_val_loss.item())
+        # Choose best model
+        if epoch_val_loss.item() < best_val_loss:
+            best_val_loss = epoch_val_loss.item()
+            best_model_state = linear_model.state_dict()
+        # Early stopping
+        patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0
+        if len(val_loss)>=patience:
+            for epoch_id in range(1,patience,1):
+                val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
+                if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+            if is_not_decreasing==patience-1: break
+        if args.optimizer=='SGD': lr = lr*0.75 # No decay for Adam
+        if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
+    linear_model.load_state_dict(best_model_state)
+    
+    # Val and Test performance
+    pred_correct = 0
+    with torch.no_grad():
+        linear_model.eval()
+        for step,batch in enumerate(ds_val):
+            predicted = torch.max(linear_model(batch['inputs']).data, dim=1)[1]
+            y_val_pred += predicted.cpu().tolist()
+            y_val_true += batch['labels'].tolist()
+    print('Val F1:',f1_score(y_val_true,y_val_pred))
+    pred_correct = 0
+    with torch.no_grad():
+        linear_model.eval()
+        for step,batch in enumerate(ds_test):
+            predicted = torch.max(linear_model(batch['inputs']).data, dim=1)[1]
+            y_test_pred += predicted.cpu().tolist()
+            y_test_true += batch['labels'].tolist()
+    print('Test F1:',f1_score(y_test_true,y_test_pred))
+
+    return
+
 def main(): 
     """
     Specify dataset name as the first command line argument. Current options are 
@@ -56,6 +156,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_linear')
+    parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--bs',type=int, default=4)
@@ -153,6 +254,7 @@ def main():
     all_test_accs, all_test_f1s = {}, {}
     all_val_preds, all_test_preds = {}, {}
     all_y_true_val, all_y_true_test = {}, {}
+    all_train_logits, all_val_logits, all_test_logits = {}, {}, {}
     if args.num_folds==1: # Use static test data
         if args.len_dataset==1800:
             sampled_idxs = np.random.choice(np.arange(1800), size=int(1800*(1-0.2)), replace=False) 
@@ -184,6 +286,7 @@ def main():
         all_test_accs[i], all_test_f1s[i] = [], []
         all_val_preds[i], all_test_preds[i] = [], []
         all_y_true_val[i], all_y_true_test[i] = [], []
+        all_train_logits[i], all_val_logits[i], all_test_logits[i] = [], [], []
         # loop_layers = list(chosen_dims.keys()) if using_chosen_dims else range(num_layers)
         # for layer in tqdm(loop_layers):
         for layer in tqdm(range(num_layers)):
@@ -214,6 +317,7 @@ def main():
                     train_loss, val_loss = [], []
                     best_val_loss = torch.inf
                     best_model_state = linear_model.state_dict()
+                    best_val_logits = []
                     if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch':
                         optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
                         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
@@ -251,6 +355,7 @@ def main():
                         # Get val loss
                         linear_model.eval()
                         epoch_val_loss = 0
+                        epoch_val_logits = []
                         for step,batch in enumerate(ds_val):
                             optimizer.zero_grad()
                             activations = []
@@ -274,11 +379,13 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                             outputs = linear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device))
+                            epoch_val_logits.append(outputs)
                         val_loss.append(epoch_val_loss.item())
                         # Choose best model
                         if epoch_val_loss.item() < best_val_loss:
                             best_val_loss = epoch_val_loss.item()
                             best_model_state = linear_model.state_dict()
+                            best_val_logits = epoch_val_logits
                         # Early stopping
                         patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0
                         if len(val_loss)>=patience:
@@ -294,6 +401,11 @@ def main():
                     if args.save_probes:
                         probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_model{i}_{layer}_{head}'
                         torch.save(linear_model, probe_save_path)
+                    if args.classifier_on_probes:
+                        # Fix train order and get logits
+                        ds_train_fixed = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
+                        ds_train_fixed = DataLoader(ds_train_fixed, batch_size=args.bs)
+                        best_train_logits = get_logits(linear_model,ds_train_fixed,args)
                     
                     # Val and Test performance
                     pred_correct = 0
@@ -324,6 +436,7 @@ def main():
                     pred_correct = 0
                     y_test_pred, y_test_true = [], []
                     test_preds = []
+                    test_logits = []
                     with torch.no_grad():
                         linear_model.eval()
                         use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
@@ -346,16 +459,20 @@ def main():
                             y_test_true += batch['labels'].tolist()
                             test_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                             test_preds.append(test_preds_batch)
+                            test_logits.append(linear_model(inputs))
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+
+                    all_train_logits[i].append(torch.cat(best_train_logits))
+                    all_val_logits[i].append(torch.cat(best_val_logits))
+                    all_test_logits[i].append(torch.cat(test_logits))
     
-        # if args.classifier_on_probes:
-        #     logits = []
-        #         # Load probe
-        #         probe_save_path = f'{args.save_path}/probes/models/{args.results_file_name}_model{model_num}_{layer}_{head}'
-        #         linear_model = 
-        #         logits.append()
+        if args.classifier_on_probes:
+            train_logits = torch.cat(all_train_logits[i],dim=1)
+            val_logits = torch.cat(all_val_logits[i],dim=1)
+            test_logits = torch.cat(all_test_logits[i],dim=1)
+            train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,args)
 
     # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
