@@ -70,11 +70,11 @@ def get_logits(ds_train_fixed,layer,linear_model,device,args):
 
 def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,device,args):
     ds_train = Dataset.from_dict({"inputs": train_logits, "labels": y_train}).with_format("torch")
-    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler).to(device)
+    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
     ds_val = Dataset.from_dict({"inputs": val_logits, "labels": y_val}).with_format("torch")
-    ds_val = DataLoader(ds_val, batch_size=args.bs).to(device)
+    ds_val = DataLoader(ds_val, batch_size=args.bs)
     ds_test = Dataset.from_dict({"inputs": test_logits, "labels": y_test}).with_format("torch")
-    ds_test = DataLoader(ds_test, batch_size=args.bs).to(device)
+    ds_test = DataLoader(ds_test, batch_size=args.bs)
 
     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
@@ -95,8 +95,8 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
         if args.optimizer=='Adam' or args.optimizer=='SGD': optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
         for step,batch in enumerate(ds_train):
             optimizer.zero_grad()
-            outputs = linear_model(batch['inputs'])
-            loss = criterion(outputs, batch['labels'])
+            outputs = linear_model(batch['inputs'].to(device))
+            loss = criterion(outputs, batch['labels'].to(device))
             train_loss.append(loss.item())
             loss.backward()
             optimizer.step()
@@ -105,8 +105,8 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
         epoch_val_loss = 0
         for step,batch in enumerate(ds_val):
             optimizer.zero_grad()
-            outputs = linear_model(batch['inputs'])
-            epoch_val_loss += criterion(outputs, batch['labels'])
+            outputs = linear_model(batch['inputs'].to(device))
+            epoch_val_loss += criterion(outputs, batch['labels'].to(device))
         val_loss.append(epoch_val_loss.item())
         # Choose best model
         if epoch_val_loss.item() < best_val_loss:
@@ -128,17 +128,17 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     with torch.no_grad():
         linear_model.eval()
         for step,batch in enumerate(ds_val):
-            predicted = torch.max(linear_model(batch['inputs']).data, dim=1)[1]
+            predicted = torch.max(linear_model(batch['inputs'].to(device)).data, dim=1)[1]
             y_val_pred += predicted.cpu().tolist()
-            y_val_true += batch['labels'].tolist()
+            y_val_true += batch['labels'].to(device).tolist()
     print('Val F1:',f1_score(y_val_true,y_val_pred))
     pred_correct = 0
     with torch.no_grad():
         linear_model.eval()
         for step,batch in enumerate(ds_test):
-            predicted = torch.max(linear_model(batch['inputs']).data, dim=1)[1]
+            predicted = torch.max(linear_model(batch['inputs'].to(device)).data, dim=1)[1]
             y_test_pred += predicted.cpu().tolist()
-            y_test_true += batch['labels'].tolist()
+            y_test_true += batch['labels'].to(device).tolist()
     print('Test F1:',f1_score(y_test_true,y_test_pred))
 
     return
