@@ -43,7 +43,7 @@ def boolean_string(s):
 def num_tagged_tokens(tagged_token_idxs_prompt):
     return sum([b-a+1 for a,b in tagged_token_idxs_prompt])
 
-def get_logits(linear_model,ds_train_fixed,args):
+def get_logits(ds_train_fixed,layer,linear_model,args):
     logits = []
     linear_model.eval()
     for step,batch in enumerate(ds_train_fixed):
@@ -405,7 +405,7 @@ def main():
                         # Fix train order and get logits
                         ds_train_fixed = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
                         ds_train_fixed = DataLoader(ds_train_fixed, batch_size=args.bs)
-                        best_train_logits = get_logits(linear_model,ds_train_fixed,args)
+                        best_train_logits = get_logits(ds_train_fixed,layer,linear_model,args)
                     
                     # Val and Test performance
                     pred_correct = 0
