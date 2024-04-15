@@ -156,6 +156,7 @@ def main():
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred))
+
         # best_probes = np.argwhere(all_val_f1s[fold]>=np.mean(all_val_f1s[fold]))
         # print('Num of probes > avg:',len(best_probes))
         # confident_sample_pred = []
@@ -189,6 +190,13 @@ def main():
             confident_sample_pred2.append(any_vote)
         print('Voting amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred1))
         print('Any one amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred2))
+        confident_sample_pred = []
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred))
         
         print('\n')
         np.set_printoptions(precision=2)
