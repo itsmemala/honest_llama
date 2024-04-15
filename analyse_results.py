@@ -189,7 +189,7 @@ def main():
             confident_sample_pred1.append(maj_vote)
             confident_sample_pred2.append(any_vote)
         print('Voting amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred1),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred1)[2][0])
-        print('Any one amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred2),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pre2)[2][0])
+        print('Any one amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred2),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred2)[2][0])
         confident_sample_pred = []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
