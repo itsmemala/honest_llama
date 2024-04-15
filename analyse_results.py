@@ -196,7 +196,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-        print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),recall_score(all_test_true[fold][0],confident_sample_pred),precision_score(all_test_true[fold][0],confident_sample_pred))
+        print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
         
         print('\n')
         np.set_printoptions(precision=2)
