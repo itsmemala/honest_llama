@@ -159,7 +159,7 @@ def main():
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_linear')
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
-    parser.add_argument('--classifier_on_probes',type=bool, default=False)
+    # parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--bs',type=int, default=4)
