@@ -132,7 +132,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
             predicted = torch.max(linear_model(batch['inputs'].to(device)).data, dim=1)[1]
             y_val_pred += predicted.cpu().tolist()
             y_val_true += batch['labels'].to(device).tolist()
-    print('Val F1:',f1_score(y_val_true,y_val_pred))
+    print('Val F1 (logits):',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
     y_test_pred, y_test_true = [], []
     pred_correct = 0
     with torch.no_grad():
@@ -141,7 +141,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
             predicted = torch.max(linear_model(batch['inputs'].to(device)).data, dim=1)[1]
             y_test_pred += predicted.cpu().tolist()
             y_test_true += batch['labels'].to(device).tolist()
-    print('Test F1:',f1_score(y_test_true,y_test_pred))
+    print('Test F1 (logits):',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
 
     return
 
@@ -158,6 +158,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_linear')
+    parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -494,6 +495,10 @@ def main():
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_val_true.npy', all_y_true_val)
     all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
+    all_val_logits = np.stack([np.stack(all_val_logits[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_val_logits.npy', all_val_logits)
+    all_test_logits = np.stack([np.stack(all_test_logits[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
 
 if __name__ == '__main__':
     main()
