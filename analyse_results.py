@@ -83,7 +83,7 @@ def main():
         axs[1,1].set_xlabel('probe idx')
         fig.tight_layout()
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_oracle_hist.png')
-        print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('Oracle:',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
         num_correct_probes_nonhallu = np.array(num_correct_probes_nonhallu)
         num_correct_probes_hallu = np.array(num_correct_probes_hallu)
         print('Non-Hallucinated hard samples:',sum(num_correct_probes_nonhallu<20),sum(num_correct_probes_nonhallu<10),sum(num_correct_probes_nonhallu<5))
@@ -129,7 +129,7 @@ def main():
         axs[1,1].stairs(counts, bins)
         axs[1,1].set_xlabel('probe idx')
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_top5oracle_hist.png')
-        print('Oracle (using 5 most confident):',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('Oracle (using 5 most confident):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
         print('\n')
 
         print('\n')
@@ -146,7 +146,7 @@ def main():
                 best_sample_pred.append(correct_answer)
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
-        print('Oracle (using 5 most accurate):',f1_score(all_test_true[fold][0],best_sample_pred))
+        print('Oracle (using 5 most accurate):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
         print('\n')
         
         confident_sample_pred = []
@@ -155,7 +155,7 @@ def main():
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-        print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred)[2][0])
+        print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
 
         # best_probes = np.argwhere(all_val_f1s[fold]>=np.mean(all_val_f1s[fold]))
         # print('Num of probes > avg:',len(best_probes))
@@ -188,8 +188,8 @@ def main():
             any_vote = 1 if class_1_vote_cnt>0 else 0
             confident_sample_pred1.append(maj_vote)
             confident_sample_pred2.append(any_vote)
-        print('Voting amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred1),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred1)[2][0])
-        print('Any one amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred2),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred2)[2][0])
+        print('Voting amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+        print('Any one amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         confident_sample_pred = []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
