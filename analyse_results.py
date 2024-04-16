@@ -126,7 +126,7 @@ def main():
         axs[1,0].set_xlabel('probe idx')
         axs[1,0].set_ylabel('# times correct (%)')
         counts, bins = np.histogram(correct_probes_hallu, bins=range(33))
-        axs[1,1].stairs(counts/counts_confident_h, bins)
+        axs[1,1].stairs(counts*100/counts_confident_h, bins)
         axs[1,1].set_xlabel('probe idx')
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_top5oracle_hist.png')
         print('Oracle (using 5 most confident):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
