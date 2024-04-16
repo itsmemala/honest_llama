@@ -68,7 +68,7 @@ def main():
         print('baseline accuracy:',max(sum([test_labels[i] for i in test_idxs])
                                   ,tot-sum([test_labels[i] for i in test_idxs])
                                   )/tot)
-        print('baseline f1:',f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs]))
+        print('baseline f1:',f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs]),f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs],pos_label=0))
 
         print('\nUncertainty Baselines:')
         train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_uncertainty_scores.npy')
