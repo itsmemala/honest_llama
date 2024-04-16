@@ -468,8 +468,8 @@ def main():
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-
-                    all_train_logits[i].append(torch.cat(best_train_logits))
+                    if args.classifier_on_probes:
+                        all_train_logits[i].append(torch.cat(best_train_logits))
                     all_val_logits[i].append(torch.cat(best_val_logits))
                     all_test_logits[i].append(torch.cat(test_logits))
             #     break
