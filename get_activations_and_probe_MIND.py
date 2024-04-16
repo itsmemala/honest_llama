@@ -304,7 +304,7 @@ def main():
                     all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
                     all_y_true_val[i].append(y_val_true)
                     all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                    print('Val F1:',f1_score(y_val_true,y_val_pred))
+                    print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
                     pred_correct = 0
                     y_test_pred, y_test_true = [], []
                     test_preds = []
@@ -333,7 +333,7 @@ def main():
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                    print('Test F1:',f1_score(y_test_true,y_test_pred))
+                    print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
     
 
 if __name__ == '__main__':
