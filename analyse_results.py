@@ -47,7 +47,7 @@ def main():
             assert sum(all_val_true[fold][0]==all_val_true[fold][model])==len(all_val_true[fold][0])
 
         test_f1_using_logits, val_f1_using_logits = [], []
-        for model in all_test_logits[fold].shape[0]:
+        for model in range(all_test_logits[fold].shape[0]):
             test_f1_using_logits.append(f1_score(all_test_true[fold][0],np.argmax(all_test_logits[fold][model], axis=1)))
             val_f1_using_logits.append(f1_score(all_val_true[fold][0],np.argmax(all_val_logits[fold][model], axis=1)))
 
