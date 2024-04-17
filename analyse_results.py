@@ -274,7 +274,7 @@ def main():
             confident_sample_pred2.append(any_vote)
         print('Voting amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         print('Any one amongst 5 most confident probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        # Probe selection - c
+        # Probe selection - d
         confident_sample_pred = []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -282,8 +282,19 @@ def main():
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
         print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
+        # Probe selection - e
+        confident_sample_pred = []
+        best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
+        top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            sample_pred = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst most accurate 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
         
-        # Probe selection - c - using logits
+        # Probe selection - d - using logits
         confident_sample_pred = []
         for i in range(all_test_logits[fold].shape[1]):
             sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -291,6 +302,17 @@ def main():
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
         print('Voting amongst all probes per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
+        # Probe selection - e - using logits
+        confident_sample_pred = []
+        best_probe_idxs = np.argpartition(val_f1_using_logits, -5)[-5:]
+        top_5_lower_bound_val = np.min(val_f1_using_logits[best_probe_idxs])
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            sample_pred = sample_pred[val_f1_using_logits>=top_5_lower_bound_val]
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst most accurate 5 probes - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
 
         print('\n')
         np.set_printoptions(precision=2)
