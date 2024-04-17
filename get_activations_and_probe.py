@@ -440,9 +440,9 @@ def main():
                             y_val_true += batch['labels'].tolist()
                             val_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                             val_preds.append(val_preds_batch)
-                            print(linear_model.linear.weight.shape)
-                            norm_weights = linear_model.linear.weight / linear_model.linear.weight.sum(dim=-1).unsqueeze(-1) # unit normalise
-                            val_sim.append(torch.sum(inputs * norm_weights.detach(), dim=-1)) # + linear_model.linear.bias
+                            norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].sum(dim=-1).unsqueeze(-1) # unit normalise
+                            norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].sum(dim=-1).unsqueeze(-1) # unit normalise
+                            val_sim.append(torch.tensor(torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1))) # + linear_model.linear.bias
                     all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
                     all_val_sim[i].append(torch.cat(val_sim).cpu().numpy())
                     all_y_true_val[i].append(y_val_true)
@@ -476,8 +476,9 @@ def main():
                             test_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                             test_preds.append(test_preds_batch)
                             test_logits.append(linear_model(inputs))
-                            norm_weights = linear_model.linear.weight / linear_model.linear.weight.sum(dim=-1).unsqueeze(-1) # unit normalise
-                            test_sim.append(torch.sum(inputs * norm_weights.detach(), dim=-1)) # + linear_model.linear.bias
+                            norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].sum(dim=-1).unsqueeze(-1) # unit normalise
+                            norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].sum(dim=-1).unsqueeze(-1) # unit normalise
+                            test_sim.append(torch.tensor(torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1))) # + linear_model.linear.bias
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_test_sim[i].append(torch.cat(test_sim).cpu().numpy())
                     all_y_true_test[i].append(y_test_true)
@@ -515,6 +516,10 @@ def main():
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_val_logits.npy', all_val_logits)
     all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
+    all_val_sim = np.stack([torch.stack(all_val_sim[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_val_sim.npy', all_val_sim)
+    all_test_sim = np.stack([torch.stack(all_test_sim[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{args.method}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_test_sim.npy', all_test_sim)
 
 if __name__ == '__main__':
     main()
