@@ -274,7 +274,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-        print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
+        print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         # Probe selection - e
         confident_sample_pred = []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
@@ -285,7 +285,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-        print('Voting amongst most accurate 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
+        print('Voting amongst most accurate 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         
         print('\n')
         # Probe selection - d - using logits
@@ -295,7 +295,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-        print('Voting amongst all probes per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
+        print('Voting amongst all probes per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         # Probe selection - e - using logits
         confident_sample_pred = []
         best_probe_idxs = np.argpartition(val_f1_using_logits, -5)[-5:]
@@ -306,7 +306,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-        print('Voting amongst most accurate 5 probes - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
+        print('Voting amongst most accurate 5 probes - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
 
         print('\n')
         np.set_printoptions(precision=2)
