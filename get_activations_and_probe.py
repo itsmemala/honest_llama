@@ -442,7 +442,8 @@ def main():
                             val_preds.append(val_preds_batch)
                             norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].sum(dim=-1).unsqueeze(-1) # unit normalise
                             norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].sum(dim=-1).unsqueeze(-1) # unit normalise
-                            val_sim.append(torch.tensor([torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)])) # + linear_model.linear.bias
+                            print(torch.hstack([torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)]).shape)
+                            val_sim.append(torch.hstack([torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)])) # + linear_model.linear.bias
                     all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
                     all_val_sim[i].append(torch.cat(val_sim).cpu().numpy())
                     all_y_true_val[i].append(y_val_true)
@@ -478,7 +479,7 @@ def main():
                             test_logits.append(linear_model(inputs))
                             norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].sum(dim=-1).unsqueeze(-1) # unit normalise
                             norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].sum(dim=-1).unsqueeze(-1) # unit normalise
-                            test_sim.append(torch.tensor([torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)])) # + linear_model.linear.bias
+                            test_sim.append(torch.hstack([torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)])) # + linear_model.linear.bias
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_test_sim[i].append(torch.cat(test_sim).cpu().numpy())
                     all_y_true_test[i].append(y_test_true)
