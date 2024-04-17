@@ -42,7 +42,7 @@ def main():
 
     for fold in range(len(all_test_f1s)):
 
-        for model in all_test_true[fold].shape[0]:
+        for model in range(all_test_true[fold].shape[0]):
             assert sum(all_test_true[fold][0]==all_test_true[fold][model])==len(all_test_true[fold][0]) # check all models have same batch order
             assert sum(all_val_true[fold][0]==all_val_true[fold][model])==len(all_val_true[fold][0])
 
