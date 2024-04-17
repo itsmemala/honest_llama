@@ -102,10 +102,8 @@ def main():
         print('Non-Hallucinated hard samples:',sum(num_correct_probes_nonhallu<20),sum(num_correct_probes_nonhallu<10),sum(num_correct_probes_nonhallu<5))
         print('Hallucinated hard samples:',sum(num_correct_probes_hallu<20),sum(num_correct_probes_hallu<10),sum(num_correct_probes_hallu<5))
         print('# Hallucinated samples:',sum(all_test_true[fold][0]==0))
-        print('\n')
         
         # Oracle 2
-        print('\n')
         best_sample_pred =[]
         best_probes_nonhallu, correct_probes_nonhallu = [], []
         best_probes_hallu, correct_probes_hallu = [], []
@@ -144,10 +142,8 @@ def main():
         axs[1,1].set_xlabel('probe idx')
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_top5oracle_hist.png')
         print('Oracle (using 5 most confident):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
-        print('\n')
 
         # Oracle 3
-        print('\n')
         best_sample_pred =[]
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
@@ -162,7 +158,6 @@ def main():
             else:
                 best_sample_pred.append(1 if correct_answer==0 else 0)
         print('Oracle (using 5 most accurate):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
-        print('\n')
         
         # Oracle 1 - using logits
         print('\n')
@@ -209,10 +204,8 @@ def main():
         print('Non-Hallucinated hard samples:',sum(num_correct_probes_nonhallu<20),sum(num_correct_probes_nonhallu<10),sum(num_correct_probes_nonhallu<5))
         print('Hallucinated hard samples:',sum(num_correct_probes_hallu<20),sum(num_correct_probes_hallu<10),sum(num_correct_probes_hallu<5))
         print('# Hallucinated samples:',sum(all_test_true[fold][0]==0))
-        print('\n')
 
         # Oracle 3 - using logits
-        print('\n')
         val_f1_using_logits = np.array(val_f1_using_logits)
         best_sample_pred =[]
         best_probe_idxs = np.argpartition(val_f1_using_logits, -5)[-5:]
@@ -294,6 +287,7 @@ def main():
             confident_sample_pred.append(maj_vote)
         print('Voting amongst most accurate 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),precision_recall_fscore_support(all_test_true[fold][0],confident_sample_pred))
         
+        print('\n')
         # Probe selection - d - using logits
         confident_sample_pred = []
         for i in range(all_test_logits[fold].shape[1]):
