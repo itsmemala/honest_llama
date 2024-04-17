@@ -215,6 +215,7 @@ def main():
         print('\n')
         best_sample_pred =[]
         best_probe_idxs = np.argpartition(val_f1_using_logits, -5)[-5:]
+        print(best_probe_idxs)
         top_5_lower_bound_val = np.min(val_f1_using_logits[best_probe_idxs])
         print('Best probes:',best_probe_idxs)
         for i in range(all_test_logits[fold].shape[1]):
