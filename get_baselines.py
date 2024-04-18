@@ -90,10 +90,14 @@ def main():
                     pr.append(list(p))
                     recall.append(list(r))
                     f1.append(list(f))
-                idx_best_f1 = np.argmax(np.array(f1)[:,1]) # threshold for best f1 for class 1
+                idx_best_f1_cls1 = np.argmax(np.array(f1)[:,1]) # threshold for best f1 for class 1
+                idx_best_f1_avg = np.argmax(np.mean(np.array(f1),axis=1)) # threshold for best averaged f1
                 
-                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1]
-                print('Computing with',sample_set,'samples and entropy idx',use_entropy_idx,':',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
+                print('Computing with',sample_set,'samples and entropy idx',use_entropy_idx,':')
+                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]                
+                print('Optimising for cls1:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
+                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
+                print('Optimising for avg:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
     
 
 if __name__ == '__main__':
