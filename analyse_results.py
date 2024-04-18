@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--results_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--use_similarity", type=bool, default=False)
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -39,6 +40,9 @@ def main():
     all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_val_true.npy')
     all_val_logits, all_test_logits = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_logits.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_logits.npy')
+    if args.use_similarity:
+        sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm')
+        all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
 
     for fold in range(len(all_test_f1s)):
 
@@ -286,6 +290,18 @@ def main():
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
         print('Voting amongst most accurate 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        # Probe selection - f
+        for sim_cutoff in [0.3,0.4,0.5,0.6,0.7,0.8,0.9]:
+            confident_sample_pred, selected_probes = [], []
+            for i in range(all_test_pred[fold].shape[1]):
+                sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+                best_probe_idxs = (all_test_sim[fold][:,i,0]>sim_cutoff) | (all_test_sim[fold][:,i,1]>sim_cutoff)
+                sample_pred_chosen = sample_pred[best_probe_idxs]
+                class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
+                maj_vote = 1 if class_1_vote_cnt>2 else 0
+                confident_sample_pred.append(maj_vote)
+                selected_probes.append(sum(best_probe_idxs))
+            print('Voting amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         
         print('\n')
         # Probe selection - d - using logits
