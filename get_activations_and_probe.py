@@ -422,6 +422,8 @@ def main():
                     val_sim = []
                     with torch.no_grad():
                         linear_model.eval()
+                        norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                        norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                         for step,batch in enumerate(ds_val):
                             activations = []
                             for idx in batch['inputs_idxs']:
@@ -440,8 +442,6 @@ def main():
                             y_val_true += batch['labels'].tolist()
                             val_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                             val_preds.append(val_preds_batch)
-                            norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             val_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
                     all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
                     all_val_sim[i].append(torch.cat(val_sim).cpu().numpy())
@@ -476,8 +476,6 @@ def main():
                             test_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                             test_preds.append(test_preds_batch)
                             test_logits.append(linear_model(inputs))
-                            norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             test_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_test_sim[i].append(torch.cat(test_sim).cpu().numpy())
