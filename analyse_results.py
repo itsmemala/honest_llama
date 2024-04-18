@@ -112,7 +112,7 @@ def main():
         print('# Hallucinated samples:',sum(all_test_true[fold][0]==0))
         print('Set intersection for >10 probes:',set.intersection(*correct_probes_nonhallu_sets1),set.intersection(*correct_probes_hallu_sets1))
         print('Set intersection for >5 probes:',set.intersection(*correct_probes_nonhallu_sets2),set.intersection(*correct_probes_hallu_sets2))
-        print(correct_probes_nonhallu_sets1[:5])
+        print(set.intersection(*correct_probes_nonhallu_sets1[:5]))
         
         # Oracle 2
         best_sample_pred =[]
