@@ -303,7 +303,7 @@ def main():
                 maj_vote = 1 if class_1_vote_cnt>(sum(best_probe_idxs)/2) else 0
                 confident_sample_pred1.append(maj_vote)
                 # method 2 - choose most confident
-                if sum(best_probe_idxs)=0: sample_pred_chosen = sample_pred
+                if sum(best_probe_idxs)==0: sample_pred_chosen = sample_pred
                 probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
                 confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
             print('Voting amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
