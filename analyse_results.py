@@ -41,7 +41,7 @@ def main():
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_val_true.npy')
     all_val_logits, all_test_logits = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_logits.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_logits.npy')
     if args.use_similarity:
-        sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm')
+        sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'individual_linear_unitnorm' not in args.results_file_name else args.results_file_name
         all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
 
     for fold in range(len(all_test_f1s)):
@@ -304,7 +304,7 @@ def main():
                 confident_sample_pred1.append(maj_vote)
                 # method 2 - choose most confident
                 if sum(best_probe_idxs)==0: sample_pred_chosen = sample_pred
-                np.seterr(divide = 'ignore')
+                np.seterr(divide = 'ignore') # turn off for display clarity
                 probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
                 np.seterr(divide = 'warn')
                 confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
