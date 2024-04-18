@@ -291,7 +291,7 @@ def main():
             confident_sample_pred.append(maj_vote)
         print('Voting amongst most accurate 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         # Probe selection - f
-        for sim_cutoff in [0.3,0.4,0.5,0.6]:
+        for sim_cutoff in [0.3,0.4,0.5,0.6,0.7,0.8,0.9]:
             confident_sample_pred1, confident_sample_pred2, selected_probes = [], [], []
             for i in range(all_test_pred[fold].shape[1]):
                 sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -303,6 +303,7 @@ def main():
                 maj_vote = 1 if class_1_vote_cnt>(sum(best_probe_idxs)/2) else 0
                 confident_sample_pred1.append(maj_vote)
                 # method 2 - choose most confident
+                if sum(best_probe_idxs)=0: sample_pred_chosen = sample_pred
                 probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
                 confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
             print('Voting amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
