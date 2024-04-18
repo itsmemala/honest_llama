@@ -310,7 +310,7 @@ def main():
                 confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
             print('Voting amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
             print('Using most confident amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        print(np.histogram(all_test_sim[fold][0,:,0]))
+        # print(np.histogram(all_test_sim[fold][0,:,0]))
         # fig, axs = plt.subplots(1,1)
         # counts, bins = np.histogram(all_test_sim[fold][0,:,0])
         # axs[0].stairs(counts, bins)
