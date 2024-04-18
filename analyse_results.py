@@ -64,7 +64,7 @@ def main():
         print('\n')
         best_sample_pred =[]
         num_correct_probes_nonhallu, correct_probes_nonhallu, correct_probes_nonhallu_sets1, correct_probes_nonhallu_sets2 = [], [], [], []
-        num_correct_probes_hallu, correct_probes_hallu, correct_probes_hallu_set1, correct_probes_hallu_sets2 = [], [], [], []
+        num_correct_probes_hallu, correct_probes_hallu, correct_probes_hallu_sets1, correct_probes_hallu_sets2 = [], [], [], []
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
