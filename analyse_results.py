@@ -63,18 +63,22 @@ def main():
         # Oracle 1
         print('\n')
         best_sample_pred =[]
-        num_correct_probes_nonhallu, correct_probes_nonhallu = [], []
-        num_correct_probes_hallu, correct_probes_hallu = [], []
+        num_correct_probes_nonhallu, correct_probes_nonhallu, correct_probes_nonhallu_sets1, correct_probes_nonhallu_sets2 = [], [], [], []
+        num_correct_probes_hallu, correct_probes_hallu, correct_probes_hallu_set1, correct_probes_hallu_sets2 = [], [], [], []
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred = np.argmax(sample_pred,axis=1)
-            assert sample_pred.shape==(32,) # num_layers
+            # assert sample_pred.shape==(32,) # num_layers
             correct_answer = all_test_true[fold][0][i]
             if correct_answer==1: num_correct_probes_nonhallu.append(sum(sample_pred==correct_answer))
             if correct_answer==1 and sum(sample_pred==correct_answer)<20: correct_probes_nonhallu += [idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]
+            if correct_answer==1 and sum(sample_pred==correct_answer)>10: correct_probes_nonhallu_sets1.append(set([idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]))
+            if correct_answer==1 and sum(sample_pred==correct_answer)>5: correct_probes_nonhallu_sets2.append(set([idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]))
             if correct_answer==0: num_correct_probes_hallu.append(sum(sample_pred==correct_answer))
             if correct_answer==0 and sum(sample_pred==correct_answer)<20: correct_probes_hallu += [idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]
+            if correct_answer==0 and sum(sample_pred==correct_answer)>10: correct_probes_hallu_sets1.append(set([idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]))
+            if correct_answer==0 and sum(sample_pred==correct_answer)>5: correct_probes_hallu_sets2.append(set([idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]))
             # if i==0: print(sample_pred==correct_answer,sum(sample_pred==correct_answer))
             if sum(sample_pred==correct_answer)>0:
                 best_sample_pred.append(correct_answer)
@@ -106,6 +110,8 @@ def main():
         print('Non-Hallucinated hard samples:',sum(num_correct_probes_nonhallu<20),sum(num_correct_probes_nonhallu<10),sum(num_correct_probes_nonhallu<5))
         print('Hallucinated hard samples:',sum(num_correct_probes_hallu<20),sum(num_correct_probes_hallu<10),sum(num_correct_probes_hallu<5))
         print('# Hallucinated samples:',sum(all_test_true[fold][0]==0))
+        print('Set intersection for >10 probes:',set.intersection(*correct_probes_nonhallu_sets1),set.intersection(*correct_probes_hallu_sets1))
+        print('Set intersection for >5 probes:',set.intersection(*correct_probes_nonhallu_sets2),set.intersection(*correct_probes_hallu_sets2))
         
         # Oracle 2
         best_sample_pred =[]
