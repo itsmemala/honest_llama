@@ -310,6 +310,10 @@ def main():
                 confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
             print('Voting amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
             print('Using most confident amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
+        counts, bins = np.histogram(all_test_sim[fold][0,:,0])
+        plt.stairs(counts, bins)
+        plt.savefig(f'{args.save_path}/figures/{args.results_file_name}_sim_scores.png')
+        
         print('\n')
         # Probe selection - d - using logits
         confident_sample_pred = []
