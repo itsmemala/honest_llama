@@ -319,18 +319,19 @@ def main():
         #         print('Voting amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         #         print('Using most confident amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # Probe selection - f
-        confident_sample_pred1, confident_sample_pred2, confident_sample_pred3 = [], [], []
-        for i in range(all_test_pred[fold].shape[1]):
-            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
-            confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-            if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
-                confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
-            else:
-                confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-        print('Using most similar probe per sample (cls 0 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
-        print('Using most similar probe per sample (cls 1 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        print('Using most similar probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+        if args.use_similarity:
+            confident_sample_pred1, confident_sample_pred2, confident_sample_pred3 = [], [], []
+            for i in range(all_test_pred[fold].shape[1]):
+                sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+                confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
+                confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
+                if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
+                else:
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
+            print('Using most similar probe per sample (cls 0 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+            print('Using most similar probe per sample (cls 1 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
+            print('Using most similar probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         
         
         print('\n')
