@@ -338,13 +338,17 @@ def main():
             print('Using similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         # Probe selection - h
         confident_sample_pred = []
-        # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax([np.sum(sample_pred[:,0]*probe_wise_entropy,axis=0),np.sum(sample_pred[:,1]*probe_wise_entropy,axis=0)]))
-            if i==0: print(np.histogram(probe_wise_entropy))
         print('Using confidence weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        # Probe selection - i
+        confident_sample_pred = []
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            confident_sample_pred.append(np.argmax([np.sum(sample_pred[:,0]*all_val_f1s[fold],axis=0),np.sum(sample_pred[:,1]*all_val_f1s[fold],axis=0)]))
+        print('Using accuracy weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         
         
         print('\n')
