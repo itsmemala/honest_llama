@@ -331,7 +331,7 @@ def main():
                     confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
                 sim_wgt = np.squeeze(all_test_sim[fold][:,i,:])
                 sim_wgt[sim_wgt<0] = 0 # re-assign negative weights
-                confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)/np.sum(sim_wgt,axis=0)))
+                confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)))
             print('Using most similar probe per sample (cls 0 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
             print('Using most similar probe per sample (cls 1 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
             print('Using most similar probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
