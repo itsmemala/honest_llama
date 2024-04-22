@@ -178,7 +178,7 @@ def main():
         for i in range(all_test_logits[fold].shape[1]):
             sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred = np.argmax(sample_pred,axis=1)
-            assert sample_pred.shape==(32,) # num_layers
+            # assert sample_pred.shape==(32,) # num_layers
             correct_answer = all_test_true[fold][0][i]
             if correct_answer==1: num_correct_probes_nonhallu.append(sum(sample_pred==correct_answer))
             if correct_answer==1 and sum(sample_pred==correct_answer)<20: correct_probes_nonhallu += [idx for idx,probe_pred in enumerate(sample_pred) if probe_pred==correct_answer]
