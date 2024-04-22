@@ -10,7 +10,7 @@ import argparse
 
 # Define a custom argument type for a list of integers
 def list_of_ints(arg):
-    return list(map(float, arg.split(',')))
+    return list(map(int, arg.split(',')))
 
 def main():
 
@@ -52,7 +52,7 @@ def main():
             all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
     else:
         print(args.layer_starts)
-        # all_test_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{args.layer_start}_{args.layer_end}_test_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
+        all_test_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{args.layer_start}_{args.layer_end}_test_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
         print(all_test_f1s.shape)
         exit()
 
