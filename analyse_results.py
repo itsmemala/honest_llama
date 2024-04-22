@@ -8,10 +8,16 @@ from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_su
 from matplotlib import pyplot as plt
 import argparse
 
+# Define a custom argument type for a list of integers
+def list_of_ints(arg):
+    return list(map(float, arg.split(',')))
+
 def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--results_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument('--layer_starts',default=None,type=list_of_ints,help='(default=%(default)s)')
+    parser.add_argument('--layer_ends',default=None,type=list_of_ints,help='(default=%(default)s)')
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--use_similarity", type=bool, default=False)
     parser.add_argument('--save_path',type=str, default='')
@@ -29,20 +35,25 @@ def main():
             if 'where' in prompt: catg[2].append(idx)
             if 'what' in prompt or 'which' in prompt: catg[3].append(idx)
 
-    try:
-        all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy')
-        all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy')
-    except ValueError:
-        all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy',allow_pickle=True).item()
-        all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy',allow_pickle=True).item()
-    all_test_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_f1.npy')
-    all_val_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_f1.npy')
-    all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
-    all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_val_true.npy')
-    all_val_logits, all_test_logits = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_logits.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_logits.npy')
-    if args.use_similarity:
-        sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'individual_linear_unitnorm' not in args.results_file_name else args.results_file_name
-        all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
+    if args.layer_ends is None:
+        try:
+            all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy')
+            all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy')
+        except ValueError:
+            all_val_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_loss.npy',allow_pickle=True).item()
+            all_train_loss = np.load(f'{args.save_path}/probes/{args.results_file_name}_train_loss.npy',allow_pickle=True).item()
+        all_test_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_f1.npy')
+        all_val_f1s = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_f1.npy')
+        all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
+        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_val_true.npy')
+        all_val_logits, all_test_logits = np.load(f'{args.save_path}/probes/{args.results_file_name}_val_logits.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_logits.npy')
+        if args.use_similarity:
+            sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'individual_linear_unitnorm' not in args.results_file_name else args.results_file_name
+            all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
+    else:
+        all_test_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{args.layer_start}_{args.layer_end}_test_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
+        print(all_test_f1s.shape)
+        exit()
 
     for fold in range(len(all_test_f1s)):
 
@@ -375,6 +386,8 @@ def main():
         print('\n')
         np.set_printoptions(precision=2)
         for model in range(len(all_val_loss[fold])):
+            if 'ah' in args.results_file_name and model<1023:
+                continue
             print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
         print('\n')
         print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
