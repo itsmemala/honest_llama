@@ -51,7 +51,7 @@ def main():
             sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'individual_linear_unitnorm' not in args.results_file_name else args.results_file_name
             all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
     else:
-        all_val_loss_files =[np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_val_loss.npy',allow_pickle=True).item() for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)]
+        all_val_loss_files =[np.array(np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_val_loss.npy',allow_pickle=True).item()) for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)]
         print(all_val_loss_files[0][0].shape,all_val_loss_files[0][1].shape)
         # all_train_loss = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_train_loss.npy',allow_pickle=True).item() for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
         all_test_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_test_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
