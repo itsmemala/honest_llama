@@ -51,8 +51,7 @@ def main():
             sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'individual_linear_unitnorm' not in args.results_file_name else args.results_file_name
             all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
     else:
-        all_val_loss_files =[np.array(np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_val_loss.npy',allow_pickle=True).item()) for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)]
-        print(all_val_loss_files[0][0].shape,all_val_loss_files[0][1].shape)
+        all_val_loss_files =[np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_val_loss.npy',allow_pickle=True).item() for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)]
         # all_train_loss = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_train_loss.npy',allow_pickle=True).item() for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
         all_test_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_test_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
         all_val_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_val_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
@@ -63,7 +62,7 @@ def main():
         all_val_logits = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_val_logits.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
         all_test_logits = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{layer_start}_{layer_end}_test_logits.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
         # print(all_test_logits.shape)
-        exit()
+        # exit()
 
     for fold in range(len(all_test_f1s)):
 
@@ -395,13 +394,14 @@ def main():
 
         print('\n')
         np.set_printoptions(precision=2)
-        for model in range(len(all_val_loss[fold])):
-            if 'ah' in args.results_file_name and model<1023:
-                continue
-            print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
+        if 'ah' in args.results_file_name:
+            print('Val loss model',model,':',all_val_loss_files[-1][fold][-1],'Val F1:',"{:.2f}".format(all_val_f1s[fold][-1]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][-1]))
+        else:
+            for model in range(len(all_val_loss[fold])):
+                print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
         print('\n')
         print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
-        best_val_loss_by_model = [np.min(model_losses) for model_losses in all_val_loss[fold]]
+        best_val_loss_by_model = [[np.min(model_losses) for model_losses in all_val_loss[fold]] for all_val_loss in all_val_loss_files] if 'ah' in args.results_file_name else [np.min(model_losses) for model_losses in all_val_loss[fold]]
         print('Avg val loss across probes:',np.mean(best_val_loss_by_model))
         print('\n')
 
