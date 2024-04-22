@@ -51,8 +51,9 @@ def main():
             sim_file_name = args.results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'individual_linear_unitnorm' not in args.results_file_name else args.results_file_name
             all_val_sim, all_test_sim = np.load(f'{args.save_path}/probes/{sim_file_name}_val_sim.npy'), np.load(f'{args.save_path}/probes/{sim_file_name}_test_sim.npy')
     else:
-        print(args.layer_starts)
-        all_test_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{args.layer_start}_{args.layer_end}_test_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
+        for layer_start,layer_end in zip(args.layer_starts,args.layer_ends):
+            print(layer_start)
+        # all_test_f1s = np.concatenate([np.load(f'{args.save_path}/probes/{args.results_file_name}_{args.layer_start}_{args.layer_end}_test_f1.npy') for layer_start,layer_end in zip(args.layer_starts,args.layer_ends)], axis=1)
         print(all_test_f1s.shape)
         exit()
 
