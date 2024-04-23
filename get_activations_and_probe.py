@@ -297,12 +297,13 @@ def main():
         all_val_sim[i], all_test_sim[i] = [], []
         probes_saved = []
         loop_layers = range(args.layer_start,args.layer_end+1,1) if args.layer_start is not None else range(num_layers)
+        if args.method=='individual_linear_kld_reverse': loop_layers = range(num_layers-1,-1,-1)
         for layer in tqdm(loop_layers):
         # for layer in tqdm(range(num_layers)):
         # for layer in tqdm([0]):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
-                if args.method=='individual_linear' or args.method=='individual_linear_unitnorm' or args.method=='individual_linear_kld':
+                if args.method=='individual_linear' or args.method=='individual_linear_unitnorm' or args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse':
                     train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
                     class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
                     weight = 1. / class_sample_count
@@ -319,7 +320,7 @@ def main():
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
                     criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
-                    criterion_kld = nn.KLDivLoss()
+                    criterion_kld = nn.KLDivLoss(reduction='batchmean')
                     lr = args.lr
                     
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
@@ -359,13 +360,13 @@ def main():
                             if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, targets.to(device))
-                            if args.method=='individual_linear_kld' and len(probes_saved)>0:
+                            if 'individual_linear_kld' in args.method and len(probes_saved)>0:
                                 train_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                 for probes_saved_path in probes_saved:
                                     past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                                     past_linear_model = torch.load(probes_saved_path)
                                     past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                                    loss = loss + criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0],reduction='batchmean')
+                                    loss = loss + criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
                             train_loss.append(loss.item())
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
