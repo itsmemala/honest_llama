@@ -340,7 +340,7 @@ def main():
         #         print('Using most confident amongst most similar probes per sample (>',sim_cutoff,'):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # Probe selection - f,g
         if args.use_similarity:
-            confident_sample_pred1, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4 = [], [], [], []
+            confident_sample_pred1, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4, confident_sample_pred5 = [], [], [], [], []
             for i in range(all_test_pred[fold].shape[1]):
                 sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
                 confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
@@ -352,10 +352,12 @@ def main():
                 sim_wgt = np.squeeze(all_test_sim[fold][:,i,:])
                 sim_wgt[sim_wgt<0] = 0 # re-assign negative weights
                 confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)))
+                confident_sample_pred5.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*all_val_f1s[fold],axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*all_val_f1s[fold],axis=0)]))
             print('Using most similar probe per sample (cls 0 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
             print('Using most similar probe per sample (cls 1 wgts):',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
             print('Using most similar probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
-            print('Using similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+            print('Using similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred4,pos_label=0))
+            print('Using accuracy and similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred5),f1_score(all_test_true[fold][0],confident_sample_pred5,pos_label=0))
         # Probe selection - h
         confident_sample_pred = []
         for i in range(all_test_pred[fold].shape[1]):
