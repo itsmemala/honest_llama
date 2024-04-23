@@ -319,6 +319,7 @@ def main():
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
                     criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
+                    criterion_kld = nn.KLDivLoss()
                     lr = args.lr
                     
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
@@ -364,7 +365,7 @@ def main():
                                     past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                                     past_linear_model = torch.load(probes_saved_path)
                                     past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                                    loss = loss + nn.KLDivLoss(train_preds_batch[:,0],past_preds_batch[:,0],reduction='mean')
+                                    loss = loss + criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0],reduction='batchmean')
                             train_loss.append(loss.item())
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
