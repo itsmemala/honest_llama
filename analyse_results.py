@@ -401,7 +401,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-            sample_pred2 = sample_pred[val_f1_avg>=top_5_lower_bound_val2]
+            sample_pred2 = np.squeeze(all_test_pred[fold][:,i,:])[val_f1_avg>=top_5_lower_bound_val2]
             class_1_vote_cnt = sum(np.argmax(sample_pred2,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred2.shape[0]/2) else 0
             confident_sample_pred2.append(maj_vote)
@@ -514,7 +514,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-            sample_pred2 = sample_pred[val_f1_avg_using_logits>=top_5_lower_bound_val2]
+            sample_pred2 = np.squeeze(all_test_logits[fold][:,i,:])[val_f1_avg_using_logits>=top_5_lower_bound_val2]
             class_1_vote_cnt = sum(np.argmax(sample_pred2,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred2.shape[0]/2) else 0
             confident_sample_pred2.append(maj_vote)
