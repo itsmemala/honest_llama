@@ -7,6 +7,7 @@ import json
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score
 from matplotlib import pyplot as plt
 import argparse
+from utils import LogisticRegression_Torch
 
 # Define a custom argument type for a list of integers
 def list_of_ints(arg):
@@ -472,6 +473,19 @@ def main():
         print('Using accuracy (cls1 acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('Using accuracy (ind cls acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         print('Using accuracy (avg acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
+        # Probe selection - j
+        act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
+        using_act = 'ah' if '_ah_' in args.results_file_name else 'mlp_l1' if '_mlp_l1_' in args.results_file_name else 'mlp'
+        num_layers = 32 if '_7B_' in args.results_file_name else 40 if '_13B_' in args.results_file_name else 60
+        probe_wgts_cls0 = []
+        probe_wgts_cls1 = []
+        for model in range(all_test_pred[fold].shape[0]):
+            layer = model if using_act=='mlp' else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
+            head = 0 if using_act=='mlp' else (model%num_layers) 
+            current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2).to(device)
+            linear_model = torch.load(f'{args.results_file_name}_model{fold}_{layer}_{head}')
+            probe_wgts_cls0.append(linear_model.linear.weight[0])
+            probe_wgts_cls1.append(linear_model.linear.weight[1])
         
         
         print('\n')
