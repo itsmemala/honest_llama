@@ -460,7 +460,7 @@ def main():
             confident_sample_pred.append(np.argmax([np.sum(sample_pred[:,0]*probe_wise_entropy,axis=0),np.sum(sample_pred[:,1]*probe_wise_entropy,axis=0)]))
         print('Using confidence weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         # Probe selection - i
-        confident_sample_pred, confident_sample_pred1, confident_sample_pred2 = [], []
+        confident_sample_pred, confident_sample_pred1, confident_sample_pred2 = [], [], []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             confident_sample_pred.append(np.argmax([np.sum(sample_pred[:,0]*all_val_f1s[fold],axis=0),np.sum(sample_pred[:,1]*all_val_f1s[fold],axis=0)]))
@@ -555,7 +555,7 @@ def main():
             confident_sample_pred.append(np.argmax([np.sum(sample_pred_logits[:,0]*probe_wise_entropy,axis=0),np.sum(sample_pred_logits[:,1]*probe_wise_entropy,axis=0)]))
         print('Using confidence weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         # Probe selection - i - using logits
-        confident_sample_pred, confident_sample_pred1, confident_sample_pred2 = [], []
+        confident_sample_pred, confident_sample_pred1, confident_sample_pred2 = [], [], []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get logits of each sample across all layers of model
             confident_sample_pred.append(np.argmax([np.sum(sample_pred[:,0]*val_f1_using_logits,axis=0),np.sum(sample_pred[:,1]*val_f1_using_logits,axis=0)]))
