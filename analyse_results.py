@@ -77,23 +77,23 @@ def main():
             cls0_f1 = f1_score(all_test_true[fold][0],np.argmax(all_test_logits[fold][model], axis=1),pos_label=0)
             test_f1_using_logits.append(cls1_f1)
             test_f1_cls0_using_logits.append(cls0_f1)
-            test_f1_avg_using_logits.append(np.mean(cls1_f1,cls0_f1))
+            test_f1_avg_using_logits.append(np.mean((cls1_f1,cls0_f1)))
             #
             cls1_f1 = f1_score(all_val_true[fold][0],np.argmax(all_val_logits[fold][model], axis=1))
             cls0_f1 = f1_score(all_val_true[fold][0],np.argmax(all_val_logits[fold][model], axis=1),pos_label=0)
             val_f1_using_logits.append(cls1_f1)
             val_f1_cls0_using_logits.append(cls0_f1)
-            val_f1_avg_using_logits.append(np.mean(cls1_f1,cls0_f1))
+            val_f1_avg_using_logits.append(np.mean((cls1_f1,cls0_f1)))
             #
             cls1_f1 = f1_score(all_test_true[fold][0],np.argmax(all_test_pred[fold][model], axis=1))
             cls0_f1 = f1_score(all_test_true[fold][0],np.argmax(all_test_pred[fold][model], axis=1),pos_label=0)
             test_f1_cls0.append(cls0_f1)
-            test_f1_avg.append(np.mean(cls1_f1,cls0_f1))
+            test_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
             #
             cls1_f1 = f1_score(all_val_true[fold][0],np.argmax(all_val_pred[fold][model], axis=1))
             cls0_f1 = f1_score(all_val_true[fold][0],np.argmax(all_val_pred[fold][model], axis=1),pos_label=0)
             val_f1_cls0.append(cls0_f1)
-            val_f1_avg.append(np.mean(cls1_f1,cls0_f1))
+            val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
             
 
         print('FOLD',fold,'RESULTS:')
