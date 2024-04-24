@@ -484,7 +484,7 @@ def main():
         for model in range(all_test_pred[fold].shape[0]):
             layer = model if using_act=='mlp' else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
             head = 0 if using_act=='mlp' else (model%num_layers) 
-            current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2).to(device)
+            current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2)
             linear_model = torch.load(f'{args.results_file_name}_model{fold}_{layer}_{head}')
             probe_wgts_cls0.append(linear_model.linear.weight[0])
             probe_wgts_cls1.append(linear_model.linear.weight[1])
