@@ -4,6 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import pickle
 import json
+from itertools import combinations
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score
 from matplotlib import pyplot as plt
 import argparse
@@ -486,7 +487,9 @@ def main():
             linear_model = torch.load(f'{args.results_file_name}_model{fold}_{layer}_{head}')
             probe_wgts_cls0.append(linear_model.linear.weight[0])
             probe_wgts_cls1.append(linear_model.linear.weight[1])
-        
+        for model_idx_a,model_idx_b in combinations(range(all_test_pred[fold].shape[0]), 2):
+            
+
         
         print('\n')
         # Probe selection - a - using logits
