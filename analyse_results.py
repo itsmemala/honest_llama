@@ -480,6 +480,7 @@ def main():
         num_layers = 32 if '_7B_' in args.results_file_name else 40 if '_13B_' in args.results_file_name else 60
         probe_wgts_cls0 = []
         probe_wgts_cls1 = []
+        # Load probe weights
         for model in range(all_test_pred[fold].shape[0]):
             layer = model if using_act=='mlp' else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
             head = 0 if using_act=='mlp' else (model%num_layers) 
@@ -487,8 +488,32 @@ def main():
             linear_model = torch.load(f'{args.results_file_name}_model{fold}_{layer}_{head}')
             probe_wgts_cls0.append(linear_model.linear.weight[0])
             probe_wgts_cls1.append(linear_model.linear.weight[1])
-        for model_idx_a,model_idx_b in combinations(range(all_test_pred[fold].shape[0]), 2):
-            
+        # Get mean similarity of each probe to every other probe
+        probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
+        for model_idx_a in range(all_test_pred[fold].shape[0]):
+            sim_cls0, sim_cls1 = [], []
+            norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            for model_idx_b in range(all_test_pred[fold].shape[0],1):
+                if model_idx_b!=model_idx_a:
+                    norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    sim_cls0.append(norm_weights_a0*norm_weights_b0)
+                    sim_cls1.append(norm_weights_a1*norm_weights_b1)
+            probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
+            probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
+        # Majority voting
+        confident_sample_pred1 = []
+        best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, -5)[-5:]
+        best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, -5)[-5:]
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            sample_pred_chosen = sample_pred[best_probe_idxs1 | best_probe_idxs2]
+            class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred_chosen.shape[0]/2) else 0
+            confident_sample_pred1.append(maj_vote)
+        print('Voting amongst most dissimilar probes:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+        
 
         
         print('\n')
