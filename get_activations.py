@@ -222,7 +222,7 @@ def main():
         else:
             print("Saving layer wise activations")
             np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
             
             # print("Saving head wise activations")
