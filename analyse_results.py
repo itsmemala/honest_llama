@@ -64,7 +64,7 @@ def main():
         # print(all_test_logits.shape)
         # exit()
 
-    np.set_printoptions(precision=2)
+    np.set_printoptions(precision=1)
     np.seterr(divide = 'ignore') # turn off for display clarity
 
     for fold in range(len(all_test_f1s)):
