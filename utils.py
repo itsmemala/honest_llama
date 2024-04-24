@@ -374,7 +374,7 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
         with TraceDict(model, ANALYSE) as ret:
             output = model(prompt, output_hidden_states = True)
         activation = ret[ANALYSE[0]].output.squeeze().detach().to(torch.float32)
-        layer_activation = torch.stack(output.hidden_states,dim=0).squeeze().detach().cpu().to(torch.float32)
+        layer_activation = output.hidden_states[layer].squeeze().detach().cpu().to(torch.float32)
 
         del output
 
