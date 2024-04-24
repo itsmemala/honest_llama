@@ -311,7 +311,7 @@ def main():
 
         # Oracle 3 - using logits
         val_f1_using_logits = np.array(val_f1_using_logits)
-        best_sample_pred, best_sample_pre2 = [], []
+        best_sample_pred, best_sample_pred2 = [], []
         best_probe_idxs = np.argpartition(val_f1_using_logits, -5)[-5:]
         top_5_lower_bound_val = np.min(val_f1_using_logits[best_probe_idxs])
         val_f1_avg_using_logits = np.array(val_f1_avg_using_logits)
