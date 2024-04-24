@@ -64,6 +64,9 @@ def main():
         # print(all_test_logits.shape)
         # exit()
 
+    np.set_printoptions(precision=2)
+    np.seterr(divide = 'ignore') # turn off for display clarity
+
     for fold in range(len(all_test_f1s)):
 
         for model in range(all_test_true[fold].shape[0]):
