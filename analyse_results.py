@@ -503,7 +503,7 @@ def main():
             probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
         # Majority voting
-        results = []
+        results,results_cls1,results_cls0 = [], [], []
         params = []
         for ma_top_x in [5,10,15,20,25,32]:
             for top_x in [2,3,4,5,10,15,20]:
@@ -522,9 +522,11 @@ def main():
                     confident_sample_pred1.append(maj_vote)
                 # print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
                 results.append(f1_score(all_test_true[fold][0],confident_sample_pred1,average='macro'))
+                results_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred1))
+                results_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
                 params.append([ma_top_x,top_x,len(best_probes_idxs)])
         best_idx = np.argmax(results)
-        print('Voting amongst most dissimilar probes (best result):',params[best_idx],results[best_idx])
+        print('Voting amongst most dissimilar probes (best result):',params[best_idx],results_cls1[best_idx],results_cls0[best_idx])
         fig, axs = plt.subplots(1,2)
         plot_data = probe_wise_mean_sim_cls0
         counts, bins = np.histogram(plot_data)
