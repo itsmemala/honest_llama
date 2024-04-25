@@ -317,7 +317,7 @@ def main():
                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                    act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
+                    act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
                     linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
                     criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
@@ -372,9 +372,9 @@ def main():
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
                             optimizer.step()
-                            if 'individual_linear_kld' in args.method and len(probes_saved)>0:
-                                print('Total loss:',loss.item())
-                                print('KLD loss:',criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
+                            # if 'individual_linear_kld' in args.method and len(probes_saved)>0:
+                            #     print('Total loss:',loss.item())
+                            #     print('KLD loss:',criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
                         # Get val loss
                         linear_model.eval()
                         epoch_val_loss = 0
