@@ -502,8 +502,8 @@ def main():
                         all_train_logits[i].append(torch.cat(best_train_logits))
                     all_val_logits[i].append(torch.cat(best_val_logits))
                     all_test_logits[i].append(torch.cat(test_logits))
-                break
-            break
+            #     break
+            # break
     
         if args.classifier_on_probes:
             train_logits = torch.cat(all_train_logits[i],dim=1)
