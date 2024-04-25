@@ -552,7 +552,7 @@ def main():
         best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         # print(sum(val_f1_avg>=top_5_lower_bound_val2))
-        num_hard_samples = 0
+        num_hard_samples, entropy_gap = 0, []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -564,10 +564,14 @@ def main():
             if np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)])!=all_test_true[fold][0][i]:
                 # print(probe_wise_entropy)
                 num_hard_samples += 1
+                entropy_gap.append(sample_pred2_chosen[np.argpartition(probe_wise_entropy,2)[1]]-sample_pred2_chosen[np.argmin(probe_wise_entropy)])
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        print(num_hard_samples)
-
+        # print(num_hard_samples)
+        fig, axs = plt.subplots(1,1)
+        counts, bins = np.histogram(entropy_gap)
+        axs[0].stairs(counts, bins)
+        fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
         
         print('\n')
         # Probe selection - a - using logits
