@@ -509,8 +509,8 @@ def main():
         best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
         best_probe_idxs3 = np.argpartition(val_f1_avg, -15)[-15:]
         best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
-        best_probes_idxs = list(set.intersection(*[best_probes_idxs_union,best_probe_idxs3]))
-        print(best_probes_idxs)
+        best_probes_idxs = np.array(set.intersection(*[best_probes_idxs_union,best_probe_idxs3]))
+        # print(best_probes_idxs)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[best_probes_idxs]
