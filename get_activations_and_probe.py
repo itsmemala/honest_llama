@@ -372,7 +372,8 @@ def main():
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
                             optimizer.step()
-                        print(loss.item())
+                            print('Total loss:',loss.item())
+                            print('KLD loss:',criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
                         # Get val loss
                         linear_model.eval()
                         epoch_val_loss = 0
