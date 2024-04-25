@@ -516,7 +516,7 @@ def main():
             class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred_chosen.shape[0]/2) else 0
             confident_sample_pred1.append(maj_vote)
-        print('Voting amongst most dissimilar probes:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+        print('Voting amongst most dissimilar probes',len(best_probes_idxs_union),':',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         fig, axs = plt.subplots(1,2)
         plot_data = probe_wise_mean_sim_cls0[best_probe_idxs1]
         counts, bins = np.histogram(plot_data, bins=20)
