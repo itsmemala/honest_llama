@@ -516,22 +516,23 @@ def main():
                 best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
                 best_probes_idxs = np.array(list(set.intersection(*[best_probes_idxs_union,best_probe_idxs3])),dtype=int)
                 # print(best_probes_idxs)
-                for i in range(all_test_pred[fold].shape[1]):
-                    sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-                    sample_pred_chosen = sample_pred[best_probes_idxs]
-                    class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
-                    maj_vote = 1 if class_1_vote_cnt>=(sample_pred_chosen.shape[0]/2) else 0
-                    confident_sample_pred1.append(maj_vote)
-                    probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
-                    confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
-                # print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
-                results.append(f1_score(all_test_true[fold][0],confident_sample_pred1,average='macro'))
-                results_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred1))
-                results_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
-                params.append([ma_top_x,top_x,len(best_probes_idxs)])
-                results_mc.append(f1_score(all_test_true[fold][0],confident_sample_pred2,average='macro'))
-                results_mc_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred2))
-                results_mc_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
+                if len(best_probes_idxs)>0:
+                    for i in range(all_test_pred[fold].shape[1]):
+                        sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+                        sample_pred_chosen = sample_pred[best_probes_idxs]
+                        class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
+                        maj_vote = 1 if class_1_vote_cnt>=(sample_pred_chosen.shape[0]/2) else 0
+                        confident_sample_pred1.append(maj_vote)
+                        probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
+                        confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
+                    # print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+                    results.append(f1_score(all_test_true[fold][0],confident_sample_pred1,average='macro'))
+                    results_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred1))
+                    results_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+                    params.append([ma_top_x,top_x,len(best_probes_idxs)])
+                    results_mc.append(f1_score(all_test_true[fold][0],confident_sample_pred2,average='macro'))
+                    results_mc_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred2))
+                    results_mc_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         best_idx = np.argmax(results)
         mc_best_idx = np.argmax(results_mc)
         print('Voting amongst most dissimilar probes (best result):',params[best_idx],results_cls1[best_idx],results_cls0[best_idx])
