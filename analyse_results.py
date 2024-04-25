@@ -536,14 +536,14 @@ def main():
         mc_best_idx = np.argmax(results_mc)
         print('Voting amongst most dissimilar probes (best result):',params[best_idx],results_cls1[best_idx],results_cls0[best_idx])
         print('MC amongst most dissimilar probes (best result):',params[mc_best_idx],results_cls1[mc_best_idx],results_cls0[mc_best_idx])
-        fig, axs = plt.subplots(1,2)
-        plot_data = probe_wise_mean_sim_cls0
-        counts, bins = np.histogram(plot_data)
-        axs[0,0].stairs(counts, bins)
-        plot_data = probe_wise_mean_sim_cls1
-        counts, bins = np.histogram(plot_data)
-        axs[0,1].stairs(counts, bins)
-        fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
+        # fig, axs = plt.subplots(1,2)
+        # plot_data = probe_wise_mean_sim_cls0
+        # counts, bins = np.histogram(plot_data)
+        # axs[0,0].stairs(counts, bins)
+        # plot_data = probe_wise_mean_sim_cls1
+        # counts, bins = np.histogram(plot_data)
+        # axs[0,1].stairs(counts, bins)
+        # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
         # Probe selection - l
         confident_sample_pred, confident_sample_pred2 = [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
