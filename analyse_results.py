@@ -475,7 +475,7 @@ def main():
         print('Using accuracy (cls1 acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('Using accuracy (ind cls acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         print('Using accuracy (avg acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        # Probe selection - j
+        # Probe selection - j,k
         act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
         using_act = 'ah' if '_ah_' in args.results_file_name else 'mlp_l1' if '_mlp_l1_' in args.results_file_name else 'mlp'
         num_layers = 32 if '_7B_' in args.results_file_name else 40 if '_13B_' in args.results_file_name else 60
@@ -505,10 +505,11 @@ def main():
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
         # Majority voting
         results,results_cls1,results_cls0 = [], [], []
+        results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
         params = []
         for ma_top_x in [5,10,15,20,25,32]:
             for top_x in [2,3,4,5,10,15,20]:
-                confident_sample_pred1 = []
+                confident_sample_pred1, confident_sample_pred2 = [], []
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
                 best_probe_idxs3 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
@@ -521,13 +522,20 @@ def main():
                     class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
                     maj_vote = 1 if class_1_vote_cnt>=(sample_pred_chosen.shape[0]/2) else 0
                     confident_sample_pred1.append(maj_vote)
+                    probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
+                    confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
                 # print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
                 results.append(f1_score(all_test_true[fold][0],confident_sample_pred1,average='macro'))
                 results_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred1))
                 results_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
                 params.append([ma_top_x,top_x,len(best_probes_idxs)])
+                results_mc.append(f1_score(all_test_true[fold][0],confident_sample_pred2,average='macro'))
+                results_mc_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred2))
+                results_mc_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         best_idx = np.argmax(results)
+        mc_best_idx = np.argmax(results_mc)
         print('Voting amongst most dissimilar probes (best result):',params[best_idx],results_cls1[best_idx],results_cls0[best_idx])
+        print('MC amongst most dissimilar probes (best result):',params[mc_best_idx],results_cls1[mc_best_idx],results_cls0[mc_best_idx])
         fig, axs = plt.subplots(1,2)
         plot_data = probe_wise_mean_sim_cls0
         counts, bins = np.histogram(plot_data)
@@ -536,7 +544,22 @@ def main():
         counts, bins = np.histogram(plot_data)
         axs[0,1].stairs(counts, bins)
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
-        
+        # Probe selection - l
+        confident_sample_pred, confident_sample_pred2 = [], []
+        best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
+        top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
+        best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
+        top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
+            probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
+            confident_sample_pred.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
+            sample_pred2_chosen = np.squeeze(all_test_pred[fold][:,i,:])[val_f1_avg>=top_5_lower_bound_val2]
+            probe_wise_entropy = (-sample_pred2_chosen*np.nan_to_num(np.log2(sample_pred2_chosen),neginf=0)).sum(axis=1)
+            confident_sample_pred2.append(np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)]))
+        print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
 
         
         print('\n')
