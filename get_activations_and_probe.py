@@ -274,7 +274,7 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    method_concat = args.method + '_' + args.kld_wgt if 'kld' in args.method else args.method
+    method_concat = args.method + '_' + str(args.kld_wgt) if 'kld' in args.method else args.method
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
