@@ -572,6 +572,7 @@ def main():
         fig, axs = plt.subplots(1,1)
         counts, bins = np.histogram(entropy_gap)
         print(np.histogram(entropy_gap))
+        print(np.histogram(entropy_gap_to_correct))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
         
