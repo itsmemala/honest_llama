@@ -552,7 +552,7 @@ def main():
         best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         # print(sum(val_f1_avg>=top_5_lower_bound_val2))
-        num_hard_samples, entropy_gap = 0, []
+        num_hard_samples, entropy_gap, entropy_gap_to_correct = 0, [], []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -565,6 +565,7 @@ def main():
                 # print(probe_wise_entropy)
                 num_hard_samples += 1
                 entropy_gap.append((probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
+                entropy_gap_to_correct.append((probe_wise_entropy[np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # print(num_hard_samples)
