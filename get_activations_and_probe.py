@@ -50,7 +50,7 @@ def get_logits(ds_train_fixed,layer,head,linear_model,device,args):
         activations = []
         for idx in batch['inputs_idxs']:
             if args.load_act==False:
-                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise'}
+                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
                 file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
