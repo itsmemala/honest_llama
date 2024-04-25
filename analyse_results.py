@@ -566,7 +566,7 @@ def main():
                 num_hard_samples += 1
                 entropy_gap.append((probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
                 if sum(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])>0: # if correct prediction exists
-                    entropy_gap_to_correct.append((probe_wise_entropy[np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
+                    entropy_gap_to_correct.append((probe_wise_entropy[np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])[0]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # print(num_hard_samples)
@@ -576,6 +576,7 @@ def main():
         print(np.histogram(entropy_gap_to_correct))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
+
         
         print('\n')
         # Probe selection - a - using logits
