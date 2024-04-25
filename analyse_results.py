@@ -504,28 +504,30 @@ def main():
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
         # Majority voting
         confident_sample_pred1 = []
-        top_x = 10
-        best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
-        best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
-        best_probe_idxs3 = np.argpartition(val_f1_avg, -15)[-15:]
-        best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
-        best_probes_idxs = np.array(list(set.intersection(*[best_probes_idxs_union,best_probe_idxs3])),dtype=int)
-        # print(best_probes_idxs)
-        for i in range(all_test_pred[fold].shape[1]):
-            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred_chosen = sample_pred[best_probes_idxs]
-            class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
-            maj_vote = 1 if class_1_vote_cnt>=(sample_pred_chosen.shape[0]/2) else 0
-            confident_sample_pred1.append(maj_vote)
-        print('Voting amongst most dissimilar probes',len(best_probes_idxs_union),':',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+        # top_x = 10
+        for ma_top_x in [5,10,15,20,25,32]:
+            for top_x in [2,3,4,5,10,15]:
+                best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
+                best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
+                best_probe_idxs3 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
+                best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
+                best_probes_idxs = np.array(list(set.intersection(*[best_probes_idxs_union,best_probe_idxs3])),dtype=int)
+                # print(best_probes_idxs)
+                for i in range(all_test_pred[fold].shape[1]):
+                    sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+                    sample_pred_chosen = sample_pred[best_probes_idxs]
+                    class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
+                    maj_vote = 1 if class_1_vote_cnt>=(sample_pred_chosen.shape[0]/2) else 0
+                    confident_sample_pred1.append(maj_vote)
+                print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         fig, axs = plt.subplots(1,2)
-        plot_data = probe_wise_mean_sim_cls0[best_probe_idxs1]
+        plot_data = probe_wise_mean_sim_cls0
         counts, bins = np.histogram(plot_data, bins=20)
         axs[0,0].stairs(counts, bins)
-        plot_data = probe_wise_mean_sim_cls1[best_probe_idxs2]
+        plot_data = probe_wise_mean_sim_cls1
         counts, bins = np.histogram(plot_data, bins=20)
         axs[0,1].stairs(counts, bins)
-        fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_dissimilar_probes_{top_x}.png')
+        fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
         
 
         
