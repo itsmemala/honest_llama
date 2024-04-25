@@ -551,6 +551,7 @@ def main():
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
         best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
+        print(sum(val_f1_avg>=top_5_lower_bound_val2))
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
