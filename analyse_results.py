@@ -202,30 +202,31 @@ def main():
         print('Oracle (using 5 most confident):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
 
         # Oracle 3
-        best_sample_pred, best_sample_pred2 = [], []
-        best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
-        top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
-        val_f1_avg = np.array(val_f1_avg)
-        best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
-        top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
-        print('Best probes:',best_probe_idxs)
-        for i in range(all_test_pred[fold].shape[1]):
-            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
-            sample_pred = np.argmax(sample_pred,axis=1)
-            sample_pred2 = np.squeeze(all_test_pred[fold][:,i,:])[val_f1_avg>=top_5_lower_bound_val2]
-            sample_pred2 = np.argmax(sample_pred2,axis=1)
-            correct_answer = all_test_true[fold][0][i]
-            if sum(sample_pred==correct_answer)>0:
-                best_sample_pred.append(correct_answer)
-            else:
-                best_sample_pred.append(1 if correct_answer==0 else 0)
-            if sum(sample_pred2==correct_answer)>0:
-                best_sample_pred2.append(correct_answer)
-            else:
-                best_sample_pred2.append(1 if correct_answer==0 else 0)
-        print('Oracle (using 5 most accurate on cls1):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
-        print('Oracle (using 5 most accurate on both cls):',f1_score(all_test_true[fold][0],best_sample_pred2),f1_score(all_test_true[fold][0],best_sample_pred2,pos_label=0))
+        for top_x in [5,4,3,2,1]:
+            best_sample_pred, best_sample_pred2 = [], []
+            best_probe_idxs = np.argpartition(all_val_f1s[fold], -top_x)[-top_x:]
+            top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
+            val_f1_avg = np.array(val_f1_avg)
+            best_probe_idxs2 = np.argpartition(val_f1_avg, -top_x)[-top_x:]
+            top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
+            print('Best probes:',best_probe_idxs)
+            for i in range(all_test_pred[fold].shape[1]):
+                sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+                sample_pred = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
+                sample_pred = np.argmax(sample_pred,axis=1)
+                sample_pred2 = np.squeeze(all_test_pred[fold][:,i,:])[val_f1_avg>=top_5_lower_bound_val2]
+                sample_pred2 = np.argmax(sample_pred2,axis=1)
+                correct_answer = all_test_true[fold][0][i]
+                if sum(sample_pred==correct_answer)>0:
+                    best_sample_pred.append(correct_answer)
+                else:
+                    best_sample_pred.append(1 if correct_answer==0 else 0)
+                if sum(sample_pred2==correct_answer)>0:
+                    best_sample_pred2.append(correct_answer)
+                else:
+                    best_sample_pred2.append(1 if correct_answer==0 else 0)
+            # print('Oracle (using 5 most accurate on cls1):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
+            print('Oracle (using',str(top_x),'most accurate on both cls):',f1_score(all_test_true[fold][0],best_sample_pred2),f1_score(all_test_true[fold][0],best_sample_pred2,pos_label=0))
         
         # Oracle 1 - using logits
         print('\n')
