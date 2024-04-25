@@ -570,8 +570,9 @@ def main():
         # print(num_hard_samples)
         fig, axs = plt.subplots(1,1)
         counts, bins = np.histogram(entropy_gap)
-        axs[0].stairs(counts, bins)
-        fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
+        print(np.histogram(entropy_gap))
+        # axs.stairs(counts, bins)
+        # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
         
         print('\n')
         # Probe selection - a - using logits
