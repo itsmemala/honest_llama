@@ -504,7 +504,7 @@ def main():
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
         # Majority voting
         for ma_top_x in [5,10,15,20,25,32]:
-            for top_x in [2,3,4,5,10,15]:
+            for top_x in [2,3,4,5,10,15,20]:
                 confident_sample_pred1 = []
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
@@ -521,10 +521,10 @@ def main():
                 print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         fig, axs = plt.subplots(1,2)
         plot_data = probe_wise_mean_sim_cls0
-        counts, bins = np.histogram(plot_data, bins=20)
+        counts, bins = np.histogram(plot_data)
         axs[0,0].stairs(counts, bins)
         plot_data = probe_wise_mean_sim_cls1
-        counts, bins = np.histogram(plot_data, bins=20)
+        counts, bins = np.histogram(plot_data)
         axs[0,1].stairs(counts, bins)
         fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
         
