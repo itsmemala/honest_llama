@@ -503,10 +503,9 @@ def main():
             probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
         # Majority voting
-        confident_sample_pred1 = []
-        # top_x = 10
         for ma_top_x in [5,10,15,20,25,32]:
             for top_x in [2,3,4,5,10,15]:
+                confident_sample_pred1 = []
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
                 best_probe_idxs3 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
