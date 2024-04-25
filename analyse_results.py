@@ -564,7 +564,7 @@ def main():
             if np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)])!=all_test_true[fold][0][i]:
                 # print(probe_wise_entropy)
                 num_hard_samples += 1
-                entropy_gap.append(probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))
+                entropy_gap.append((probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # print(num_hard_samples)
