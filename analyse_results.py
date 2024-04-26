@@ -560,6 +560,7 @@ def main():
         # print(sum(val_f1_avg>=top_5_lower_bound_val2))
         num_hard_samples, entropy_wrong, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], [], []
         max_sim, max_sim1 = [], []
+        cls_wrong = []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -602,22 +603,26 @@ def main():
                             if sim>max_sim_val: max_sim_val = sim
                 max_sim.append(max_sim_val)
             else:
+                cls_wrong.append(all_test_true[fold][0][i])
                 for idx_a in ma5_index:
                     wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path)
                     norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     for idx_b in ma5_index:
-                        if idx_b != idx_a: # for each incorrect probe
+                        if idx_b != idx_a: # for each other probe
                             wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
                             norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of probes
                             if sim>max_sim_val1: max_sim_val1 = sim
                 max_sim1.append(max_sim_val1)
+            # dissimilar_idx_a, dissimilar_idx_b = None, None
+
         # print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # print(num_hard_samples)
         # fig, axs = plt.subplots(1,1)
         # counts, bins = np.histogram(entropy_gap)
+        print(sum(cls_wrong))
         print(np.histogram(entropy_wrong))
         print('Entropy gaps:')
         print(np.histogram(entropy_gap))
@@ -627,6 +632,7 @@ def main():
         print('Probe similarity:')
         print(np.histogram(max_sim))
         print(np.histogram(max_sim1))
+        print('MC between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
