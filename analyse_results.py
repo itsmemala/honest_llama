@@ -593,7 +593,7 @@ def main():
                 for idx_a in all_correct_index: # for each correct probe
                     correct_index = ma5_index[idx_a]
                     wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,correct_index,args.results_file_name,args.save_path)
-                    norm_weights_a = wgts_cls1_a/wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     for idx_b in ma5_index:
                         if idx_b not in ma5_index[all_correct_index]: # for each incorrect probe
                             wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
@@ -604,7 +604,7 @@ def main():
             else:
                 for idx_a in ma5_index:
                     wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path)
-                    norm_weights_a = wgts_cls1_a/wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     for idx_b in ma5_index:
                         if idx_b != idx_a: # for each incorrect probe
                             wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
