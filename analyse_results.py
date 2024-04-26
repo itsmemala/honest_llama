@@ -503,11 +503,11 @@ def main():
                 if model_idx_b!=model_idx_a:
                     norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    print(norm_weights_a0.shape,norm_weights_b0.shape)
                     sim_cls0.append(np.sum(norm_weights_a0*norm_weights_b0))
                     sim_cls1.append(np.sum(norm_weights_a1*norm_weights_b1))
             probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
-        print(norm_weights_a0.shape,norm_weights_b0.shape)
         # Majority voting
         results,results_cls1,results_cls0 = [], [], []
         results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
