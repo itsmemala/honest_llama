@@ -584,7 +584,7 @@ def main():
                     correct_index_excl_mc = [idx for idx in all_correct_index if idx!=np.argmin(probe_wise_entropy)]
                     entropy_gap_to_correct2.append((np.min(probe_wise_entropy[correct_index_excl_mc])-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
             ma5_index = np.argwhere(val_f1_avg>=top_5_lower_bound_val2) # 0-31
-            mc_index = ma5_index[np.argmin(probe_wise_entropy)] # 0-31
+            mc_index = ma5_index[np.argmin(probe_wise_entropy)][0] # 0-31
             mc_wgts_cls0, mc_wgts_cls1 = get_probe_wgts(fold,mc_index,args.results_file_name,args.save_path)
             max_sim_val, max_sim_val1 = -1, -1
             if len(all_correct_index)>0: # if correct prediction exists
