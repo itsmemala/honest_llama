@@ -14,7 +14,7 @@ from utils import LogisticRegression_Torch
 def list_of_ints(arg):
     return list(map(int, arg.split(',')))
 
-def get_probe_wgts(model,results_file_name,save_path):
+def get_probe_wgts(fold,model,results_file_name,save_path):
     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
     using_act = 'ah' if '_ah_' in results_file_name else 'mlp_l1' if '_mlp_l1_' in results_file_name else 'mlp'
     num_layers = 32 if '_7B_' in results_file_name else 40 if '_13B_' in results_file_name else 60
@@ -490,7 +490,7 @@ def main():
         probe_wgts_cls1 = []
         # Load probe weights
         for model in range(all_test_pred[fold].shape[0]):
-            wgt_cls0, wgt_cls1 = get_probe_wgts(model,args.results_file_name,args.save_path)
+            wgt_cls0, wgt_cls1 = get_probe_wgts(fold,model,args.results_file_name,args.save_path)
             probe_wgts_cls0.append(wgt_cls0)
             probe_wgts_cls1.append(wgt_cls1)
         # Get mean similarity of each probe to every other probe
@@ -581,7 +581,7 @@ def main():
                     entropy_gap_to_correct2.append((probe_wise_entropy[np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])[0]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
             # all_probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             # mc_index = all_probe_wise_entropy
-            # mc_wgts_cls0, mc_wgts_cls1 = get_probe_wgts(mc_index,args.results_file_name,args.save_path)
+            # mc_wgts_cls0, mc_wgts_cls1 = get_probe_wgts(fold,mc_index,args.results_file_name,args.save_path)
             idxs_check.append(np.argmin(probe_wise_entropy))
         print(np.histogram(idxs_check))
         print(len(sample_pred2_chosen))
