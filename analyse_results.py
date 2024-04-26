@@ -14,6 +14,16 @@ from utils import LogisticRegression_Torch
 def list_of_ints(arg):
     return list(map(int, arg.split(',')))
 
+def get_probe_wgts(model,results_file_name):
+    act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
+    using_act = 'ah' if '_ah_' in results_file_name else 'mlp_l1' if '_mlp_l1_' in results_file_name else 'mlp'
+    num_layers = 32 if '_7B_' in results_file_name else 40 if '_13B_' in results_file_name else 60
+    layer = model if using_act=='mlp' else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
+    head = 0 if using_act=='mlp' else (model%num_layers) 
+    current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2)
+    linear_model = torch.load(f'{args.save_path}/probes/models/{results_file_name}_model{fold}_{layer}_{head}')
+    return linear_model.linear.weight[0], linear_model.linear.weight[1]
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -476,19 +486,13 @@ def main():
         print('Using accuracy (ind cls acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         print('Using accuracy (avg acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # Probe selection - j,k
-        act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
-        using_act = 'ah' if '_ah_' in args.results_file_name else 'mlp_l1' if '_mlp_l1_' in args.results_file_name else 'mlp'
-        num_layers = 32 if '_7B_' in args.results_file_name else 40 if '_13B_' in args.results_file_name else 60
         probe_wgts_cls0 = []
         probe_wgts_cls1 = []
         # Load probe weights
         for model in range(all_test_pred[fold].shape[0]):
-            layer = model if using_act=='mlp' else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
-            head = 0 if using_act=='mlp' else (model%num_layers) 
-            current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2)
-            linear_model = torch.load(f'{args.save_path}/probes/models/{args.results_file_name}_model{fold}_{layer}_{head}')
-            probe_wgts_cls0.append(linear_model.linear.weight[0])
-            probe_wgts_cls1.append(linear_model.linear.weight[1])
+            wgt_cls0, wgt_cls1 = get_probe_wgts(model,args.results_file_name)
+            probe_wgts_cls0.append(wgt_cls0)
+            probe_wgts_cls1.append(wgt_cls1)
         # Get mean similarity of each probe to every other probe
         probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
         for model_idx_a in range(all_test_pred[fold].shape[0]):
@@ -513,7 +517,8 @@ def main():
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
                 best_probe_idxs3 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
-                best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
+                # best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
+                best_probes_idxs_union = best_probe_idxs2
                 best_probes_idxs = np.array(list(set.intersection(*[best_probes_idxs_union,best_probe_idxs3])),dtype=int)
                 # print(best_probes_idxs)
                 if len(best_probes_idxs)>0:
@@ -545,6 +550,7 @@ def main():
         # counts, bins = np.histogram(plot_data)
         # axs[0,1].stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
+
         # Probe selection - l
         confident_sample_pred, confident_sample_pred2 = [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -10)[-10:]
@@ -552,6 +558,7 @@ def main():
         best_probe_idxs2 = np.argpartition(val_f1_avg, -10)[-10:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         # print(sum(val_f1_avg>=top_5_lower_bound_val2))
+        idxs_check = []
         num_hard_samples, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -572,6 +579,12 @@ def main():
                 entropy_gap2.append((probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
                 if sum(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])>1: # if more than 1 correct prediction exists
                     entropy_gap_to_correct2.append((probe_wise_entropy[np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])[0]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
+            # all_probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            # mc_index = all_probe_wise_entropy
+            # mc_wgts_cls0, mc_wgts_cls1 = get_probe_wgts(mc_index,args.results_file_name)
+            idxs_check.append(np.argmin(probe_wise_entropy))
+        print(np.histogram(idxs_check))
+        print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # print(num_hard_samples)
@@ -583,6 +596,7 @@ def main():
         print(np.histogram(entropy_gap_to_correct2))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
+
 
         
         print('\n')
