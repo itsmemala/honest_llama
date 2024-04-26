@@ -507,6 +507,7 @@ def main():
                     sim_cls1.append(np.sum(norm_weights_a1*norm_weights_b1))
             probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
+        print(norm_weights_a.shape,norm_weights_b.shape)
         # Majority voting
         results,results_cls1,results_cls0 = [], [], []
         results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
@@ -609,6 +610,7 @@ def main():
                         if idx_b != idx_a: # for each incorrect probe
                             wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
                             norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            print(norm_weights_a.shape,norm_weights_b.shape)
                             sim = np.sum(norm_weights_a*norm_weights_b) # sim of probes
                             if sim>max_sim_val1: max_sim_val1 = sim
                 max_sim1.append(max_sim_val1)
