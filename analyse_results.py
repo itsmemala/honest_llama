@@ -507,7 +507,7 @@ def main():
                     sim_cls1.append(np.sum(norm_weights_a1*norm_weights_b1))
             probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
-        print(norm_weights_a.shape,norm_weights_b.shape)
+        print(norm_weights_a0.shape,norm_weights_b0.shape)
         # Majority voting
         results,results_cls1,results_cls0 = [], [], []
         results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
