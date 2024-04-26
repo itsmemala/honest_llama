@@ -598,7 +598,7 @@ def main():
                         if idx_b not in ma5_index[all_correct_index]: # for each incorrect probe
                             wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
                             norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                            sim = np.sum(norm_weights_a*norm_weights_b) # sim of correct and incorrect probes
+                            sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of correct and incorrect probes
                             if sim>max_sim_val: max_sim_val = sim
                 max_sim.append(max_sim_val)
             else:
@@ -609,8 +609,7 @@ def main():
                         if idx_b != idx_a: # for each incorrect probe
                             wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
                             norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                            print(norm_weights_a.shape,norm_weights_b.shape)
-                            sim = np.sum(norm_weights_a*norm_weights_b) # sim of probes
+                            sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of probes
                             if sim>max_sim_val1: max_sim_val1 = sim
                 max_sim1.append(max_sim_val1)
         # print(len(sample_pred2_chosen))
