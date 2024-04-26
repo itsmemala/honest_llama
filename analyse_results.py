@@ -547,9 +547,9 @@ def main():
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
         # Probe selection - l
         confident_sample_pred, confident_sample_pred2 = [], []
-        best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
+        best_probe_idxs = np.argpartition(all_val_f1s[fold], -10)[-10:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
-        best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
+        best_probe_idxs2 = np.argpartition(val_f1_avg, -10)[-10:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         # print(sum(val_f1_avg>=top_5_lower_bound_val2))
         num_hard_samples, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], []
