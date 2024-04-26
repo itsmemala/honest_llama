@@ -552,7 +552,7 @@ def main():
         best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         # print(sum(val_f1_avg>=top_5_lower_bound_val2))
-        num_hard_samples, entropy_gap, entropy_gap_to_correct = 0, [], []
+        num_hard_samples, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -567,6 +567,11 @@ def main():
                 entropy_gap.append((probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
                 if sum(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])>0: # if correct prediction exists
                     entropy_gap_to_correct.append((probe_wise_entropy[np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])[0]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
+            if np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)])==all_test_true[fold][0][i]:
+                num_hard_samples += 1
+                entropy_gap2.append((probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
+                if sum(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])>1: # if more than 1 correct prediction exists
+                    entropy_gap_to_correct2.append((probe_wise_entropy[np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i])[0]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # print(num_hard_samples)
@@ -574,6 +579,8 @@ def main():
         counts, bins = np.histogram(entropy_gap)
         print(np.histogram(entropy_gap))
         print(np.histogram(entropy_gap_to_correct))
+        print(np.histogram(entropy_gap2))
+        print(np.histogram(entropy_gap_to_correct2))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
