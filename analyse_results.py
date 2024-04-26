@@ -625,8 +625,8 @@ def main():
         print(np.histogram(entropy_gap2))
         print(np.histogram(entropy_gap_to_correct2))
         print('Probe similarity:')
-        print(np.histogram(sim_val))
-        print(np.histogram(sim_val1))
+        print(np.histogram(max_sim))
+        print(np.histogram(max_sim1))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
