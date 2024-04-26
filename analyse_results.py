@@ -570,7 +570,7 @@ def main():
             probe_wise_entropy = (-sample_pred2_chosen*np.nan_to_num(np.log2(sample_pred2_chosen),neginf=0)).sum(axis=1)
             confident_sample_pred2.append(np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)]))
             all_correct_index = np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i]) # 0-4
-            all_correct_index = [val[0] for val in all_correct_index]
+            all_correct_index = np.array([val[0] for val in all_correct_index])
             if np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)])!=all_test_true[fold][0][i]:
                 # print(probe_wise_entropy)
                 num_hard_samples += 1
@@ -585,7 +585,7 @@ def main():
                     correct_index_excl_mc = [idx for idx in all_correct_index if idx!=np.argmin(probe_wise_entropy)]
                     entropy_gap_to_correct2.append((np.min(probe_wise_entropy[correct_index_excl_mc])-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
             ma5_index = np.argwhere(val_f1_avg>=top_5_lower_bound_val2) # 0-31
-            ma5_index = [val[0] for val in ma5_index]
+            ma5_index = np.array([val[0] for val in ma5_index])
             mc_index = ma5_index[np.argmin(probe_wise_entropy)] # 0-31
             mc_wgts_cls0, mc_wgts_cls1 = get_probe_wgts(fold,mc_index,args.results_file_name,args.save_path)
             max_sim_val, max_sim_val1 = -1, -1
