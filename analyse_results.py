@@ -619,6 +619,7 @@ def main():
                             if sim>max_sim_val1: max_sim_val1 = sim
                 max_sim1.append(max_sim_val1)
             # dissimilar_idx_a, dissimilar_idx_b = None, None
+            mean_probe_vector = np.mean(probe_wgts_cls0[ma5_index],axis=0)
 
         # print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
