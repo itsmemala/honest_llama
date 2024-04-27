@@ -328,7 +328,7 @@ def main():
                     
                     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
-                    train_loss, val_loss = [], []
+                    train_loss, val_loss, kld_loss = [], [], []
                     best_val_loss = torch.inf
                     best_model_state = linear_model.state_dict()
                     best_val_logits = []
@@ -370,13 +370,14 @@ def main():
                                     past_linear_model = torch.load(probes_saved_path)
                                     past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
+                                    kld_loss.append(1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
                             train_loss.append(loss.item())
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
                             optimizer.step()
-                            if 'individual_linear_kld' in args.method and len(probes_saved)>0:
-                                print('Total loss:',loss.item())
-                                print('KLD loss:',1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
+                            # if 'individual_linear_kld' in args.method and len(probes_saved)>0:
+                            #     print('Total loss:',loss.item())
+                            #     print('KLD loss:',1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
                         # Get val loss
                         linear_model.eval()
                         epoch_val_loss = 0
@@ -423,6 +424,11 @@ def main():
                         if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
                     all_train_loss[i].append(np.array(train_loss))
                     all_val_loss[i].append(np.array(val_loss))
+                    if 'individual_linear_kld' in args.method and len(probes_saved)>0:
+                        print(layer,head)
+                        print('KLD loss:',kld_loss[:10],kld_loss[-10:])
+                        print('Train and val loss:',train_loss[-1],val_loss[-1])
+                        print('\n')
                     linear_model.load_state_dict(best_model_state)
                     if args.save_probes:
                         probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}'
