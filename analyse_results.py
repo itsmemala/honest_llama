@@ -575,7 +575,6 @@ def main():
             if np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)])!=all_test_true[fold][0][i]:
                 # print(probe_wise_entropy)
                 num_hard_samples += 1
-                entropy_wrong.append(np.min(probe_wise_entropy))
                 entropy_gap.append((probe_wise_entropy[np.argpartition(probe_wise_entropy,2)[1]]-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
                 if len(all_correct_index)>0: # if correct prediction exists
                     entropy_gap_to_correct.append((np.min(probe_wise_entropy[all_correct_index])-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
@@ -606,6 +605,7 @@ def main():
                 max_sim.append(max_sim_val)
             else:
                 cls_wrong.append(all_test_true[fold][0][i])
+                entropy_wrong.append(np.min(probe_wise_entropy))
                 for idx_a in ma5_index:
                     wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path)
                     # norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
