@@ -644,7 +644,8 @@ def main():
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
             min_sim_val = 1
-            for idx_b in range(32):
+            for idx_b in ma5_index:
+            # for idx_b in range(32):
                 if idx_b != mc_index: # for each other probe
                     wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
                     # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
