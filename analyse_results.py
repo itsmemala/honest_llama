@@ -552,21 +552,22 @@ def main():
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
 
         # Probe selection - l
+        ma_top_x = 10
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
-        best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
+        best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
-        best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
+        best_probe_idxs2 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         ma5_index = np.argwhere(val_f1_avg>=top_5_lower_bound_val2) # 0-31
         ma5_index = np.array([val[0] for val in ma5_index])
         min_sim_val = 1
-        # for idx_a in ma5_index:
-        for idx_a in range(32):
+        for idx_a in ma5_index:
+        # for idx_a in range(32):
             wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path)
             # norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             norm_weights_a = wgts_cls0_a / wgts_cls0_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            # for idx_b in ma5_index:
-            for idx_b in range(32):
+            for idx_b in ma5_index:
+            # for idx_b in range(32):
                 if idx_b != idx_a: # for each other probe
                     wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
                     # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
