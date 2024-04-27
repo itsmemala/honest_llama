@@ -637,7 +637,7 @@ def main():
         print('Probe similarity:')
         print(np.histogram(max_sim))
         print(np.histogram(max_sim1))
-        print('MC between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+        # print('MC between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
