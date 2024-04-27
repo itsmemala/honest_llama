@@ -603,6 +603,7 @@ def main():
                     entropy_gap_to_correct2.append((np.min(probe_wise_entropy[correct_index_excl_mc])-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
             mc_index = ma5_index[np.argmin(probe_wise_entropy)] # 0-31
             mc_wgts_cls0, mc_wgts_cls1 = get_probe_wgts(fold,mc_index,args.results_file_name,args.save_path)
+            norm_weights_mc = mc_wgts_cls0 / mc_wgts_cls0.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             max_sim_val, max_sim_val1 = -1, -1
             if len(all_correct_index)>0: # if correct prediction exists
                 for idx_a in all_correct_index: # for each correct probe
@@ -633,11 +634,25 @@ def main():
                             sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of probes
                             if sim>max_sim_val1: max_sim_val1 = sim
                 max_sim1.append(max_sim_val1)
+
             # mean_probe_vector = np.mean(probe_wgts_cls0[ma5_index],axis=0)
-            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
+
+            # sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
             # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
-            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
+
+            min_sim_val = 1
+            for idx_b in range(32):
+                if idx_b != mc_index: # for each other probe
+                    wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
+                    # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    sim = torch.sum(norm_weights_mc*norm_weights_b).item() # sim of probes
+                    if sim<=min_sim_val: min_sim_val, mc_dissimilar_idx = sim, idx_b
+            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([mc_index, dissimilar_idx_b])]
+            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, dissimilar_idx_b])]
             confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
         # print(len(sample_pred2_chosen))
