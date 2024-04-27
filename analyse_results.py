@@ -652,8 +652,8 @@ def main():
                     norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     sim = torch.sum(norm_weights_mc*norm_weights_b).item() # sim of probes
                     if sim<=min_sim_val: min_sim_val, mc_dissimilar_idx = sim, idx_b
-            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([mc_index, dissimilar_idx_b])]
-            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, dissimilar_idx_b])]
+            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([mc_index, mc_dissimilar_idx])]
+            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
             confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
         # print(len(sample_pred2_chosen))
