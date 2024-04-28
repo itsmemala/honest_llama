@@ -653,8 +653,8 @@ def main():
                     sim = torch.sum(norm_weights_mc*norm_weights_b).item() # sim of probes
                     if sim<=min_sim_val: min_sim_val, mc_dissimilar_idx = sim, idx_b
             sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([mc_index, mc_dissimilar_idx])]
-            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
-            confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
+            # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
+            # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
         # print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
@@ -672,7 +672,7 @@ def main():
         print('Probe similarity:')
         print(np.histogram(max_sim))
         print(np.histogram(max_sim1))
-        print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+        # print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
