@@ -559,6 +559,7 @@ def main():
         # best_probe_idxs2 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
         # top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         # ma5_index = np.argwhere(val_f1_avg>=top_5_lower_bound_val2) # 0-31
+        val_f1_cls0= np.array(val_f1_cls0)
         best_probe_idxs2 = np.argpartition(val_f1_cls0, -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val2 = np.min(val_f1_cls0[best_probe_idxs2])
         ma5_index = np.argwhere(val_f1_cls0>=top_5_lower_bound_val2) # 0-31
