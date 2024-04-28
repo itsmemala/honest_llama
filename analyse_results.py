@@ -552,7 +552,7 @@ def main():
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
 
         # Probe selection - l
-        ma_top_x = 10
+        ma_top_x = 5
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
@@ -561,13 +561,13 @@ def main():
         ma5_index = np.argwhere(val_f1_avg>=top_5_lower_bound_val2) # 0-31
         ma5_index = np.array([val[0] for val in ma5_index])
         min_sim_val = 1
-        # for idx_a in ma5_index:
-        for idx_a in range(32):
+        for idx_a in ma5_index:
+        # for idx_a in range(32):
             wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path)
             # norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             norm_weights_a = wgts_cls0_a / wgts_cls0_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            # for idx_b in ma5_index:
-            for idx_b in range(32):
+            for idx_b in ma5_index:
+            # for idx_b in range(32):
                 if idx_b != idx_a: # for each other probe
                     wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
                     # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
@@ -637,22 +637,22 @@ def main():
 
             # mean_probe_vector = np.mean(probe_wgts_cls0[ma5_index],axis=0)
 
-            # sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
-            # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
-            # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
+            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
+            confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
             # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
-            min_sim_val = 1
-            # for idx_b in ma5_index:
-            for idx_b in range(32):
-                if idx_b != mc_index: # for each other probe
-                    wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
-                    # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    sim = torch.sum(norm_weights_mc*norm_weights_b).item() # sim of probes
-                    if sim<=min_sim_val: min_sim_val, mc_dissimilar_idx = sim, idx_b
-            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([mc_index, mc_dissimilar_idx])]
+            # min_sim_val = 1
+            # # for idx_b in ma5_index:
+            # for idx_b in range(32):
+            #     if idx_b != mc_index: # for each other probe
+            #         wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path)
+            #         # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            #         norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            #         sim = torch.sum(norm_weights_mc*norm_weights_b).item() # sim of probes
+            #         if sim<=min_sim_val: min_sim_val, mc_dissimilar_idx = sim, idx_b
+            # sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([mc_index, mc_dissimilar_idx])]
             # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
@@ -672,7 +672,7 @@ def main():
         print('Probe similarity:')
         print(np.histogram(max_sim))
         print(np.histogram(max_sim1))
-        # print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+        print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
