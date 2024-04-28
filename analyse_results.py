@@ -651,8 +651,8 @@ def main():
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
-            if np.max(all_test_sim[fold][:,i,0])>0: confident_sample_pred3.append(0)
-            if np.max(all_test_sim[fold][:,i,0])<=0: confident_sample_pred3.append(1)
+            if np.max(all_test_sim[fold][:,i,0])>=0: confident_sample_pred3.append(0)
+            if np.max(all_test_sim[fold][:,i,0])<0: confident_sample_pred3.append(1)
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
