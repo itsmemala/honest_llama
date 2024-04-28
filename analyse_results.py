@@ -693,8 +693,8 @@ def main():
 
         check_sim_correct, check_sim_wrong = [], []
         for i in range(all_val_pred[fold].shape[1]):
-            if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,1]))
-            if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,1]))
+            if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,0]))
+            if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,0]))
         print(np.histogram(check_sim_correct))
         print(np.histogram(check_sim_wrong))
 
