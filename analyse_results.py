@@ -589,7 +589,8 @@ def main():
             probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
             
-            sample_pred2_chosen = np.squeeze(all_test_pred[fold][:,i,:])[val_f1_avg>=top_5_lower_bound_val2]
+            # sample_pred2_chosen = np.squeeze(all_test_pred[fold][:,i,:])[val_f1_avg>=top_5_lower_bound_val2]
+            sample_pred2_chosen = np.squeeze(all_test_pred[fold][:,i,:])[val_f1_cls0>=top_5_lower_bound_val2]
             probe_wise_entropy = (-sample_pred2_chosen*np.nan_to_num(np.log2(sample_pred2_chosen),neginf=0)).sum(axis=1)
             confident_sample_pred2.append(np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)]))
             all_correct_index = np.argwhere(np.argmax(sample_pred2_chosen,axis=1)==all_test_true[fold][0][i]) # 0-4
