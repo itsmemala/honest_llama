@@ -578,6 +578,7 @@ def main():
         num_hard_samples, entropy_wrong, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], [], []
         max_sim, max_sim1 = [], []
         cls_wrong = []
+        check_sim_correct, check_sim_wrong = [], []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -638,10 +639,12 @@ def main():
             # mean_probe_vector = np.mean(probe_wgts_cls0[ma5_index],axis=0)
 
             sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
-            probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
-            confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
-            # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
-            # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
+            # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
+            # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
+            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
+            if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
+            if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
@@ -670,9 +673,11 @@ def main():
         # print(np.histogram(entropy_gap2))
         # print(np.histogram(entropy_gap_to_correct2))
         print('Probe similarity:')
-        print(np.histogram(max_sim))
-        print(np.histogram(max_sim1))
+        # print(np.histogram(max_sim))
+        # print(np.histogram(max_sim1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+        print(np.histogram(check_sim_correct))
+        print(np.histogram(check_sim_wrong))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
