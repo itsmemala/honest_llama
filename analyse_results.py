@@ -556,9 +556,12 @@ def main():
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
-        best_probe_idxs2 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
-        top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
-        ma5_index = np.argwhere(val_f1_avg>=top_5_lower_bound_val2) # 0-31
+        # best_probe_idxs2 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
+        # top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
+        # ma5_index = np.argwhere(val_f1_avg>=top_5_lower_bound_val2) # 0-31
+        best_probe_idxs2 = np.argpartition(val_f1_cls0, -ma_top_x)[-ma_top_x:]
+        top_5_lower_bound_val2 = np.min(val_f1_cls0[best_probe_idxs2])
+        ma5_index = np.argwhere(val_f1_cls0>=top_5_lower_bound_val2) # 0-31
         ma5_index = np.array([val[0] for val in ma5_index])
         min_sim_val = 1
         for idx_a in ma5_index:
