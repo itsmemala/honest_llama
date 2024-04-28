@@ -655,8 +655,8 @@ def main():
                 confident_sample_pred3.append(0)
             else:
                 confident_sample_pred3.append(1)
-            if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim[fold][:,i,1]))
-            if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim[fold][:,i,1]))
+            if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,1]))
+            if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,1]))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
