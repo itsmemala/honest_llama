@@ -655,6 +655,8 @@ def main():
                 confident_sample_pred3.append(0)
             else:
                 confident_sample_pred3.append(1)
+            if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim[fold][:,i,0]))
+            if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim[fold][:,i,0]))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
@@ -686,8 +688,8 @@ def main():
         print(np.histogram(max_sim))
         print(np.histogram(max_sim1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
-        # print(np.histogram(check_sim_correct))
-        # print(np.histogram(check_sim_wrong))
+        print(np.histogram(check_sim_correct))
+        print(np.histogram(check_sim_wrong))
         # axs.stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_entropy_gap.png')
 
