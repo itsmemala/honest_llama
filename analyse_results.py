@@ -586,6 +586,7 @@ def main():
         max_sim, max_sim1 = [], []
         cls_wrong = []
         check_sim_correct, check_sim_wrong = [], []
+        num_correct_probes= []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -615,6 +616,7 @@ def main():
             norm_weights_mc = mc_wgts_cls0 / mc_wgts_cls0.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             max_sim_val, max_sim_val1 = -1, -1
             if len(all_correct_index)>0: # if correct prediction exists
+                num_correct_probes.append(len(all_correct_index))
                 for idx_a in all_correct_index: # for each correct probe
                     correct_index = ma5_index[idx_a]
                     wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,correct_index,args.results_file_name,args.save_path)
@@ -688,13 +690,14 @@ def main():
         print(np.histogram(entropy_gap2))
         print(np.histogram(entropy_gap_to_correct2))
         print('Probe similarity:')
-        print(np.histogram(max_sim))
-        print(np.histogram(max_sim1))
+        # print(np.histogram(max_sim))
+        # print(np.histogram(max_sim1))
         # print(np.histogram(all_sim_cls0))
         # print(np.histogram(all_sim_cls1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # print(np.histogram(check_sim_correct))
         # print(np.histogram(check_sim_wrong))
+        print(np.histogram(num_correct_probes))
 
         check_sim_correct, check_sim_wrong = [], []
         for i in range(all_val_pred[fold].shape[1]):
