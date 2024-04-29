@@ -714,7 +714,8 @@ def main():
         print('PCA:')
         pca = KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
         transformed = pca.fit_transform(probe_wgts_cls0)
-        print(transformed[0][0].shape)
+        print(transformed.shape)
+        print(pca.explained_variance_ratio_)
         
         # print('\n')
         # # Probe selection - a - using logits
