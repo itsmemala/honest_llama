@@ -283,9 +283,9 @@ def main():
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
-        y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
-        y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
-        y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([[test_labels[i]] for i in test_idxs], axis = 0)
+        y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0, dtype='float32')
+        y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0, dtype='float32')
+        y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0, dtype='float32') if args.num_folds>1 else np.stack([[test_labels[i]] for i in test_idxs], axis = 0, dtype='float32')
         # if args.method=='individual_non_linear':
         #     y_train = np.vstack([[val] for val in y_train], dtype='float32')
         #     y_val = np.vstack([[val] for val in y_val], dtype='float32')
