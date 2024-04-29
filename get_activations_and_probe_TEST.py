@@ -431,6 +431,7 @@ def main():
                         print('\n')
                     linear_model.load_state_dict(best_model_state)
                     if args.save_probes:
+                        pass
                         # probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}'
                         # torch.save(linear_model, probe_save_path)
                         # probes_saved.append(probe_save_path)
