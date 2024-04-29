@@ -129,7 +129,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     with torch.no_grad():
         linear_model.eval()
         for step,batch in enumerate(ds_val):
-            predicted = [1 for inp in batch['inputs'] if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 else 0]
+            predicted = [1 if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 for inp in batch['inputs'] else 0]
             y_val_pred += predicted.cpu().tolist()
             y_val_true += batch['labels'].to(device).tolist()
     print('Val F1 (logits):',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
@@ -138,7 +138,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     with torch.no_grad():
         linear_model.eval()
         for step,batch in enumerate(ds_test):
-            predicted = [1 for inp in batch['inputs'] if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 else 0]
+            predicted = [1 if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 for inp in batch['inputs'] else 0]
             y_test_pred += predicted.cpu().tolist()
             y_test_true += batch['labels'].to(device).tolist()
     print('Test F1 (logits):',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
@@ -461,7 +461,7 @@ def main():
                                 activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            predicted = [1 for inp in inputs if torch.sigmoid(linear_model(inp).data)>0.5 else 0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 for inp in inputs if torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0]>0.5 else 0]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                            predicted = [1 if torch.sigmoid(linear_model(inp).data)>0.5 for inp in inputs else 0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0]>0.5 for inp in inputs else 0]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_val_pred += predicted.cpu().tolist()
                             y_val_true += batch['labels'].tolist()
                             val_preds_batch = torch.sigmoid(linear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
@@ -494,7 +494,7 @@ def main():
                                 activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
                             if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            predicted = [1 for inp in inputs if torch.sigmoid(linear_model(inp).data)>0.5 else 0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 for inp in inputs if torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0]>0.5 else 0]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                            predicted = [1 if torch.sigmoid(linear_model(inp).data)>0.5 for inp in inputs else 0] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0]>0.5 for inp in inputs else 0]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_test_pred += predicted.cpu().tolist()
                             y_test_true += batch['labels'].tolist()
                             test_preds_batch = torch.sigmoid(linear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
