@@ -716,6 +716,20 @@ def main():
         transformed = pca.fit_transform(probe_wgts_cls0)
         print(transformed.shape)
         print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
+        all_sim_cls0, all_sim_cls1 = [], []
+        for model_idx_a in range(all_test_pred[fold].shape[0]):
+            sim_cls0, sim_cls1 = [], []
+            norm_weights_a0 = transformed[model_idx_a] / transformed[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            # norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            for model_idx_b in range(all_test_pred[fold].shape[0]):
+                if model_idx_b!=model_idx_a:
+                    norm_weights_b0 = transformed[model_idx_b] / transformed[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    # norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+                    # sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+            all_sim_cls0 += sim_cls0
+            # all_sim_cls1 += sim_cls1
+        print(np.histogram(all_sim_cls0))
         
         # print('\n')
         # # Probe selection - a - using logits
