@@ -650,9 +650,9 @@ def main():
 
             # mean_probe_vector = np.mean(probe_wgts_cls0[ma5_index],axis=0)
 
-            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
-            probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
-            confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
+            # sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
+            # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
             # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
@@ -678,6 +678,12 @@ def main():
             # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
+            probe_wise_entropy = probe_wise_entropy[probe_wise_entropy<0.1]
+            if len(probe_wise_entropy==0):
+                confident_sample_pred3.append(0)
+            elif len(probe_wise_entropy==0):
+                confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
+
         # print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
@@ -700,6 +706,7 @@ def main():
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # print(np.histogram(check_sim_correct))
         # print(np.histogram(check_sim_wrong))
+        print('Num correct probes:')
         print(np.histogram(num_correct_probes))
 
         # check_sim_correct, check_sim_wrong = [], []
@@ -710,29 +717,29 @@ def main():
         # print(np.histogram(check_sim_correct))
         # print(np.histogram(check_sim_wrong))
 
-        probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
-        # print('Probe dimensions:')
-        # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
-        print('PCA:')
-        pca = PCA(n_components=32) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
-        transformed = pca.fit_transform(probe_wgts_cls0)
-        print(transformed.shape)
-        print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
-        transformed = torch.from_numpy(transformed)
-        all_sim_cls0, all_sim_cls1 = [], []
-        for model_idx_a in range(all_test_pred[fold].shape[0]):
-            sim_cls0, sim_cls1 = [], []
-            norm_weights_a0 = transformed[model_idx_a] / transformed[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            # norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            for model_idx_b in range(all_test_pred[fold].shape[0]):
-                if model_idx_b!=model_idx_a:
-                    norm_weights_b0 = transformed[model_idx_b] / transformed[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    # norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
-                    # sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
-            all_sim_cls0 += sim_cls0
-            # all_sim_cls1 += sim_cls1
-        print(np.histogram(all_sim_cls0))
+        # probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
+        # # print('Probe dimensions:')
+        # # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
+        # print('PCA:')
+        # pca = PCA(n_components=32) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+        # transformed = pca.fit_transform(probe_wgts_cls0)
+        # print(transformed.shape)
+        # print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
+        # transformed = torch.from_numpy(transformed)
+        # all_sim_cls0, all_sim_cls1 = [], []
+        # for model_idx_a in range(all_test_pred[fold].shape[0]):
+        #     sim_cls0, sim_cls1 = [], []
+        #     norm_weights_a0 = transformed[model_idx_a] / transformed[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #     # norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #     for model_idx_b in range(all_test_pred[fold].shape[0]):
+        #         if model_idx_b!=model_idx_a:
+        #             norm_weights_b0 = transformed[model_idx_b] / transformed[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #             # norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #             sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+        #             # sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+        #     all_sim_cls0 += sim_cls0
+        #     # all_sim_cls1 += sim_cls1
+        # print(np.histogram(all_sim_cls0))
         
         # print('\n')
         # # Probe selection - a - using logits
