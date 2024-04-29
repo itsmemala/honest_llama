@@ -516,7 +516,8 @@ def main():
                                 y_test_true += batch['labels'].tolist()
                                 test_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                 test_preds.append(test_preds_batch)
-                                test_logits.append(linear_model(inputs))
+                                if args.token in ['answer_last','prompt_last','maxpool_all']: test_logits.append(linear_model(inputs))
+                                if args.token in ['all','tagged_tokens']: test_logits.append(torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]))
                                 if args.token in ['all','tagged_tokens']: inputs = torch.cat(activations,dim=0)  # stack for calculating sim
                                 test_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
                         all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
