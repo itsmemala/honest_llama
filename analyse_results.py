@@ -707,8 +707,9 @@ def main():
         # print(np.histogram(check_sim_correct))
         # print(np.histogram(check_sim_wrong))
 
+        probe_wgts_cls0 = [val.cpu().numpy() for val in probe_wgts_cls0]
         print('Probe dimensions:')
-        print(np.histogram(np.argmax(probe_wgts_cls0.cpu().numpy(), axis=1)))
+        print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
 
         
         # print('\n')
