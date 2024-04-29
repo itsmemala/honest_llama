@@ -678,7 +678,7 @@ def main():
             # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
-            probe_wise_entropy = probe_wise_entropy[probe_wise_entropy<=0.3]
+            probe_wise_entropy = probe_wise_entropy[probe_wise_entropy<=0.4]
             if len(probe_wise_entropy)==0:
                 confident_sample_pred3.append(0)
             else:
