@@ -78,9 +78,9 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     ds_test = Dataset.from_dict({"inputs": test_logits, "labels": y_test}).with_format("torch")
     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-    linear_model = LogisticRegression_Torch(train_logits.shape[1], 2).to(device)
+    linear_model = LogisticRegression_Torch(train_logits.shape[1], 1).to(device)
     wgt_0 = np.sum(y_train)/len(y_train)
-    criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
     lr = args.lr
     
     # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
@@ -129,7 +129,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     with torch.no_grad():
         linear_model.eval()
         for step,batch in enumerate(ds_val):
-            predicted = torch.max(linear_model(batch['inputs'].to(device)).data, dim=1)[1]
+            predicted = [1 for inp in batch['inputs'] if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 else 0]
             y_val_pred += predicted.cpu().tolist()
             y_val_true += batch['labels'].to(device).tolist()
     print('Val F1 (logits):',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
@@ -138,7 +138,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     with torch.no_grad():
         linear_model.eval()
         for step,batch in enumerate(ds_test):
-            predicted = torch.max(linear_model(batch['inputs'].to(device)).data, dim=1)[1]
+            predicted = [1 for inp in batch['inputs'] if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 else 0]
             y_test_pred += predicted.cpu().tolist()
             y_test_true += batch['labels'].to(device).tolist()
     print('Test F1 (logits):',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
