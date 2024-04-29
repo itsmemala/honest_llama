@@ -6,6 +6,7 @@ import pickle
 import json
 from itertools import combinations
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score
+from sklearn.decomposition import PCA, KernelPCA
 from matplotlib import pyplot as plt
 import argparse
 from utils import LogisticRegression_Torch
@@ -708,9 +709,11 @@ def main():
         # print(np.histogram(check_sim_wrong))
 
         probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
-        print('Probe dimensions:')
-        print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
-
+        # print('Probe dimensions:')
+        # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
+        pca = KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+        transformed = pca.fit_transform(probe_wgts_cls0)
+        print(transformed.shape)
         
         # print('\n')
         # # Probe selection - a - using logits
