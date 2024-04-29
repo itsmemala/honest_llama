@@ -311,7 +311,7 @@ def main():
         # for layer in tqdm([0]):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
-                loop_kld_probes = range(2) if args.method=='individual_linear_kld_perprobe' else [0]:
+                loop_kld_probes = range(2) if args.method=='individual_linear_kld_perprobe' else [0]
                 for kld_probe in loop_kld_probes:
                     if args.method=='individual_linear' or args.method=='individual_linear_unitnorm' or args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse' or args.method=='individual_linear_kld_perprobe':
                         train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
