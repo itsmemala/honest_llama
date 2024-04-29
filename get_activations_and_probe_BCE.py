@@ -97,7 +97,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
         for step,batch in enumerate(ds_train):
             optimizer.zero_grad()
             outputs = linear_model(batch['inputs'].to(device))
-            loss = criterion(outputs, batch['labels'].to(device))
+            loss = criterion(outputs, F.one_hot(batch['labels'],num_classes=1).to(device))
             loss.backward()
             optimizer.step()
         # Get val loss
@@ -106,7 +106,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
         for step,batch in enumerate(ds_val):
             optimizer.zero_grad()
             outputs = linear_model(batch['inputs'].to(device))
-            epoch_val_loss += criterion(outputs, batch['labels'].to(device))
+            epoch_val_loss += criterion(outputs, F.one_hot(batch['labels'],num_classes=1).to(device))
         val_loss.append(epoch_val_loss.item())
         # Choose best model
         if epoch_val_loss.item() < best_val_loss:
@@ -362,7 +362,7 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                             if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             outputs = linear_model(inputs)
-                            loss = criterion(outputs, targets.to(device))
+                            loss = criterion(outputs, F.one_hot(targets,num_classes=1).to(device))
                             if 'individual_linear_kld' in args.method and len(probes_saved)>0:
                                 train_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                 for probes_saved_path in probes_saved:
@@ -405,7 +405,7 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                             if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             outputs = linear_model(inputs)
-                            epoch_val_loss += criterion(outputs, targets.to(device))
+                            epoch_val_loss += criterion(outputs, F.one_hot(targets,num_classes=1).to(device))
                             epoch_val_logits.append(outputs)
                         val_loss.append(epoch_val_loss.item())
                         # Choose best model
