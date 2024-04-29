@@ -679,7 +679,7 @@ def main():
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
             probe_wise_entropy = probe_wise_entropy[probe_wise_entropy<0.1]
-            if len(probe_wise_entropy==0):
+            if len(probe_wise_entropy)==0:
                 confident_sample_pred3.append(0)
             else:
                 confident_sample_pred3.append(np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)]))
