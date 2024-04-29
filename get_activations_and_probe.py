@@ -40,6 +40,10 @@ def boolean_string(s):
         raise ValueError('Not a valid boolean string')
     return s == 'True'
 
+# Define a custom argument type for a list of integers
+def list_of_ints(arg):
+    return list(map(int, arg.split(',')))
+
 def num_tagged_tokens(tagged_token_idxs_prompt):
     return sum([b-a+1 for a,b in tagged_token_idxs_prompt])
 
@@ -157,7 +161,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_linear') # individual_linear_unitnorm, individual_linear, individual_linear_kld, individual_linear_kld_reverse
+    parser.add_argument('--method',type=str, default='individual_linear') # individual_linear_unitnorm, individual_linear, individual_linear_kld, individual_linear_kld_reverse, individual_linear_kld_perprobe
     parser.add_argument('--kld_wgt',type=float, default=1)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
@@ -166,6 +170,7 @@ def main():
     parser.add_argument('--epochs',type=int, default=3)
     parser.add_argument('--layer_start',type=int, default=None)
     parser.add_argument('--layer_end',type=int, default=None)
+    parser.add_argument('--custom_layers',default=None,type=list_of_ints,help='(default=%(default)s)')
     parser.add_argument('--lr',type=float, default=0.05)
     parser.add_argument('--optimizer',type=str, default='SGD')
     parser.add_argument('--use_class_wgt',type=bool, default=False)
@@ -299,219 +304,229 @@ def main():
         all_train_logits[i], all_val_logits[i], all_test_logits[i] = [], [], []
         all_val_sim[i], all_test_sim[i] = [], []
         probes_saved = []
-        loop_layers = range(args.layer_start,args.layer_end+1,1) if args.layer_start is not None else range(num_layers)
+        loop_layers = range(args.layer_start,args.layer_end+1,1) if args.layer_start is not None else args.custom_layers if args.custom_layers is not None else range(num_layers)
         if args.method=='individual_linear_kld_reverse': loop_layers = range(num_layers-1,-1,-1)
         for layer in tqdm(loop_layers):
         # for layer in tqdm(range(num_layers)):
         # for layer in tqdm([0]):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
-                if args.method=='individual_linear' or args.method=='individual_linear_unitnorm' or args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse':
-                    train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
-                    class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
-                    weight = 1. / class_sample_count
-                    samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
-                    sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-                    ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
-                    ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-                    ds_val = DataLoader(ds_val, batch_size=args.bs)
-                    ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                    ds_test = DataLoader(ds_test, batch_size=args.bs)
+                loop_kld_probes = range(2) if args.method=='individual_linear_kld_perprobe' else [0]:
+                for kld_probe in loop_kld_probes:
+                    if args.method=='individual_linear' or args.method=='individual_linear_unitnorm' or args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse' or args.method=='individual_linear_kld_perprobe':
+                        train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
+                        class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
+                        weight = 1. / class_sample_count
+                        samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
+                        sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+                        ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
+                        ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
+                        ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
+                        ds_val = DataLoader(ds_val, batch_size=args.bs)
+                        ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
+                        ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                    act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
-                    linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
-                    wgt_0 = np.sum(y_train)/len(y_train)
-                    criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
-                    criterion_kld = nn.KLDivLoss(reduction='batchmean')
-                    lr = args.lr
-                    
-                    # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
+                        act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
+                        linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
+                        wgt_0 = np.sum(y_train)/len(y_train)
+                        criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
+                        criterion_kld = nn.KLDivLoss(reduction='batchmean')
+                        lr = args.lr
+                        
+                        # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
-                    train_loss, val_loss, kld_loss = [], [], []
-                    best_val_loss = torch.inf
-                    best_model_state = linear_model.state_dict()
-                    best_val_logits = []
-                    if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch':
-                        optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
-                        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-                    for epoch in range(args.epochs):
-                        linear_model.train()
-                        if args.optimizer=='Adam' or args.optimizer=='SGD': optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
-                        # for step,batch in enumerate(iter_bar):
-                        for step,batch in enumerate(ds_train):
-                            optimizer.zero_grad()
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]) # TODO for AH: extract specific head activations
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']:
-                                targets = batch['labels']
-                            elif args.token=='all':
-                                # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                            if args.token=='tagged_tokens':
-                                # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                                targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            outputs = linear_model(inputs)
-                            loss = criterion(outputs, targets.to(device))
-                            if 'individual_linear_kld' in args.method and len(probes_saved)>0:
-                                train_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                                for probes_saved_path in probes_saved:
+                        train_loss, val_loss, kld_loss = [], [], []
+                        best_val_loss = torch.inf
+                        best_model_state = linear_model.state_dict()
+                        best_val_logits = []
+                        if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch':
+                            optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
+                            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+                        for epoch in range(args.epochs):
+                            linear_model.train()
+                            if args.optimizer=='Adam' or args.optimizer=='SGD': optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
+                            # for step,batch in enumerate(iter_bar):
+                            for step,batch in enumerate(ds_train):
+                                optimizer.zero_grad()
+                                activations = []
+                                for idx in batch['inputs_idxs']:
+                                    if args.load_act==False:
+                                        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                        file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                    else:
+                                        act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]) # TODO for AH: extract specific head activations
+                                    activations.append(act)
+                                inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+                                if args.token in ['answer_last','prompt_last','maxpool_all']:
+                                    targets = batch['labels']
+                                elif args.token=='all':
+                                    # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
+                                    targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                                if args.token=='tagged_tokens':
+                                    # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                                    targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                outputs = linear_model(inputs)
+                                loss = criterion(outputs, targets.to(device))
+                                if (args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse') and len(probes_saved)>0:
+                                    train_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                                    for probes_saved_path in probes_saved:
+                                        past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
+                                        past_linear_model = torch.load(probes_saved_path)
+                                        past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                                        loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
+                                        kld_loss.append(1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
+                                if args.method=='individual_linear_kld_perprobe' and kld_probe==1:
+                                    train_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                                    probes_saved_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_0'
                                     past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
                                     past_linear_model = torch.load(probes_saved_path)
                                     past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
                                     kld_loss.append(1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
-                            train_loss.append(loss.item())
-                            # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
-                            loss.backward()
-                            optimizer.step()
-                            # if 'individual_linear_kld' in args.method and len(probes_saved)>0:
-                            #     print('Total loss:',loss.item())
-                            #     print('KLD loss:',1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
-                        # Get val loss
-                        linear_model.eval()
-                        epoch_val_loss = 0
-                        epoch_val_logits = []
-                        for step,batch in enumerate(ds_val):
-                            optimizer.zero_grad()
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]) # TODO for AH: extract specific head activations
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']:
-                                targets = batch['labels']
-                            elif args.token=='all':
-                                # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                            if args.token=='tagged_tokens':
-                                # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                                targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            outputs = linear_model(inputs)
-                            epoch_val_loss += criterion(outputs, targets.to(device))
-                            epoch_val_logits.append(outputs)
-                        val_loss.append(epoch_val_loss.item())
-                        # Choose best model
-                        if epoch_val_loss.item() < best_val_loss:
-                            best_val_loss = epoch_val_loss.item()
-                            best_model_state = linear_model.state_dict()
-                            best_val_logits = epoch_val_logits
-                        # Early stopping
-                        patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0
-                        if len(val_loss)>=patience:
-                            for epoch_id in range(1,patience,1):
-                                val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
-                                if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
-                            if is_not_decreasing==patience-1: break
-                        if args.optimizer=='SGD': lr = lr*0.75 # No decay for Adam
-                        if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
-                    all_train_loss[i].append(np.array(train_loss))
-                    all_val_loss[i].append(np.array(val_loss))
-                    if 'individual_linear_kld' in args.method and len(probes_saved)>0:
-                        print(layer,head)
-                        print('KLD loss:',kld_loss[:10],kld_loss[-10:])
-                        print('Train and val loss:',train_loss[-1],val_loss[-1])
-                        print('\n')
-                    linear_model.load_state_dict(best_model_state)
-                    if args.save_probes:
-                        probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}'
-                        torch.save(linear_model, probe_save_path)
-                        probes_saved.append(probe_save_path)
-                    if args.classifier_on_probes:
-                        # Fix train order and get logits
-                        ds_train_fixed = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                        ds_train_fixed = DataLoader(ds_train_fixed, batch_size=args.bs)
-                        best_train_logits = get_logits(ds_train_fixed,model,layer,head,linear_model,device,args)
-                    
-                    # Val and Test performance
-                    pred_correct = 0
-                    y_val_pred, y_val_true = [], []
-                    val_preds = []
-                    val_sim = []
-                    with torch.no_grad():
-                        linear_model.eval()
-                        norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                        norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                        for step,batch in enumerate(ds_val):
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            y_val_pred += predicted.cpu().tolist()
-                            y_val_true += batch['labels'].tolist()
-                            val_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                            val_preds.append(val_preds_batch)
-                            val_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
-                    all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
-                    all_val_sim[i].append(torch.cat(val_sim).cpu().numpy())
-                    all_y_true_val[i].append(y_val_true)
-                    all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                    pred_correct = 0
-                    y_test_pred, y_test_true = [], []
-                    test_preds = []
-                    test_logits = []
-                    test_sim = []
-                    with torch.no_grad():
-                        linear_model.eval()
-                        use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
-                        use_answer_token_idxes = answer_token_idxes if args.num_folds>1 else test_answer_token_idxes
-                        use_tagged_token_idxs = tagged_token_idxs if args.num_folds>1 else test_tagged_token_idxs
-                        for step,batch in enumerate(ds_test):
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            y_test_pred += predicted.cpu().tolist()
-                            y_test_true += batch['labels'].tolist()
-                            test_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                            test_preds.append(test_preds_batch)
-                            test_logits.append(linear_model(inputs))
-                            test_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
-                    all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
-                    all_test_sim[i].append(torch.cat(test_sim).cpu().numpy())
-                    all_y_true_test[i].append(y_test_true)
-                    all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                    if args.classifier_on_probes:
-                        all_train_logits[i].append(torch.cat(best_train_logits))
-                    all_val_logits[i].append(torch.cat(best_val_logits))
-                    all_test_logits[i].append(torch.cat(test_logits))
-            #     break
-            # break
+                                train_loss.append(loss.item())
+                                # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
+                                loss.backward()
+                                optimizer.step()
+                                # if 'individual_linear_kld' in args.method and len(probes_saved)>0:
+                                #     print('Total loss:',loss.item())
+                                #     print('KLD loss:',1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
+                            # Get val loss
+                            linear_model.eval()
+                            epoch_val_loss = 0
+                            epoch_val_logits = []
+                            for step,batch in enumerate(ds_val):
+                                optimizer.zero_grad()
+                                activations = []
+                                for idx in batch['inputs_idxs']:
+                                    if args.load_act==False:
+                                        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                        file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                    else:
+                                        act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx]) # TODO for AH: extract specific head activations
+                                    activations.append(act)
+                                inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+                                if args.token in ['answer_last','prompt_last','maxpool_all']:
+                                    targets = batch['labels']
+                                elif args.token=='all':
+                                    # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
+                                    targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                                if args.token=='tagged_tokens':
+                                    # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                                    targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                outputs = linear_model(inputs)
+                                epoch_val_loss += criterion(outputs, targets.to(device))
+                                epoch_val_logits.append(outputs)
+                            val_loss.append(epoch_val_loss.item())
+                            # Choose best model
+                            if epoch_val_loss.item() < best_val_loss:
+                                best_val_loss = epoch_val_loss.item()
+                                best_model_state = linear_model.state_dict()
+                                best_val_logits = epoch_val_logits
+                            # Early stopping
+                            patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0
+                            if len(val_loss)>=patience:
+                                for epoch_id in range(1,patience,1):
+                                    val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
+                                    if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+                                if is_not_decreasing==patience-1: break
+                            if args.optimizer=='SGD': lr = lr*0.75 # No decay for Adam
+                            if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
+                        all_train_loss[i].append(np.array(train_loss))
+                        all_val_loss[i].append(np.array(val_loss))
+                        if ((args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse') and len(probes_saved)>0) or (args.method=='individual_linear_kld_perprobe' and kld_probe==1):
+                            print(layer,head)
+                            print('KLD loss:',kld_loss[:10],kld_loss[-10:])
+                            print('Train and val loss:',train_loss[-1],val_loss[-1])
+                            print('\n')
+                        linear_model.load_state_dict(best_model_state)
+                        if args.save_probes:
+                            probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_{kld_probe}'
+                            torch.save(linear_model, probe_save_path)
+                            probes_saved.append(probe_save_path)
+                        if args.classifier_on_probes:
+                            # Fix train order and get logits
+                            ds_train_fixed = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
+                            ds_train_fixed = DataLoader(ds_train_fixed, batch_size=args.bs)
+                            best_train_logits = get_logits(ds_train_fixed,model,layer,head,linear_model,device,args)
+                        
+                        # Val and Test performance
+                        pred_correct = 0
+                        y_val_pred, y_val_true = [], []
+                        val_preds = []
+                        val_sim = []
+                        with torch.no_grad():
+                            linear_model.eval()
+                            norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            for step,batch in enumerate(ds_val):
+                                activations = []
+                                for idx in batch['inputs_idxs']:
+                                    if args.load_act==False:
+                                        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                        file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                    else:
+                                        act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                                    activations.append(act)
+                                inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                                y_val_pred += predicted.cpu().tolist()
+                                y_val_true += batch['labels'].tolist()
+                                val_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                                val_preds.append(val_preds_batch)
+                                val_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
+                        all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
+                        all_val_sim[i].append(torch.cat(val_sim).cpu().numpy())
+                        all_y_true_val[i].append(y_val_true)
+                        all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+                        pred_correct = 0
+                        y_test_pred, y_test_true = [], []
+                        test_preds = []
+                        test_logits = []
+                        test_sim = []
+                        with torch.no_grad():
+                            linear_model.eval()
+                            use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
+                            use_answer_token_idxes = answer_token_idxes if args.num_folds>1 else test_answer_token_idxes
+                            use_tagged_token_idxs = tagged_token_idxs if args.num_folds>1 else test_tagged_token_idxs
+                            for step,batch in enumerate(ds_test):
+                                activations = []
+                                for idx in batch['inputs_idxs']:
+                                    if args.load_act==False:
+                                        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                        file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                    else:
+                                        act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
+                                    activations.append(act)
+                                inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                                y_test_pred += predicted.cpu().tolist()
+                                y_test_true += batch['labels'].tolist()
+                                test_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                                test_preds.append(test_preds_batch)
+                                test_logits.append(linear_model(inputs))
+                                test_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
+                        all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
+                        all_test_sim[i].append(torch.cat(test_sim).cpu().numpy())
+                        all_y_true_test[i].append(y_test_true)
+                        all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+                        if args.classifier_on_probes:
+                            all_train_logits[i].append(torch.cat(best_train_logits))
+                        all_val_logits[i].append(torch.cat(best_val_logits))
+                        all_test_logits[i].append(torch.cat(test_logits))
+                #     break
+                # break
     
         if args.classifier_on_probes:
             train_logits = torch.cat(all_train_logits[i],dim=1)
