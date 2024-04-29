@@ -682,7 +682,7 @@ def main():
             if len(probe_wise_entropy==0):
                 confident_sample_pred3.append(0)
             else:
-                confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
+                confident_sample_pred3.append(np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)]))
 
         # print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
