@@ -583,7 +583,7 @@ def main():
                     sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of probes
                     if sim<=min_sim_val: min_sim_val, dissimilar_idx_a, dissimilar_idx_b = sim, idx_a, idx_b
         # print(sum(val_f1_avg>=top_5_lower_bound_val2))
-        num_hard_samples, entropy_wrong, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], [], []
+        num_hard_samples, entropy_wrong, entropy_correct, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], [], [], []
         max_sim, max_sim1 = [], []
         cls_wrong = []
         check_sim_correct, check_sim_wrong = [], []
@@ -618,6 +618,7 @@ def main():
             max_sim_val, max_sim_val1 = -1, -1
             if len(all_correct_index)>0: # if correct prediction exists
                 num_correct_probes.append(len(all_correct_index))
+                entropy_correct.append(np.min(probe_wise_entropy))
                 for idx_a in all_correct_index: # for each correct probe
                     correct_index = ma5_index[idx_a]
                     wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,correct_index,args.results_file_name,args.save_path)
@@ -685,6 +686,7 @@ def main():
         # counts, bins = np.histogram(entropy_gap)
         print(sum(cls_wrong))
         print(np.histogram(entropy_wrong))
+        print(np.histogram(entropy_correct))
         print('Entropy gaps:')
         print(np.histogram(entropy_gap))
         print(np.histogram(entropy_gap_to_correct))
