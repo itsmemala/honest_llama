@@ -690,8 +690,8 @@ def main():
         print(np.histogram(entropy_gap2))
         print(np.histogram(entropy_gap_to_correct2))
         print('Probe similarity:')
-        print(np.histogram(max_sim))
-        print(np.histogram(max_sim1))
+        # print(np.histogram(max_sim))
+        # print(np.histogram(max_sim1))
         # print(np.histogram(all_sim_cls0))
         # print(np.histogram(all_sim_cls1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
@@ -699,13 +699,16 @@ def main():
         # print(np.histogram(check_sim_wrong))
         print(np.histogram(num_correct_probes))
 
-        check_sim_correct, check_sim_wrong = [], []
-        for i in range(all_val_pred[fold].shape[1]):
-            if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,0]))
-            if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,0]))
-        print('Max probe similarity of each test sample:')
-        print(np.histogram(check_sim_correct))
-        print(np.histogram(check_sim_wrong))
+        # check_sim_correct, check_sim_wrong = [], []
+        # for i in range(all_val_pred[fold].shape[1]):
+        #     if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,0]))
+        #     if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,0]))
+        # print('Max probe similarity of each test sample:')
+        # print(np.histogram(check_sim_correct))
+        # print(np.histogram(check_sim_wrong))
+
+        print('Probe dimensions:')
+        print(np.histogram(np.argmax(probe_wgts_cls0, axis=1))
 
         
         # print('\n')
