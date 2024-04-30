@@ -130,7 +130,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
         linear_model.eval()
         for step,batch in enumerate(ds_val):
             predicted = [1 if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 else 0 for inp in batch['inputs']]
-            y_val_pred += predicted.cpu().tolist()
+            y_val_pred += predicted
             y_val_true += batch['labels'].to(device).tolist()
     print('Val F1 (logits):',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
     y_test_pred, y_test_true = [], []
@@ -139,7 +139,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
         linear_model.eval()
         for step,batch in enumerate(ds_test):
             predicted = [1 if torch.sigmoid(linear_model(inp.to(device)).data)>0.5 else 0 for inp in batch['inputs']]
-            y_test_pred += predicted.cpu().tolist()
+            y_test_pred += predicted
             y_test_true += batch['labels'].to(device).tolist()
     print('Test F1 (logits):',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
 
