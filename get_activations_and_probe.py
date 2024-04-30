@@ -334,7 +334,7 @@ def main():
                         ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                         act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
-                        linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
+                        linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=args.use_linear_bias).to(device)
                         wgt_0 = np.sum(y_train)/len(y_train)
                         criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
                         criterion_kld = nn.KLDivLoss(reduction='batchmean')
