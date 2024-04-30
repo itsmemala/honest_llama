@@ -49,9 +49,9 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class LogisticRegression_Torch(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_outputs, bias=True):
+    def __init__(self, n_inputs, n_outputs, bias):
         super().__init__()
-        self.linear = torch.nn.Linear(n_inputs, n_outputs)
+        self.linear = torch.nn.Linear(n_inputs, n_outputs, bias)
     # make predictions
     def forward(self, x):
         y_pred = self.linear(x)
