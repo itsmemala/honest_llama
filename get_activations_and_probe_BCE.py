@@ -78,7 +78,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
     ds_test = Dataset.from_dict({"inputs": test_logits, "labels": y_test}).with_format("torch")
     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-    linear_model = LogisticRegression_Torch(train_logits.shape[1], 1).to(device)
+    linear_model = LogisticRegression_Torch(train_logits.shape[1], 1, bias=args.use_linear_bias).to(device)
     wgt_0 = np.sum(y_train)/len(y_train)
     criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
     lr = args.lr
@@ -158,6 +158,8 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_linear') # individual_linear_unitnorm, individual_linear, individual_linear_kld, individual_linear_kld_reverse # no_bias
+    parser.add_argument('--use_linear_bias',type=bool, default=False)
+    parser.add_argument('--use_unitnorm',type=bool, default=False)
     parser.add_argument('--kld_wgt',type=float, default=1)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
@@ -274,7 +276,9 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    method_concat = args.method + '_' + str(args.kld_wgt) + '_' + str(args.kld_temp) if 'kld' in args.method else args.method
+    method_concat = args.method + '_unitnorm' if args.use_unitnorm==True else args.method
+    method_concat = method_concat + '_no_bias' if args.use_linear_bias==False else method_concat
+    method_concat = method_concat + '_' + str(args.kld_wgt) + '_' + str(args.kld_temp) if 'kld' in args.method else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
@@ -320,7 +324,7 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
-                    linear_model = LogisticRegression_Torch(act_dims[args.using_act], 1, bias=False).to(device) if 'no_bias' in args.method else LogisticRegression_Torch(act_dims[args.using_act], 1).to(device)
+                    linear_model = LogisticRegression_Torch(act_dims[args.using_act], 1, bias=args.use_linear_bias).to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
                     criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                     criterion_kld = nn.KLDivLoss(reduction='batchmean')
@@ -360,13 +364,13 @@ def main():
                             if args.token=='tagged_tokens':
                                 # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            if 'individual_linear_unitnorm' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                            if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             outputs = linear_model(inputs)
                             loss = criterion(outputs, targets.to(device).float())
                             if 'individual_linear_kld' in args.method and len(probes_saved)>0:
                                 train_preds_batch = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                 for probes_saved_path in probes_saved:
-                                    past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
+                                    past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 1, bias=args.use_linear_bias).to(device)
                                     past_linear_model = torch.load(probes_saved_path)
                                     past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
@@ -403,7 +407,7 @@ def main():
                             if args.token=='tagged_tokens':
                                 # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            if 'individual_linear_unitnorm' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                            if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             outputs = linear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device).float())
                             epoch_val_logits.append(outputs)
@@ -460,7 +464,7 @@ def main():
                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                                 activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            if 'individual_linear_unitnorm' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                            if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             predicted = [1 if torch.sigmoid(linear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_val_pred += predicted
                             y_val_true += batch['labels'].tolist()
@@ -493,7 +497,7 @@ def main():
                                     act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
                                 activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            if 'individual_linear_unitnorm' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                            if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             predicted = [1 if torch.sigmoid(linear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(linear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_test_pred += predicted
                             y_test_true += batch['labels'].tolist()
