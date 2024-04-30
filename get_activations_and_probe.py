@@ -161,7 +161,9 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_linear') # individual_linear_unitnorm, individual_linear, individual_linear_kld, individual_linear_kld_reverse, individual_linear_kld_perprobe
+    parser.add_argument('--method',type=str, default='individual_linear') # individual_linear, individual_linear_kld, individual_linear_kld_reverse, individual_linear_kld_perprobe
+    parser.add_argument('--use_linear_bias',type=bool, default=False)
+    parser.add_argument('--use_unitnorm',type=bool, default=False)
     parser.add_argument('--kld_wgt',type=float, default=1)
     parser.add_argument('--kld_temp',type=float, default=2)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
@@ -282,7 +284,9 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    method_concat = args.method + '_' + str(args.kld_wgt) if 'kld' in args.method else args.method
+    method_concat = args.method + '_unitnorm' if args.use_unitnorm==True else args.method
+    method_concat = method_concat + '_no_bias' if args.use_linear_bias==False else method_concat
+    method_concat = method_concat + '_' + str(args.kld_wgt) + '_' + str(args.kld_temp) if 'kld' in args.method else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
@@ -294,7 +298,7 @@ def main():
         y_train = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_val = np.stack([labels[i] for i in val_set_idxs], axis = 0)
         y_test = np.stack([labels[i] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
-        # if args.method=='individual_non_linear':
+        # if 'individual_non_linear' in args.method:
         #     y_train = np.vstack([[val] for val in y_train], dtype='float32')
         #     y_val = np.vstack([[val] for val in y_val], dtype='float32')
         #     y_test = np.vstack([[val] for val in y_test], dtype='float32')
@@ -308,7 +312,7 @@ def main():
         all_val_sim[i], all_test_sim[i] = [], []
         probes_saved = []
         loop_layers = range(args.layer_start,args.layer_end+1,1) if args.layer_start is not None else args.custom_layers if args.custom_layers is not None else range(num_layers)
-        if args.method=='individual_linear_kld_reverse': loop_layers = range(num_layers-1,-1,-1)
+        if 'individual_linear_kld_reverse' in args.method: loop_layers = range(num_layers-1,-1,-1)
         for layer in tqdm(loop_layers):
         # for layer in tqdm(range(num_layers)):
         # for layer in tqdm([0]):
@@ -316,7 +320,7 @@ def main():
             for head in loop_heads:
                 loop_kld_probes = range(2) if args.method=='individual_linear_kld_perprobe' else [0]
                 for kld_probe in loop_kld_probes:
-                    if args.method=='individual_linear' or args.method=='individual_linear_unitnorm' or args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse' or args.method=='individual_linear_kld_perprobe':
+                    if 'individual_linear' in args.method:
                         train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
                         class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
                         weight = 1. / class_sample_count
@@ -370,7 +374,7 @@ def main():
                                 if args.token=='tagged_tokens':
                                     # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                                     targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 outputs = linear_model(inputs)
                                 loss = criterion(outputs, targets.to(device))
                                 if (args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse') and len(probes_saved)>0:
@@ -381,7 +385,7 @@ def main():
                                         past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                         loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
                                         kld_loss.append(1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
-                                if args.method=='individual_linear_kld_perprobe' and kld_probe==1:
+                                if (args.method=='individual_linear_kld_perprobe') and kld_probe==1:
                                     train_preds_batch = F.log_softmax(linear_model(inputs).data / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     probes_saved_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_0'
                                     past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2).to(device)
@@ -421,7 +425,7 @@ def main():
                                 if args.token=='tagged_tokens':
                                     # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                                     targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 outputs = linear_model(inputs)
                                 epoch_val_loss += criterion(outputs, targets.to(device))
                                 epoch_val_logits.append(outputs)
@@ -479,7 +483,7 @@ def main():
                                         act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                                     activations.append(act)
                                 inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                 y_val_pred += predicted.cpu().tolist()
                                 y_val_true += batch['labels'].tolist()
@@ -513,7 +517,7 @@ def main():
                                         act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
                                     activations.append(act)
                                 inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                                if args.method=='individual_linear_unitnorm': inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                if args.use_unitnorm: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 predicted = torch.max(linear_model(inputs).data, dim=1)[1] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.max(linear_model(inp).data, dim=0)[0], dim=0)[1] for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                 y_test_pred += predicted.cpu().tolist()
                                 y_test_true += batch['labels'].tolist()
