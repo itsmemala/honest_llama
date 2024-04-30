@@ -224,6 +224,8 @@ def main():
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         if args.load_act==True: # Only load model if we need activations on the fly
             model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+        else:
+            model = None
         num_layers = 32
         num_heads = 32
     device = "cuda"
