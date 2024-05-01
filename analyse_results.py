@@ -706,8 +706,8 @@ def main():
         # print(np.histogram(max_sim1))
         # print(np.histogram(all_sim_cls0))
         # print(np.histogram(all_sim_cls1))
-        print(min(all_sim_cls0),max(all_sim_cls0))
-        print(min(all_sim_cls1),max(all_sim_cls1))
+        # print(min(all_sim_cls0),max(all_sim_cls0))
+        # print(min(all_sim_cls1),max(all_sim_cls1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # print(np.histogram(check_sim_correct))
         # print(np.histogram(check_sim_wrong))
@@ -722,29 +722,32 @@ def main():
         print(np.histogram(check_sim_correct))
         print(np.histogram(check_sim_wrong))
 
-        # probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
-        # # print('Probe dimensions:')
-        # # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
-        # print('PCA:')
-        # pca = PCA(n_components=32) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
-        # transformed = pca.fit_transform(probe_wgts_cls0)
-        # print(transformed.shape)
+        probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
+        probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
+        # print('Probe dimensions:')
+        # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
+        print('PCA:')
+        pca = PCA(n_components=32) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+        transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
+        transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
+        # print(transformed_cls0.shape)
         # print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
-        # transformed = torch.from_numpy(transformed)
-        # all_sim_cls0, all_sim_cls1 = [], []
-        # for model_idx_a in range(all_test_pred[fold].shape[0]):
-        #     sim_cls0, sim_cls1 = [], []
-        #     norm_weights_a0 = transformed[model_idx_a] / transformed[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #     # norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #     for model_idx_b in range(all_test_pred[fold].shape[0]):
-        #         if model_idx_b!=model_idx_a:
-        #             norm_weights_b0 = transformed[model_idx_b] / transformed[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #             # norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #             sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
-        #             # sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
-        #     all_sim_cls0 += sim_cls0
-        #     # all_sim_cls1 += sim_cls1
-        # print(np.histogram(all_sim_cls0))
+        transformed_cls0, transformed_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
+        all_sim_cls0, all_sim_cls1 = [], []
+        for model_idx_a in range(all_test_pred[fold].shape[0]):
+            sim_cls0, sim_cls1 = [], []
+            norm_weights_a0 = transformed_cls0[model_idx_a] / transformed_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            norm_weights_a1 = transformed_cls1[model_idx_a] / transformed_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            for model_idx_b in range(all_test_pred[fold].shape[0]):
+                if model_idx_b!=model_idx_a:
+                    norm_weights_b0 = transformed_cls0[model_idx_b] / transformed_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_b1 = transformed_cls1[model_idx_b] / transformed_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+                    sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+            all_sim_cls0 += sim_cls0
+            all_sim_cls1 += sim_cls1
+        print(min(all_sim_cls0),max(all_sim_cls0))
+        print(min(all_sim_cls1),max(all_sim_cls1))
         
         print('\n')
         # Probe selection - a - using logits
