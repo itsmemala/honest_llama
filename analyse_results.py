@@ -728,7 +728,7 @@ def main():
         # print('Probe dimensions:')
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         print('PCA:')
-        pca = PCA(n_components=20) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+        pca = PCA(n_components=32) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
         transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
         transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
         # print(transformed_cls0.shape)
