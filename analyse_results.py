@@ -146,7 +146,7 @@ def main():
         # print('Probe dimensions:')
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         print('PCA:')
-        n_components = 30 if all_test_pred[fold].shape[0]==32 else all_test_pred[fold].shape[0]
+        n_components = 20 if all_test_pred[fold].shape[0]==32 else all_test_pred[fold].shape[0]
         pca = PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
         transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
         transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
