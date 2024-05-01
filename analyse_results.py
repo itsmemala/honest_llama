@@ -517,8 +517,8 @@ def main():
         results,results_cls1,results_cls0 = [], [], []
         results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
         params = []
-        for ma_top_x in [5,10,15,20,25,32]:
-            for top_x in [2,3,4,5,10,15,20]:
+        for ma_top_x in [5]:#,10,15,20,25,32]:
+            for top_x in [2,3,4,5]:#,10,15,20]:
                 confident_sample_pred1, confident_sample_pred2 = [], []
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
