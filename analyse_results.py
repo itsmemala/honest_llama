@@ -170,9 +170,9 @@ def main():
         print('Non-Hallucinated hard samples:',sum(num_correct_probes_nonhallu<20),sum(num_correct_probes_nonhallu<10),sum(num_correct_probes_nonhallu<5))
         print('Hallucinated hard samples:',sum(num_correct_probes_hallu<20),sum(num_correct_probes_hallu<10),sum(num_correct_probes_hallu<5))
         print('# Hallucinated samples:',sum(all_test_true[fold][0]==0))
-        print('Set intersection for >10 probes:',set.intersection(*correct_probes_nonhallu_sets1),set.intersection(*correct_probes_hallu_sets1))
-        print('Set intersection for >5 probes:',set.intersection(*correct_probes_nonhallu_sets2),set.intersection(*correct_probes_hallu_sets2))
-        print(set.intersection(*correct_probes_nonhallu_sets1[:5]))
+        if all_test_pred[fold].shape[0]>10: print('Set intersection for >10 probes:',set.intersection(*correct_probes_nonhallu_sets1),set.intersection(*correct_probes_hallu_sets1))
+        if all_test_pred[fold].shape[0]>5: print('Set intersection for >5 probes:',set.intersection(*correct_probes_nonhallu_sets2),set.intersection(*correct_probes_hallu_sets2))
+        # print(set.intersection(*correct_probes_nonhallu_sets1[:5]))
         
         # Oracle 2
         best_sample_pred =[]
