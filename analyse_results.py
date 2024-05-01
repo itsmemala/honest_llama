@@ -696,11 +696,11 @@ def main():
 
             # mean_probe_vector = np.mean(probe_wgts_cls0[ma5_index],axis=0)
 
-            # sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
             # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
-            # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
-            # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
+            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
@@ -724,11 +724,11 @@ def main():
             # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
-            probe_wise_entropy = probe_wise_entropy[probe_wise_entropy<=0.9]
-            if len(probe_wise_entropy)==0:
-                confident_sample_pred3.append(0)
-            else:
-                confident_sample_pred3.append(np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)]))
+            # probe_wise_entropy = probe_wise_entropy[probe_wise_entropy<=0.9]
+            # if len(probe_wise_entropy)==0:
+            #     confident_sample_pred3.append(0)
+            # else:
+            #     confident_sample_pred3.append(np.argmax(sample_pred2_chosen[np.argmin(probe_wise_entropy)]))
 
         # print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
