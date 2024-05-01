@@ -19,8 +19,8 @@ def get_probe_wgts(fold,model,results_file_name,save_path):
     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
     using_act = 'ah' if '_ah_' in results_file_name else 'mlp_l1' if '_mlp_l1_' in results_file_name else 'mlp'
     num_layers = 32 if '_7B_' in results_file_name else 40 if '_13B_' in results_file_name else 60
-    layer = model if using_act=='mlp' else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
-    head = 0 if using_act=='mlp' else (model%num_layers)
+    layer = args.custom_layers[model] if args.custom_layers is not None else model if using_act in ['mlp','layer'] else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
+    head = 0 if using_act in ['mlp','layer'] else (model%num_layers)
     use_bias = False if 'no_bias' in results_file_name else True
     current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2, use_bias)
     kld_probe = 0
@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--layer_ends',default=None,type=list_of_ints,help='(default=%(default)s)')
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--use_similarity", type=bool, default=False)
+    parser.add_argument('--custom_layers',default=None,type=list_of_ints,help='(default=%(default)s)')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
