@@ -25,8 +25,10 @@ def get_probe_wgts(fold,model,results_file_name,save_path,args):
     current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2, use_bias)
     kld_probe = 0
     sim_file_name = results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'unitnorm' not in results_file_name else results_file_name
-    # linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}_{kld_probe}')
-    linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}')
+    try:
+        linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}_{kld_probe}')
+    except FileNotFoundError:
+        linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}')
     return linear_model.linear.weight[0], linear_model.linear.weight[1]
 
 def main():
