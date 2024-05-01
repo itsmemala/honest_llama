@@ -24,8 +24,9 @@ def get_probe_wgts(fold,model,results_file_name,save_path,args):
     use_bias = False if 'no_bias' in results_file_name else True
     current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2, use_bias)
     kld_probe = 0
-    linear_model = torch.load(f'{save_path}/probes/models/{results_file_name}_model{fold}_{layer}_{head}_{kld_probe}')
-    # linear_model = torch.load(f'{save_path}/probes/models/{results_file_name}_model{fold}_{layer}_{head}')
+    sim_file_name = results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'unitnorm' not in results_file_name else results_file_name
+    linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}_{kld_probe}')
+    # linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}')
     return linear_model.linear.weight[0], linear_model.linear.weight[1]
 
 def main():
@@ -114,6 +115,59 @@ def main():
             cls0_f1 = f1_score(all_val_true[fold][0],np.argmax(all_val_pred[fold][model], axis=1),pos_label=0)
             val_f1_cls0.append(cls0_f1)
             val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
+        
+        probe_wgts_cls0 = []
+        probe_wgts_cls1 = []
+        # Load probe weights
+        for model in range(all_test_pred[fold].shape[0]):
+            wgt_cls0, wgt_cls1 = get_probe_wgts(fold,model,args.results_file_name,args.save_path,args)
+            probe_wgts_cls0.append(wgt_cls0)
+            probe_wgts_cls1.append(wgt_cls1)
+        # Get mean similarity of each probe to every other probe
+        # probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
+        # all_sim_cls0, all_sim_cls1 = [], []
+        # for model_idx_a in range(all_test_pred[fold].shape[0]):
+        #     sim_cls0, sim_cls1 = [], []
+        #     norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #     norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #     for model_idx_b in range(all_test_pred[fold].shape[0]):
+        #         if model_idx_b!=model_idx_a:
+        #             norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #             norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #             sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+        #             sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+        #     probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
+        #     probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
+        #     all_sim_cls0 += sim_cls0
+        #     all_sim_cls1 += sim_cls1
+        probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
+        probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
+        # print('Probe dimensions:')
+        # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
+        print('PCA:')
+        pca = PCA(n_components=30) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+        transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
+        transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
+        # print(transformed_cls0.shape)
+        # print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
+        transformed_cls0, transformed_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
+        all_sim_cls0, all_sim_cls1 = [], []
+        for model_idx_a in range(all_test_pred[fold].shape[0]):
+            sim_cls0, sim_cls1 = [], []
+            norm_weights_a0 = transformed_cls0[model_idx_a] / transformed_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            norm_weights_a1 = transformed_cls1[model_idx_a] / transformed_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            for model_idx_b in range(all_test_pred[fold].shape[0]):
+                if model_idx_b!=model_idx_a:
+                    norm_weights_b0 = transformed_cls0[model_idx_b] / transformed_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_b1 = transformed_cls1[model_idx_b] / transformed_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+                    sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+            probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
+            probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
+            all_sim_cls0 += sim_cls0
+            all_sim_cls1 += sim_cls1
+        print(min(all_sim_cls0),max(all_sim_cls0))
+        print(min(all_sim_cls1),max(all_sim_cls1))
             
 
         print('FOLD',fold,'RESULTS:')
@@ -491,36 +545,11 @@ def main():
         print('Using accuracy (ind cls acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         print('Using accuracy (avg acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
         # Probe selection - j,k
-        probe_wgts_cls0 = []
-        probe_wgts_cls1 = []
-        # Load probe weights
-        for model in range(all_test_pred[fold].shape[0]):
-            wgt_cls0, wgt_cls1 = get_probe_wgts(fold,model,args.results_file_name,args.save_path,args)
-            probe_wgts_cls0.append(wgt_cls0)
-            probe_wgts_cls1.append(wgt_cls1)
-        # Get mean similarity of each probe to every other probe
-        probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
-        all_sim_cls0, all_sim_cls1 = [], []
-        for model_idx_a in range(all_test_pred[fold].shape[0]):
-            sim_cls0, sim_cls1 = [], []
-            norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            for model_idx_b in range(all_test_pred[fold].shape[0]):
-                if model_idx_b!=model_idx_a:
-                    norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
-                    sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
-            probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
-            probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
-            all_sim_cls0 += sim_cls0
-            all_sim_cls1 += sim_cls1
-        # Majority voting
         results,results_cls1,results_cls0 = [], [], []
         results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
         params = []
-        for ma_top_x in [5]:#,10,15,20,25,32]:
-            for top_x in [2,3,4]:#,5,10,15,20]:
+        for ma_top_x in [5,10,15,20,25,32]:
+            for top_x in [2,3,4,5,10,15,20]:
                 confident_sample_pred1, confident_sample_pred2 = [], []
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
@@ -546,10 +575,10 @@ def main():
                     results_mc.append(f1_score(all_test_true[fold][0],confident_sample_pred2,average='macro'))
                     results_mc_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred2))
                     results_mc_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        # best_idx = np.argmax(results)
-        # mc_best_idx = np.argmax(results_mc)
-        # print('Voting amongst most dissimilar probes (best result):',params[best_idx],results_cls1[best_idx],results_cls0[best_idx])
-        # print('MC amongst most dissimilar probes (best result):',params[mc_best_idx],results_cls1[mc_best_idx],results_cls0[mc_best_idx])
+        best_idx = np.argmax(results)
+        mc_best_idx = np.argmax(results_mc)
+        print('Voting amongst most dissimilar probes (best result):',params[best_idx],results_cls1[best_idx],results_cls0[best_idx])
+        print('MC amongst most dissimilar probes (best result):',params[mc_best_idx],results_cls1[mc_best_idx],results_cls0[mc_best_idx])
         # fig, axs = plt.subplots(1,2)
         # plot_data = probe_wise_mean_sim_cls0
         # counts, bins = np.histogram(plot_data)
@@ -722,33 +751,6 @@ def main():
         print('Max probe similarity of each val sample:')
         print(np.histogram(check_sim_correct))
         print(np.histogram(check_sim_wrong))
-
-        probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
-        probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
-        # print('Probe dimensions:')
-        # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
-        print('PCA:')
-        pca = PCA(n_components=30) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
-        transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
-        transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
-        # print(transformed_cls0.shape)
-        print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
-        transformed_cls0, transformed_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
-        all_sim_cls0, all_sim_cls1 = [], []
-        for model_idx_a in range(all_test_pred[fold].shape[0]):
-            sim_cls0, sim_cls1 = [], []
-            norm_weights_a0 = transformed_cls0[model_idx_a] / transformed_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            norm_weights_a1 = transformed_cls1[model_idx_a] / transformed_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            for model_idx_b in range(all_test_pred[fold].shape[0]):
-                if model_idx_b!=model_idx_a:
-                    norm_weights_b0 = transformed_cls0[model_idx_b] / transformed_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    norm_weights_b1 = transformed_cls1[model_idx_b] / transformed_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
-                    sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
-            all_sim_cls0 += sim_cls0
-            all_sim_cls1 += sim_cls1
-        print(min(all_sim_cls0),max(all_sim_cls0))
-        print(min(all_sim_cls1),max(all_sim_cls1))
         
         print('\n')
         # Probe selection - a - using logits
