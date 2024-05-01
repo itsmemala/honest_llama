@@ -603,7 +603,7 @@ def main():
 
         # Probe selection - m
         ma_top_x = 32
-        confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
+        confident_sample_pred, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4 = [], [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
         # best_probe_idxs2 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
@@ -699,18 +699,18 @@ def main():
             sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
             # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
-            # probe_wise_sim_0, probe_wise_sim_1 = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])], all_test_sim[fold][:,i,1][np.array([dissimilar_idx_a, dissimilar_idx_b])]
-            # if np.max(probe_wise_sim_0) > np.max(probe_wise_sim_1):
-            #     confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim_0)]))
-            # else:
-            #     confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim_1)]))
+            probe_wise_sim_0, probe_wise_sim_1 = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])], all_test_sim[fold][:,i,1][np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            if np.max(probe_wise_sim_0) > np.max(probe_wise_sim_1):
+                confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim_0)]))
+            else:
+                confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim_1)]))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
             if np.max(all_test_sim[fold][:,i,0])>0.05:
-                confident_sample_pred3.append(0)
+                confident_sample_pred4.append(0)
             else:
-                confident_sample_pred3.append(1)
+                confident_sample_pred4.append(1)
             # if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim[fold][:,i,1]))
             # if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim[fold][:,i,1]))
 
@@ -755,6 +755,7 @@ def main():
         # print(min(all_sim_cls0),max(all_sim_cls0))
         # print(min(all_sim_cls1),max(all_sim_cls1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+        print('Predict by max similarity to any probe:',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred4,pos_label=0))
         # print(np.histogram(check_sim_correct))
         # print(np.histogram(check_sim_wrong))
         print('Num correct probes:')
