@@ -266,7 +266,7 @@ def main():
     if torch.cuda.is_available(): torch.cuda.manual_seed(42)
 
     # Individual probes
-    all_train_loss, all_val_loss = {}, {}
+    all_train_loss, all_val_loss, all_kld_loss = {}, {}, {}
     all_val_accs, all_val_f1s = {}, {}
     all_test_accs, all_test_f1s = {}, {}
     all_val_preds, all_test_preds = {}, {}
@@ -304,7 +304,7 @@ def main():
         #     y_val = np.vstack([[val] for val in y_val], dtype='float32')
         #     y_test = np.vstack([[val] for val in y_test], dtype='float32')
 
-        all_train_loss[i], all_val_loss[i] = [], []
+        all_train_loss[i], all_val_loss[i], all_kld_loss[i] = [], [], []
         all_val_accs[i], all_val_f1s[i] = [], []
         all_test_accs[i], all_test_f1s[i] = [], []
         all_val_preds[i], all_test_preds[i] = [], []
@@ -402,7 +402,7 @@ def main():
                                 optimizer.step()
                                 if 'individual_linear_kld' in args.method and len(probes_saved)>0:
                                     print('Total loss:',loss.item())
-                                    print('KLD loss:',step_kld_loss)
+                                    print('KLD loss:',step_kld_loss[-1])
                             # Get val loss
                             linear_model.eval()
                             epoch_val_loss = 0
@@ -449,6 +449,7 @@ def main():
                             if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
                         all_train_loss[i].append(np.array(train_loss))
                         all_val_loss[i].append(np.array(val_loss))
+                        if len(step_kld_loss)>0: all_kld_loss[i].append(np.array(step_kld_loss))
                         if ((args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse') and len(probes_saved)>0) or (args.method=='individual_linear_kld_perprobe' and kld_probe==1):
                             print(layer,head)
                             print('KLD loss:',step_kld_loss[:10],step_kld_loss[-10:])
@@ -553,6 +554,7 @@ def main():
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_loss.npy', all_val_loss)
     # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_train_loss.npy', all_train_loss)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_kld_loss.npy', all_kld_loss)
     all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
     np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_pred.npy', all_val_preds)
     all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
