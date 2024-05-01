@@ -602,7 +602,7 @@ def main():
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
 
         # Probe selection - m
-        ma_top_x = 10
+        ma_top_x = 32
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
