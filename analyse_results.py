@@ -544,13 +544,14 @@ def main():
         print('Using accuracy (cls1 acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('Using accuracy (ind cls acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         print('Using accuracy (avg acc) weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        # Probe selection - j,k
+        # Probe selection - j,k,l
         results,results_cls1,results_cls0 = [], [], []
         results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
+        results_ms,results_ms_cls1,results_ms_cls0 = [], [], []
         params = []
         for ma_top_x in [5,10,15,20,25,32]:
             for top_x in [2,3,4,5,10,15,20]:
-                confident_sample_pred1, confident_sample_pred2 = [], []
+                confident_sample_pred1, confident_sample_pred2, confident_sample_pred3 = [], [], []
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
                 best_probe_idxs3 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
@@ -567,6 +568,10 @@ def main():
                         confident_sample_pred1.append(maj_vote)
                         probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
                         confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
+                        if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
+                            confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(all_test_sim[fold][:,i,0])]))
+                        else:
+                            confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(all_test_sim[fold][:,i,1])]))
                     # print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
                     results.append(f1_score(all_test_true[fold][0],confident_sample_pred1,average='macro'))
                     results_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred1))
@@ -575,10 +580,15 @@ def main():
                     results_mc.append(f1_score(all_test_true[fold][0],confident_sample_pred2,average='macro'))
                     results_mc_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred2))
                     results_mc_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
+                    results_ms.append(f1_score(all_test_true[fold][0],confident_sample_pred3,average='macro'))
+                    results_ms_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred3))
+                    results_ms_cls0.append(f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         best_idx = np.argmax(results)
         mc_best_idx = np.argmax(results_mc)
+        ms_best_idx = np.argmax(results_ms)
         print('Voting amongst most dissimilar probes (best result):',params[best_idx],results_cls1[best_idx],results_cls0[best_idx])
-        print('MC amongst most dissimilar probes (best result):',params[mc_best_idx],results_cls1[mc_best_idx],results_cls0[mc_best_idx])
+        print('MC amongst most dissimilar probes (best result):',params[mc_best_idx],results_mc_cls1[mc_best_idx],results_mc_cls0[mc_best_idx])
+        print('MS amongst most dissimilar probes (best result):',params[ms_best_idx],results_ms_cls1[ms_best_idx],results_ms_cls0[ms_best_idx])
         # fig, axs = plt.subplots(1,2)
         # plot_data = probe_wise_mean_sim_cls0
         # counts, bins = np.histogram(plot_data)
@@ -588,7 +598,7 @@ def main():
         # axs[0,1].stairs(counts, bins)
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
 
-        # Probe selection - l
+        # Probe selection - m
         ma_top_x = 5
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
