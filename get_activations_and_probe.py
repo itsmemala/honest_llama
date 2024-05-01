@@ -284,7 +284,8 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    method_concat = args.method + '_unitnorm' if args.use_unitnorm==True else args.method
+    method_concat = args.method + '_custom' if args.custom_layers is not None else args.method
+    method_concat = args.method + '_unitnorm' if args.use_unitnorm==True else args.method_concat
     method_concat = method_concat + '_no_bias' if args.use_linear_bias==False else method_concat
     method_concat = method_concat + '_' + str(args.kld_wgt) + '_' + str(args.kld_temp) if 'kld' in args.method else method_concat
 
