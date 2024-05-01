@@ -23,7 +23,8 @@ def get_probe_wgts(fold,model,results_file_name,save_path):
     head = 0 if using_act=='mlp' else (model%num_layers)
     use_bias = False if 'no_bias' in results_file_name else True
     current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2, use_bias)
-    linear_model = torch.load(f'{save_path}/probes/models/{results_file_name}_model{fold}_{layer}_{head}')
+    kld_probe = 0
+    linear_model = torch.load(f'{save_path}/probes/models/{results_file_name}_model{fold}_{layer}_{head}_{kld_probe}')
     return linear_model.linear.weight[0], linear_model.linear.weight[1]
 
 def main():
