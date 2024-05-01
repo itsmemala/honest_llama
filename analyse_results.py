@@ -604,13 +604,13 @@ def main():
         min_sim_val = 1
         for idx_a in ma5_index:
         # for idx_a in range(32):
-            wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path,args)
+            wgts_cls0_a, wgts_cls1_a = probe_wgts_cls0[idx_a], probe_wgts_cls1[idx_a] # get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path,args)
             # norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             norm_weights_a = wgts_cls0_a / wgts_cls0_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             for idx_b in ma5_index:
             # for idx_b in range(32):
                 if idx_b != idx_a: # for each other probe
-                    wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
+                    wgts_cls0_b, wgts_cls1_b = probe_wgts_cls0[idx_b], probe_wgts_cls1[idx_b] # get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
                     # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of probes
@@ -646,7 +646,7 @@ def main():
                     correct_index_excl_mc = [idx for idx in all_correct_index if idx!=np.argmin(probe_wise_entropy)]
                     entropy_gap_to_correct2.append((np.min(probe_wise_entropy[correct_index_excl_mc])-np.min(probe_wise_entropy))/np.min(probe_wise_entropy))
             mc_index = ma5_index[np.argmin(probe_wise_entropy)] # 0-31
-            mc_wgts_cls0, mc_wgts_cls1 = get_probe_wgts(fold,mc_index,args.results_file_name,args.save_path,args)
+            mc_wgts_cls0, mc_wgts_cls1 = probe_wgts_cls0[mc_index], probe_wgts_cls1[mc_index] # get_probe_wgts(fold,mc_index,args.results_file_name,args.save_path,args)
             norm_weights_mc = mc_wgts_cls0 / mc_wgts_cls0.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             max_sim_val, max_sim_val1 = -1, -1
             if len(all_correct_index)>0: # if correct prediction exists
@@ -654,12 +654,12 @@ def main():
                 entropy_correct.append(np.min(probe_wise_entropy))
                 for idx_a in all_correct_index: # for each correct probe
                     correct_index = ma5_index[idx_a]
-                    wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,correct_index,args.results_file_name,args.save_path,args)
+                    wgts_cls0_a, wgts_cls1_a = probe_wgts_cls0[correct_index], probe_wgts_cls1[correct_index] # get_probe_wgts(fold,correct_index,args.results_file_name,args.save_path,args)
                     # norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     norm_weights_a = wgts_cls0_a / wgts_cls0_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     for idx_b in ma5_index:
                         if idx_b not in ma5_index[all_correct_index]: # for each incorrect probe
-                            wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
+                            wgts_cls0_b, wgts_cls1_b = probe_wgts_cls0[idx_b], probe_wgts_cls1[idx_b] # get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
                             # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of correct and incorrect probes
@@ -669,12 +669,12 @@ def main():
                 cls_wrong.append(all_test_true[fold][0][i])
                 entropy_wrong.append(np.min(probe_wise_entropy))
                 for idx_a in ma5_index:
-                    wgts_cls0_a, wgts_cls1_a = get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path,args)
+                    wgts_cls0_a, wgts_cls1_a = probe_wgts_cls0[idx_a], probe_wgts_cls1[idx_a] # get_probe_wgts(fold,idx_a,args.results_file_name,args.save_path,args)
                     # norm_weights_a = wgts_cls1_a / wgts_cls1_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     norm_weights_a = wgts_cls0_a / wgts_cls0_a.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     for idx_b in ma5_index:
                         if idx_b != idx_a: # for each other probe
-                            wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
+                            wgts_cls0_b, wgts_cls1_b = probe_wgts_cls0[idx_b], probe_wgts_cls1[idx_b] # get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
                             # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             sim = torch.sum(norm_weights_a*norm_weights_b).item() # sim of probes
@@ -702,7 +702,7 @@ def main():
             # # for idx_b in ma5_index:
             # for idx_b in range(32):
             #     if idx_b != mc_index: # for each other probe
-            #         wgts_cls0_b, wgts_cls1_b = get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
+            #         wgts_cls0_b, wgts_cls1_b = probe_wgts_cls0[idx_b], probe_wgts_cls1[idx_b]  # get_probe_wgts(fold,idx_b,args.results_file_name,args.save_path,args)
             #         # norm_weights_b = wgts_cls1_b / wgts_cls1_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             #         norm_weights_b = wgts_cls0_b / wgts_cls0_b.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
             #         sim = torch.sum(norm_weights_mc*norm_weights_b).item() # sim of probes
