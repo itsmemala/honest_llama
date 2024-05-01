@@ -20,7 +20,8 @@ def get_probe_wgts(fold,model,results_file_name,save_path):
     using_act = 'ah' if '_ah_' in results_file_name else 'mlp_l1' if '_mlp_l1_' in results_file_name else 'mlp'
     num_layers = 32 if '_7B_' in results_file_name else 40 if '_13B_' in results_file_name else 60
     layer = model if using_act=='mlp' else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
-    head = 0 if using_act=='mlp' else (model%num_layers) 
+    head = 0 if using_act=='mlp' else (model%num_layers)
+    use_bias = False if 'no_bias' in results_file_name else True
     current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2)
     linear_model = torch.load(f'{save_path}/probes/models/{results_file_name}_model{fold}_{layer}_{head}')
     return linear_model.linear.weight[0], linear_model.linear.weight[1]
@@ -701,8 +702,8 @@ def main():
         print('Probe similarity:')
         # print(np.histogram(max_sim))
         # print(np.histogram(max_sim1))
-        # print(np.histogram(all_sim_cls0))
-        # print(np.histogram(all_sim_cls1))
+        print(np.histogram(all_sim_cls0))
+        print(np.histogram(all_sim_cls1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         # print(np.histogram(check_sim_correct))
         # print(np.histogram(check_sim_wrong))
