@@ -385,9 +385,9 @@ def main():
                                         past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=args.use_linear_bias).to(device)
                                         past_linear_model = torch.load(probes_saved_path)
                                         past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                                        probe_kld_loss += criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
-                                    loss = loss + args.kld_wgt/probe_kld_loss
-                                    step_kld_loss.append(1/probe_kld_loss.item())
+                                        probe_kld_loss += 1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
+                                    loss = loss + args.kld_wgt*probe_kld_loss
+                                    step_kld_loss.append(probe_kld_loss.item())
                                 if (args.method=='individual_linear_kld_perprobe') and kld_probe==1:
                                     train_preds_batch = F.log_softmax(linear_model(inputs).data / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     probes_saved_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_0'
