@@ -699,8 +699,11 @@ def main():
             sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
             # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
-            probe_wise_sim = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])]
-            confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
+            probe_wise_sim_0, probe_wise_sim_1 = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])], all_test_sim[fold][:,i,1][np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            if np.max(probe_wise_sim_0) > np.max(probe_wise_sim_1):
+                confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim_0)]))
+            else:
+                confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim_1)]))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
