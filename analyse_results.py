@@ -557,8 +557,8 @@ def main():
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
                 best_probe_idxs3 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
-                best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
-                # best_probes_idxs_union = set(best_probe_idxs2)
+                # best_probes_idxs_union = set(best_probe_idxs1).union(set(best_probe_idxs2))
+                best_probes_idxs_union = set(best_probe_idxs1)
                 best_probes_idxs = np.array(list(set.intersection(*[best_probes_idxs_union,best_probe_idxs3])),dtype=int)
                 # print(best_probes_idxs)
                 if len(best_probes_idxs)>0:
