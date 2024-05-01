@@ -568,10 +568,11 @@ def main():
                         confident_sample_pred1.append(maj_vote)
                         probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
                         confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
+                        probe_wise_sim_0, probe_wise_sim_1 = all_test_sim[fold][:,i,0][best_probes_idxs], all_test_sim[fold][:,i,1][best_probes_idxs]
                         if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
-                            confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(all_test_sim[fold][:,i,0])]))
+                            confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(probe_wise_sim_0)]))
                         else:
-                            confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(all_test_sim[fold][:,i,1])]))
+                            confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(probe_wise_sim_1)]))
                     # print('Voting amongst most dissimilar probes (',ma_top_x,',',top_x,',',len(best_probes_idxs),'):',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
                     results.append(f1_score(all_test_true[fold][0],confident_sample_pred1,average='macro'))
                     results_cls1.append(f1_score(all_test_true[fold][0],confident_sample_pred1))
