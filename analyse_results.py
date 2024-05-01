@@ -732,7 +732,7 @@ def main():
         transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
         transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
         # print(transformed_cls0.shape)
-        # print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
+        print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
         transformed_cls0, transformed_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
         all_sim_cls0, all_sim_cls1 = [], []
         for model_idx_a in range(all_test_pred[fold].shape[0]):
