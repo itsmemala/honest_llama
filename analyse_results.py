@@ -124,8 +124,8 @@ def main():
             probe_wgts_cls0.append(wgt_cls0)
             probe_wgts_cls1.append(wgt_cls1)
         # Get mean similarity of each probe to every other probe
-        # probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
-        # all_sim_cls0, all_sim_cls1 = [], []
+        probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
+        all_sim_cls0, all_sim_cls1 = [], []
         # for model_idx_a in range(all_test_pred[fold].shape[0]):
         #     sim_cls0, sim_cls1 = [], []
         #     norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
@@ -151,7 +151,7 @@ def main():
         # print(transformed_cls0.shape)
         # print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
         transformed_cls0, transformed_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
-        all_sim_cls0, all_sim_cls1 = [], []
+        # all_sim_cls0, all_sim_cls1 = [], []
         for model_idx_a in range(all_test_pred[fold].shape[0]):
             sim_cls0, sim_cls1 = [], []
             norm_weights_a0 = transformed_cls0[model_idx_a] / transformed_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
