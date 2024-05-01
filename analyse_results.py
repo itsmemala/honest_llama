@@ -711,13 +711,13 @@ def main():
         print('Num correct probes:')
         print(np.histogram(num_correct_probes))
 
-        # check_sim_correct, check_sim_wrong = [], []
-        # for i in range(all_val_pred[fold].shape[1]):
-        #     if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,0]))
-        #     if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,0]))
-        # print('Max probe similarity of each test sample:')
-        # print(np.histogram(check_sim_correct))
-        # print(np.histogram(check_sim_wrong))
+        check_sim_correct, check_sim_wrong = [], []
+        for i in range(all_val_pred[fold].shape[1]):
+            if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,0]))
+            if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,0]))
+        print('Max probe similarity of each val sample:')
+        print(np.histogram(check_sim_correct))
+        print(np.histogram(check_sim_wrong))
 
         # probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
         # # print('Probe dimensions:')
@@ -743,99 +743,99 @@ def main():
         #     # all_sim_cls1 += sim_cls1
         # print(np.histogram(all_sim_cls0))
         
-        # print('\n')
-        # # Probe selection - a - using logits
-        # confident_sample_pred = []
-        # # print(all_test_pred[fold].shape)
-        # for i in range(all_test_logits[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     sample_pred_logits = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
-        #     confident_sample_pred.append(np.argmax(sample_pred_logits[np.argmin(probe_wise_entropy)]))
-        # print('Using most confident probe per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
-        # # Probe selection - b - using logits
-        # confident_sample_pred1, confident_sample_pred2 = [], []
-        # # print(all_test_pred[fold].shape)
-        # for i in range(all_test_pred[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     best_probe_idxs = np.argpartition(probe_wise_entropy, -5)[-5:]
-        #     top_5_lower_bound_val = np.min(probe_wise_entropy[best_probe_idxs])
-        #     best_probe_idxs = probe_wise_entropy>=top_5_lower_bound_val
-        #     sample_pred_logits = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
-        #     sample_pred_chosen = sample_pred_logits[best_probe_idxs]
-        #     class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
-        #     maj_vote = 1 if class_1_vote_cnt>2 else 0
-        #     any_vote = 1 if class_1_vote_cnt>0 else 0
-        #     confident_sample_pred1.append(maj_vote)
-        #     confident_sample_pred2.append(any_vote)
-        # print('Voting amongst 5 most confident probes per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
-        # # Probe selection - d - using logits
-        # confident_sample_pred = []
-        # for i in range(all_test_logits[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
-        #     class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
-        #     maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
-        #     confident_sample_pred.append(maj_vote)
-        # print('Voting amongst all probes per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
-        # # Probe selection - e - using logits
-        # confident_sample_pred, confident_sample_pred2 = [], []
-        # best_probe_idxs = np.argpartition(val_f1_using_logits, -5)[-5:]
-        # top_5_lower_bound_val = np.min(val_f1_using_logits[best_probe_idxs])
-        # best_probe_idxs2 = np.argpartition(val_f1_avg_using_logits, -5)[-5:]
-        # top_5_lower_bound_val2 = np.min(val_f1_avg_using_logits[best_probe_idxs2])
-        # for i in range(all_test_logits[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
-        #     sample_pred = sample_pred[val_f1_using_logits>=top_5_lower_bound_val]
-        #     class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
-        #     maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
-        #     confident_sample_pred.append(maj_vote)
-        #     sample_pred2 = np.squeeze(all_test_logits[fold][:,i,:])[val_f1_avg_using_logits>=top_5_lower_bound_val2]
-        #     class_1_vote_cnt = sum(np.argmax(sample_pred2,axis=1))
-        #     maj_vote = 1 if class_1_vote_cnt>=(sample_pred2.shape[0]/2) else 0
-        #     confident_sample_pred2.append(maj_vote)
-        # print('Voting amongst most accurate (for cls1) 5 probes - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
-        # print('Voting amongst most accurate (for both cls) 5 probes - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        # # Probe selection - f,g - using logits
-        # if args.use_similarity:
-        #     confident_sample_pred1, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7 = [], [], [], [], [], [], []
-        #     for i in range(all_test_logits[fold].shape[1]):
-        #         sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get predictions of each sample across all layers of model
-        #         # confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
-        #         # confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-        #         if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
-        #             confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
-        #         else:
-        #             confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-        #         sim_wgt = np.squeeze(all_test_sim[fold][:,i,:])
-        #         sim_wgt[sim_wgt<0] = 0 # re-assign negative weights
-        #         confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)))
-        #         confident_sample_pred5.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*val_f1_using_logits,axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*val_f1_using_logits,axis=0)]))
-        #         confident_sample_pred6.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*val_f1_cls0_using_logits,axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*val_f1_using_logits,axis=0)]))
-        #         confident_sample_pred7.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*val_f1_avg_using_logits,axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*val_f1_avg_using_logits,axis=0)]))
-        #     print('Using most similar probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
-        #     print('Using similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred4,pos_label=0))
-        #     print('Using accuracy (cls1 acc) and similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred5),f1_score(all_test_true[fold][0],confident_sample_pred5,pos_label=0))
-        #     print('Using accuracy (ind cls acc) and similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred6),f1_score(all_test_true[fold][0],confident_sample_pred6,pos_label=0))
-        #     print('Using accuracy (avg acc) and similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred7),f1_score(all_test_true[fold][0],confident_sample_pred7,pos_label=0))
-        # # Probe selection - h - using logits
-        # confident_sample_pred = []
-        # for i in range(all_test_pred[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     sample_pred_logits = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
-        #     confident_sample_pred.append(np.argmax([np.sum(sample_pred_logits[:,0]*probe_wise_entropy,axis=0),np.sum(sample_pred_logits[:,1]*probe_wise_entropy,axis=0)]))
-        # print('Using confidence weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
-        # # Probe selection - i - using logits
-        # confident_sample_pred, confident_sample_pred1, confident_sample_pred2 = [], [], []
-        # for i in range(all_test_pred[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get logits of each sample across all layers of model
-        #     confident_sample_pred.append(np.argmax([np.sum(sample_pred[:,0]*val_f1_using_logits,axis=0),np.sum(sample_pred[:,1]*val_f1_using_logits,axis=0)]))
-        #     confident_sample_pred1.append(np.argmax([np.sum(sample_pred[:,0]*val_f1_cls0_using_logits,axis=0),np.sum(sample_pred[:,1]*val_f1_using_logits,axis=0)]))
-        #     confident_sample_pred2.append(np.argmax([np.sum(sample_pred[:,0]*val_f1_avg_using_logits,axis=0),np.sum(sample_pred[:,1]*val_f1_avg_using_logits,axis=0)]))
-        # print('Using accuracy (cls1 acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
-        # print('Using accuracy (ind cls acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
-        # print('Using accuracy (avg acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
+        print('\n')
+        # Probe selection - a - using logits
+        confident_sample_pred = []
+        # print(all_test_pred[fold].shape)
+        for i in range(all_test_logits[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            sample_pred_logits = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
+            confident_sample_pred.append(np.argmax(sample_pred_logits[np.argmin(probe_wise_entropy)]))
+        print('Using most confident probe per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        # Probe selection - b - using logits
+        confident_sample_pred1, confident_sample_pred2 = [], []
+        # print(all_test_pred[fold].shape)
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            best_probe_idxs = np.argpartition(probe_wise_entropy, -5)[-5:]
+            top_5_lower_bound_val = np.min(probe_wise_entropy[best_probe_idxs])
+            best_probe_idxs = probe_wise_entropy>=top_5_lower_bound_val
+            sample_pred_logits = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
+            sample_pred_chosen = sample_pred_logits[best_probe_idxs]
+            class_1_vote_cnt = sum(np.argmax(sample_pred_chosen,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>2 else 0
+            any_vote = 1 if class_1_vote_cnt>0 else 0
+            confident_sample_pred1.append(maj_vote)
+            confident_sample_pred2.append(any_vote)
+        print('Voting amongst 5 most confident probes per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+        # Probe selection - d - using logits
+        confident_sample_pred = []
+        for i in range(all_test_logits[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst all probes per sample - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        # Probe selection - e - using logits
+        confident_sample_pred, confident_sample_pred2 = [], []
+        best_probe_idxs = np.argpartition(val_f1_using_logits, -5)[-5:]
+        top_5_lower_bound_val = np.min(val_f1_using_logits[best_probe_idxs])
+        best_probe_idxs2 = np.argpartition(val_f1_avg_using_logits, -5)[-5:]
+        top_5_lower_bound_val2 = np.min(val_f1_avg_using_logits[best_probe_idxs2])
+        for i in range(all_test_logits[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
+            sample_pred = sample_pred[val_f1_using_logits>=top_5_lower_bound_val]
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+            sample_pred2 = np.squeeze(all_test_logits[fold][:,i,:])[val_f1_avg_using_logits>=top_5_lower_bound_val2]
+            class_1_vote_cnt = sum(np.argmax(sample_pred2,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred2.shape[0]/2) else 0
+            confident_sample_pred2.append(maj_vote)
+        print('Voting amongst most accurate (for cls1) 5 probes - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        print('Voting amongst most accurate (for both cls) 5 probes - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
+        # Probe selection - f,g - using logits
+        if args.use_similarity:
+            confident_sample_pred1, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7 = [], [], [], [], [], [], []
+            for i in range(all_test_logits[fold].shape[1]):
+                sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get predictions of each sample across all layers of model
+                # confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
+                # confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
+                if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
+                else:
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
+                sim_wgt = np.squeeze(all_test_sim[fold][:,i,:])
+                sim_wgt[sim_wgt<0] = 0 # re-assign negative weights
+                confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)))
+                confident_sample_pred5.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*val_f1_using_logits,axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*val_f1_using_logits,axis=0)]))
+                confident_sample_pred6.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*val_f1_cls0_using_logits,axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*val_f1_using_logits,axis=0)]))
+                confident_sample_pred7.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*val_f1_avg_using_logits,axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*val_f1_avg_using_logits,axis=0)]))
+            print('Using most similar probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+            print('Using similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred4,pos_label=0))
+            print('Using accuracy (cls1 acc) and similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred5),f1_score(all_test_true[fold][0],confident_sample_pred5,pos_label=0))
+            print('Using accuracy (ind cls acc) and similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred6),f1_score(all_test_true[fold][0],confident_sample_pred6,pos_label=0))
+            print('Using accuracy (avg acc) and similarity weighted voting:',f1_score(all_test_true[fold][0],confident_sample_pred7),f1_score(all_test_true[fold][0],confident_sample_pred7,pos_label=0))
+        # Probe selection - h - using logits
+        confident_sample_pred = []
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            sample_pred_logits = np.squeeze(all_test_logits[fold][:,i,:]) # Get logits of each sample across all layers of model
+            confident_sample_pred.append(np.argmax([np.sum(sample_pred_logits[:,0]*probe_wise_entropy,axis=0),np.sum(sample_pred_logits[:,1]*probe_wise_entropy,axis=0)]))
+        print('Using confidence weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        # Probe selection - i - using logits
+        confident_sample_pred, confident_sample_pred1, confident_sample_pred2 = [], [], []
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get logits of each sample across all layers of model
+            confident_sample_pred.append(np.argmax([np.sum(sample_pred[:,0]*val_f1_using_logits,axis=0),np.sum(sample_pred[:,1]*val_f1_using_logits,axis=0)]))
+            confident_sample_pred1.append(np.argmax([np.sum(sample_pred[:,0]*val_f1_cls0_using_logits,axis=0),np.sum(sample_pred[:,1]*val_f1_using_logits,axis=0)]))
+            confident_sample_pred2.append(np.argmax([np.sum(sample_pred[:,0]*val_f1_avg_using_logits,axis=0),np.sum(sample_pred[:,1]*val_f1_avg_using_logits,axis=0)]))
+        print('Using accuracy (cls1 acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        print('Using accuracy (ind cls acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
+        print('Using accuracy (avg acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
 
         # print('\n')
         # np.set_printoptions(precision=2)
@@ -844,11 +844,11 @@ def main():
         # else:
         #     for model in range(len(all_val_loss[fold])):
         #         print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
-        # print('\n')
-        # print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
-        # best_val_loss_by_model = [[np.min(model_losses) for model_losses in all_val_loss[fold]] for all_val_loss in all_val_loss_files] if 'ah' in args.results_file_name else [np.min(model_losses) for model_losses in all_val_loss[fold]]
-        # print('Avg val loss across probes:',np.mean(best_val_loss_by_model))
-        # print('\n')
+        print('\n')
+        print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
+        best_val_loss_by_model = [[np.min(model_losses) for model_losses in all_val_loss[fold]] for all_val_loss in all_val_loss_files] if 'ah' in args.results_file_name else [np.min(model_losses) for model_losses in all_val_loss[fold]]
+        print('Avg val loss across probes:',np.mean(best_val_loss_by_model))
+        print('\n')
 
 
 
