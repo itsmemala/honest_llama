@@ -147,11 +147,12 @@ def main():
         # print('Probe dimensions:')
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         print('PCA:')
-        pca = PCA(n_components=30) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+        n_components = 30 if all_test_pred[fold].shape[0]==32 else all_test_pred[fold].shape[0]
+        pca = PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
         transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
         transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
         # print(transformed_cls0.shape)
-        # print(np.sum(pca.explained_variance_ratio_),pca.explained_variance_ratio_)
+        print(np.sum(pca.explained_variance_ratio_))#,pca.explained_variance_ratio_)
         probe_wgts_cls0, probe_wgts_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
         # all_sim_cls0, all_sim_cls1 = [], []
         for model_idx_a in range(all_test_pred[fold].shape[0]):
