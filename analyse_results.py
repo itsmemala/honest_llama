@@ -128,20 +128,21 @@ def main():
         # Get mean similarity of each probe to every other probe
         probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
         all_sim_cls0, all_sim_cls1 = [], []
-        # for model_idx_a in range(all_test_pred[fold].shape[0]):
-        #     sim_cls0, sim_cls1 = [], []
-        #     norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #     norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #     for model_idx_b in range(all_test_pred[fold].shape[0]):
-        #         if model_idx_b!=model_idx_a:
-        #             norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #             norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        #             sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
-        #             sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
-        #     probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
-        #     probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
-        #     all_sim_cls0 += sim_cls0
-        #     all_sim_cls1 += sim_cls1
+        for model_idx_a in range(all_test_pred[fold].shape[0]):
+            sim_cls0, sim_cls1 = [], []
+            norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+            for model_idx_b in range(all_test_pred[fold].shape[0]):
+                if model_idx_b!=model_idx_a:
+                    norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+                    sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+            probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
+            probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
+        print(min(all_sim_cls0),max(all_sim_cls0))
+        print(min(all_sim_cls1),max(all_sim_cls1))
+        print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
         probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
         probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
         # print('Probe dimensions:')
@@ -154,7 +155,8 @@ def main():
         # print(transformed_cls0.shape)
         print(np.sum(pca.explained_variance_ratio_))#,pca.explained_variance_ratio_)
         probe_wgts_cls0, probe_wgts_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
-        # all_sim_cls0, all_sim_cls1 = [], []
+        probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
+        all_sim_cls0, all_sim_cls1 = [], []
         for model_idx_a in range(all_test_pred[fold].shape[0]):
             sim_cls0, sim_cls1 = [], []
             norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
@@ -171,6 +173,9 @@ def main():
             all_sim_cls1 += sim_cls1
         print(min(all_sim_cls0),max(all_sim_cls0))
         print(min(all_sim_cls1),max(all_sim_cls1))
+        print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
+        print(np.histogram(all_sim_cls0))
+        print(np.histogram(all_sim_cls1))
             
 
         print('FOLD',fold,'RESULTS:')
