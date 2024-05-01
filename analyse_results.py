@@ -552,8 +552,10 @@ def main():
         results_mc,results_mc_cls1,results_mc_cls0 = [], [], []
         results_ms,results_ms_cls1,results_ms_cls0 = [], [], []
         params = []
-        for ma_top_x in [5,10,15,20,25,32]:
-            for top_x in [2,3,4,5,10,15,20]:
+        ma_top_x_list = [5,10,15,20,25,32] if all_test_pred[fold].shape[0]==32 else [5]
+        top_x_list = [2,3,4,5,10,15,20] if all_test_pred[fold].shape[0]==32 else [2,3,4]
+        for ma_top_x in ma_top_x_list:
+            for top_x in top_x_list:
                 confident_sample_pred1, confident_sample_pred2, confident_sample_pred3 = [], [], []
                 best_probe_idxs1 = np.argpartition(probe_wise_mean_sim_cls0, top_x)[:top_x]
                 best_probe_idxs2 = np.argpartition(probe_wise_mean_sim_cls1, top_x)[:top_x]
@@ -603,7 +605,7 @@ def main():
         # fig.savefig(f'{args.save_path}/figures/{args.results_file_name}_probe_avg_similarity.png')
 
         # Probe selection - m
-        ma_top_x = 32
+        ma_top_x = 5
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4 = [], [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
