@@ -40,7 +40,7 @@ def main():
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--use_similarity", type=bool, default=False)
     parser.add_argument('--custom_layers',default=None,type=list_of_ints,help='(default=%(default)s)')
-    parser.add_argument('--proj_dims',default=30,type=int,help='(default=%(default)s)')
+    parser.add_argument('--proj_dims',default=None,type=int,help='(default=%(default)s)')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -149,7 +149,7 @@ def main():
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         print('PCA:')
         # Dimensionality reduction on probe vectors
-        n_components = args.proj_dims if all_test_pred[fold].shape[0]==32 else all_test_pred[fold].shape[0]
+        n_components = args.proj_dims if args.proj_dims is not None else all_test_pred[fold].shape[0]
         pca0,pca1 = PCA(n_components=n_components), PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
         transformed_cls0 = pca0.fit_transform(probe_wgts_cls0)
         transformed_cls1 = pca1.fit_transform(probe_wgts_cls1)
