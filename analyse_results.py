@@ -681,6 +681,7 @@ def main():
         check_maxsim_correct0, check_maxsim_wrong0, check_maxsim_correct1, check_maxsim_wrong1 = [], [], [], []
         check_minsim_correct0, check_minsim_wrong0, check_minsim_correct1, check_minsim_wrong1 = [], [], [], []
         num_correct_probes= []
+        check_pred = []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -756,6 +757,7 @@ def main():
 
             if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[0]:
                 confident_sample_pred4.append(0)
+                check_pred.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
             else:
                 confident_sample_pred4.append(1)
             if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[1]:
@@ -823,6 +825,7 @@ def main():
         # print(min(all_sim_cls0),max(all_sim_cls0))
         # print(min(all_sim_cls1),max(all_sim_cls1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
+        print(sum(check_pred))
         print('Predict by max similarity to any probe >',max_sim_cutoff[0],':',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred4,pos_label=0))
         print('Predict by max similarity to any probe >',max_sim_cutoff[1],':',f1_score(all_test_true[fold][0],confident_sample_pred5),f1_score(all_test_true[fold][0],confident_sample_pred5,pos_label=0))
         print('Predict by max similarity to any probe >',max_sim_cutoff[2],':',f1_score(all_test_true[fold][0],confident_sample_pred6),f1_score(all_test_true[fold][0],confident_sample_pred6,pos_label=0))
