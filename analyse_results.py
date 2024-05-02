@@ -181,7 +181,7 @@ def main():
         print('Projecting test samples to probe PCA dimensions...')
         all_test_sim_proj[fold] = []
         for model in range(all_test_pred[fold].shape[0]):
-            layer = args.custom_layers[model]
+            layer = args.custom_layers[model] if 'kld_custom' in args.results_file_name else model
             model_test_sim_proj = []
             for i in range(all_test_pred[fold].shape[1]):
                 act_type = 'mlp' # {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
