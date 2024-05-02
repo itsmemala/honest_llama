@@ -637,7 +637,7 @@ def main():
 
         # Probe selection - l,m,n
         max_sim_cutoff = [0,0.3,0.5,0.6,0.8]
-        ma_top_x = 10
+        ma_top_x = 15
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7, confident_sample_pred8 = [], [], [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
@@ -763,8 +763,8 @@ def main():
                 confident_sample_pred8.append(0)
             else:
                 confident_sample_pred8.append(1)
-            # if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim_proj[fold][:,i,1]))
-            # if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim_proj[fold][:,i,1]))
+            if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim_proj[fold][:,i,0]))
+            if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim_proj[fold][:,i,0]))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
@@ -788,18 +788,15 @@ def main():
         # print(len(sample_pred2_chosen))
         print('MC amongst most accurate (for cls1) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         print('MC amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
-        # print(num_hard_samples)
-        # fig, axs = plt.subplots(1,1)
-        # counts, bins = np.histogram(entropy_gap)
         print(sum(cls_wrong))
         print(np.histogram(entropy_wrong))
         print(np.histogram(entropy_correct))
-        print('Entropy gaps:')
-        print(np.histogram(entropy_gap))
-        print(np.histogram(entropy_gap_to_correct))
-        print(np.histogram(entropy_gap2))
-        print(np.histogram(entropy_gap_to_correct2))
-        print('Probe similarity:')
+        # print('Entropy gaps:')
+        # print(np.histogram(entropy_gap))
+        # print(np.histogram(entropy_gap_to_correct))
+        # print(np.histogram(entropy_gap2))
+        # print(np.histogram(entropy_gap_to_correct2))
+        # print('Probe similarity:')
         # print(np.histogram(max_sim))
         # print(np.histogram(max_sim1))
         # print(np.histogram(all_sim_cls0))
@@ -812,18 +809,19 @@ def main():
         print('Predict by max similarity to any probe >',max_sim_cutoff[2],':',f1_score(all_test_true[fold][0],confident_sample_pred6),f1_score(all_test_true[fold][0],confident_sample_pred6,pos_label=0))
         print('Predict by max similarity to any probe >',max_sim_cutoff[3],':',f1_score(all_test_true[fold][0],confident_sample_pred7),f1_score(all_test_true[fold][0],confident_sample_pred7,pos_label=0))
         print('Predict by max similarity to any probe >',max_sim_cutoff[4],':',f1_score(all_test_true[fold][0],confident_sample_pred8),f1_score(all_test_true[fold][0],confident_sample_pred8,pos_label=0))
-        # print(np.histogram(check_sim_correct))
-        # print(np.histogram(check_sim_wrong))
+        print('Max probe similarity of each test sample:')
+        print(np.histogram(check_sim_correct))
+        print(np.histogram(check_sim_wrong))
         print('Num correct probes:')
         print(np.histogram(num_correct_probes))
 
-        check_sim_correct, check_sim_wrong = [], []
-        for i in range(all_val_pred[fold].shape[1]):
-            if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,0]))
-            if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,0]))
-        print('Max probe similarity of each val sample:')
-        print(np.histogram(check_sim_correct))
-        print(np.histogram(check_sim_wrong))
+        # check_sim_correct, check_sim_wrong = [], []
+        # for i in range(all_val_pred[fold].shape[1]):
+        #     if all_val_true[fold][0][i]==0: check_sim_correct.append(np.max(all_val_sim[fold][:,i,0]))
+        #     if all_val_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_val_sim[fold][:,i,0]))
+        # print('Max probe similarity of each val sample:')
+        # print(np.histogram(check_sim_correct))
+        # print(np.histogram(check_sim_wrong))
         
         print('\n')
         # Probe selection - a - using logits
