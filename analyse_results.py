@@ -637,7 +637,7 @@ def main():
 
         # Probe selection - l,m,n
         max_sim_cutoff = [0,0.3,0.5,0.6,0.8]
-        ma_top_x = 5
+        ma_top_x = 10
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7, confident_sample_pred8 = [], [], [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
