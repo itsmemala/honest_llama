@@ -190,7 +190,12 @@ def main():
                 file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
                 act = np.load(file_path,allow_pickle=True)[i%100][layer] #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
                 act = act.reshape(1, -1)
-                model_test_sim_proj.append(np.array([pca0.transform(act),pca1.transform(act)]))
+                act0, act1 = torch.from_numpy(pca0.transform(act)[0]), torch.from_numpy(pca1.transform(act)[0])
+                act0_norm = act0 / act0.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                act1_norm = act1 / act1.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                norm_weights_a0 = probe_wgts_cls0[model] / probe_wgts_cls0[model].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                norm_weights_a1 = probe_wgts_cls1[model] / probe_wgts_cls1[model].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                model_test_sim_proj.append(np.array([torch.sum(norm_weights_a0*act0_norm).item(),torch.sum(norm_weights_a1*act1_norm).item()]))
             all_test_sim_proj[fold].append(np.stack(model_test_sim_proj))
         all_test_sim_proj[fold] = np.stack(all_test_sim_proj[fold])
         print(all_test_sim_proj[fold].shape)
