@@ -87,6 +87,7 @@ def main():
     np.set_printoptions(precision=1)
     np.seterr(divide = 'ignore') # turn off for display clarity
 
+    all_test_sim_proj = {}
     for fold in range(len(all_test_f1s)):
 
         for model in range(all_test_true[fold].shape[0]):
@@ -178,7 +179,7 @@ def main():
 
         # Project test samples to reduced dimensions
         print('Projecting test samples to probe PCA dimensions...')
-        all_test_sim_proj = []
+        all_test_sim_proj[fold] = []
         for model in range(all_test_pred[fold].shape[0]):
             layer = args.custom_layers[model]
             model_test_sim_proj = []
@@ -189,9 +190,9 @@ def main():
                 file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
                 act = np.load(file_path,allow_pickle=True)[i%100][layer] #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
                 model_test_sim_proj.append(np.array(pca0.transform(act),pca1.transform(act)))
-            all_test_sim_proj.append(np.stack(model_test_sim_proj))
-        all_test_sim_proj = np.stack(all_test_sim_proj)
-        assert all_test_sim_proj.shape==all_test_sim.shape
+            all_test_sim_proj[fold].append(np.stack(model_test_sim_proj))
+        all_test_sim_proj[fold] = np.stack(all_test_sim_proj[fold] )
+        assert all_test_sim_proj[fold].shape==all_test_sim[fold].shape
 
         print('\n')
         print('FOLD',fold,'RESULTS:')
