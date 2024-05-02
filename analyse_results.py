@@ -670,7 +670,8 @@ def main():
         num_hard_samples, entropy_wrong, entropy_correct, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], [], [], []
         max_sim, max_sim1 = [], []
         cls_wrong = []
-        check_sim_correct0, check_sim_wrong0, check_sim_correct1, check_sim_wrong1 = [], [], [], []
+        check_maxsim_correct0, check_maxsim_wrong0, check_maxsim_correct1, check_maxsim_wrong1 = [], [], [], []
+        check_minsim_correct0, check_minsim_wrong0, check_minsim_correct1, check_minsim_wrong1 = [], [], [], []
         num_correct_probes= []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -765,10 +766,16 @@ def main():
                 confident_sample_pred8.append(0)
             else:
                 confident_sample_pred8.append(1)
-            if all_test_true[fold][0][i]==0: check_sim_correct0.append(np.min(all_test_sim_proj[fold][:,i,0]))
-            if all_test_true[fold][0][i]==1: check_sim_wrong0.append(np.min(all_test_sim_proj[fold][:,i,0]))
-            if all_test_true[fold][0][i]==0: check_sim_correct1.append(np.min(all_test_sim_proj[fold][:,i,1]))
-            if all_test_true[fold][0][i]==1: check_sim_wrong1.append(np.min(all_test_sim_proj[fold][:,i,1]))
+            
+            if all_test_true[fold][0][i]==0: check_maxsim_correct0.append(np.max(all_test_sim_proj[fold][:,i,0][ma5_index]))
+            if all_test_true[fold][0][i]==1: check_maxsim_wrong0.append(np.max(all_test_sim_proj[fold][:,i,0][ma5_index]))
+            if all_test_true[fold][0][i]==0: check_maxsim_correct1.append(np.max(all_test_sim_proj[fold][:,i,1][ma5_index]))
+            if all_test_true[fold][0][i]==1: check_maxsim_wrong1.append(np.max(all_test_sim_proj[fold][:,i,1][ma5_index]))
+
+            if all_test_true[fold][0][i]==0: check_minsim_correct0.append(np.min(all_test_sim_proj[fold][:,i,0][ma5_index]))
+            if all_test_true[fold][0][i]==1: check_minsim_wrong0.append(np.min(all_test_sim_proj[fold][:,i,0][ma5_index]))
+            if all_test_true[fold][0][i]==0: check_minsim_correct1.append(np.min(all_test_sim_proj[fold][:,i,1][ma5_index]))
+            if all_test_true[fold][0][i]==1: check_minsim_wrong1.append(np.min(all_test_sim_proj[fold][:,i,1][ma5_index]))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
@@ -814,10 +821,15 @@ def main():
         print('Predict by max similarity to any probe >',max_sim_cutoff[3],':',f1_score(all_test_true[fold][0],confident_sample_pred7),f1_score(all_test_true[fold][0],confident_sample_pred7,pos_label=0))
         print('Predict by max similarity to any probe >',max_sim_cutoff[4],':',f1_score(all_test_true[fold][0],confident_sample_pred8),f1_score(all_test_true[fold][0],confident_sample_pred8,pos_label=0))
         print('Max probe similarity of each test sample:')
-        print(np.histogram(check_sim_correct0))
-        print(np.histogram(check_sim_wrong0))
-        print(np.histogram(check_sim_correct1))
-        print(np.histogram(check_sim_wrong1))
+        print(np.histogram(check_maxsim_correct0))
+        print(np.histogram(check_maxsim_wrong0))
+        print(np.histogram(check_maxsim_correct1))
+        print(np.histogram(check_maxsim_wrong1))
+        print('Min probe similarity of each test sample:')
+        print(np.histogram(check_minsim_correct0))
+        print(np.histogram(check_minsim_wrong0))
+        print(np.histogram(check_minsim_correct1))
+        print(np.histogram(check_minsim_wrong1))
         print('Num correct probes:')
         print(np.histogram(num_correct_probes))
 
