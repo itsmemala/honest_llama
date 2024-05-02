@@ -741,7 +741,7 @@ def main():
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
-            if np.max(all_test_sim_proj[fold][:,i,0])>0.05:
+            if np.max(all_test_sim_proj[fold][:,i,0])>0:
                 confident_sample_pred4.append(0)
             else:
                 confident_sample_pred4.append(1)
