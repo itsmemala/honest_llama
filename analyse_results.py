@@ -189,6 +189,7 @@ def main():
                 # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
                 act = np.load(file_path,allow_pickle=True)[i%100][layer] #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                act = act.reshape(1, -1)
                 model_test_sim_proj.append(np.array(pca0.transform(act),pca1.transform(act)))
             all_test_sim_proj[fold].append(np.stack(model_test_sim_proj))
         all_test_sim_proj[fold] = np.stack(all_test_sim_proj[fold] )
