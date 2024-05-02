@@ -187,7 +187,7 @@ def main():
                 file_end = i-(i%100)+100 # 487: 487-(87)+100
                 # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%100][layer]).to(device) #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                act = np.load(file_path,allow_pickle=True)[i%100][layer] #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
                 model_test_sim_proj.append(np.array(pca0.transform(act),pca1.transform(act)))
             all_test_sim_proj.append(np.stack(model_test_sim_proj))
         all_test_sim_proj = np.stack(all_test_sim_proj)
@@ -512,7 +512,7 @@ def main():
         #         confident_sample_pred1, confident_sample_pred2, selected_probes = [], [], []
         #         for i in range(all_test_pred[fold].shape[1]):
         #             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-        #             best_probe_idxs = (all_test_sim[fold][:,i,0]>sim_cutoff) | (all_test_sim[fold][:,i,1]>sim_cutoff)
+        #             best_probe_idxs = (all_test_sim_proj[fold][:,i,0]>sim_cutoff) | (all_test_sim_proj[fold][:,i,1]>sim_cutoff)
         #             sample_pred_chosen = sample_pred[best_probe_idxs]
         #             selected_probes.append(sum(best_probe_idxs))
         #             # method 1 - vote
@@ -532,13 +532,13 @@ def main():
             confident_sample_pred1, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7 = [], [], [], [], [], [], []
             for i in range(all_test_pred[fold].shape[1]):
                 sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-                confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
-                confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-                if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
-                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
+                confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
+                confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                if np.max(all_test_sim_proj[fold][:,i,0]) > np.max(all_test_sim_proj[fold][:,i,1]):
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
                 else:
-                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-                sim_wgt = np.squeeze(all_test_sim[fold][:,i,:])
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                sim_wgt = np.squeeze(all_test_sim_proj[fold][:,i,:])
                 # sim_wgt[sim_wgt<0] = 0 # re-assign negative weights
                 confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)))
                 confident_sample_pred5.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*all_val_f1s[fold],axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*all_val_f1s[fold],axis=0)]))
@@ -594,8 +594,8 @@ def main():
                         confident_sample_pred1.append(maj_vote)
                         probe_wise_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum(axis=1)
                         confident_sample_pred2.append(np.argmax(sample_pred_chosen[np.argmin(probe_wise_entropy)]))
-                        probe_wise_sim_0, probe_wise_sim_1 = all_test_sim[fold][:,i,0][best_probes_idxs], all_test_sim[fold][:,i,1][best_probes_idxs]
-                        if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
+                        probe_wise_sim_0, probe_wise_sim_1 = all_test_sim_proj[fold][:,i,0][best_probes_idxs], all_test_sim_proj[fold][:,i,1][best_probes_idxs]
+                        if np.max(all_test_sim_proj[fold][:,i,0]) > np.max(all_test_sim_proj[fold][:,i,1]):
                             confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(probe_wise_sim_0)]))
                         else:
                             confident_sample_pred3.append(np.argmax(sample_pred_chosen[np.argmax(probe_wise_sim_1)]))
@@ -723,7 +723,7 @@ def main():
             sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([dissimilar_idx_a, dissimilar_idx_b])]
             # probe_wise_entropy = (-sample_pred3_chosen*np.nan_to_num(np.log2(sample_pred3_chosen),neginf=0)).sum(axis=1)
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmin(probe_wise_entropy)]))
-            probe_wise_sim_0, probe_wise_sim_1 = all_test_sim[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])], all_test_sim[fold][:,i,1][np.array([dissimilar_idx_a, dissimilar_idx_b])]
+            probe_wise_sim_0, probe_wise_sim_1 = all_test_sim_proj[fold][:,i,0][np.array([dissimilar_idx_a, dissimilar_idx_b])], all_test_sim_proj[fold][:,i,1][np.array([dissimilar_idx_a, dissimilar_idx_b])]
             if np.max(probe_wise_sim_0) > np.max(probe_wise_sim_1):
                 confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim_0)]))
             else:
@@ -731,12 +731,12 @@ def main():
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
-            if np.max(all_test_sim[fold][:,i,0])>0.05:
+            if np.max(all_test_sim_proj[fold][:,i,0])>0.05:
                 confident_sample_pred4.append(0)
             else:
                 confident_sample_pred4.append(1)
-            # if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim[fold][:,i,1]))
-            # if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim[fold][:,i,1]))
+            # if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim_proj[fold][:,i,1]))
+            # if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim_proj[fold][:,i,1]))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
@@ -748,7 +748,7 @@ def main():
             #         sim = torch.sum(norm_weights_mc*norm_weights_b).item() # sim of probes
             #         if sim<=min_sim_val: min_sim_val, mc_dissimilar_idx = sim, idx_b
             # sample_pred3_chosen = np.squeeze(all_test_pred[fold][:,i,:])[np.array([mc_index, mc_dissimilar_idx])]
-            # probe_wise_sim = all_test_sim[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
+            # probe_wise_sim = all_test_sim_proj[fold][:,i,0][np.array([mc_index, mc_dissimilar_idx])]
             # confident_sample_pred3.append(np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)]))
 
             # probe_wise_entropy = probe_wise_entropy[probe_wise_entropy<=0.9]
@@ -851,13 +851,13 @@ def main():
             confident_sample_pred1, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7 = [], [], [], [], [], [], []
             for i in range(all_test_logits[fold].shape[1]):
                 sample_pred = np.squeeze(all_test_logits[fold][:,i,:]) # Get predictions of each sample across all layers of model
-                # confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
-                # confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-                if np.max(all_test_sim[fold][:,i,0]) > np.max(all_test_sim[fold][:,i,1]):
-                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,0])]))
+                # confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
+                # confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                if np.max(all_test_sim_proj[fold][:,i,0]) > np.max(all_test_sim_proj[fold][:,i,1]):
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
                 else:
-                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim[fold][:,i,1])]))
-                sim_wgt = np.squeeze(all_test_sim[fold][:,i,:])
+                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                sim_wgt = np.squeeze(all_test_sim_proj[fold][:,i,:])
                 sim_wgt[sim_wgt<0] = 0 # re-assign negative weights
                 confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)))
                 confident_sample_pred5.append(np.argmax([np.sum(sample_pred[:,0]*sim_wgt[:,0]*val_f1_using_logits,axis=0),np.sum(sample_pred[:,1]*sim_wgt[:,1]*val_f1_using_logits,axis=0)]))
