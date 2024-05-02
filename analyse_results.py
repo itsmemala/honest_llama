@@ -637,7 +637,7 @@ def main():
 
         # Probe selection - l,m,n
         max_sim_cutoff = [0,0.3,0.5,0.6,0.8]
-        ma_top_x = 15
+        ma_top_x = 32
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7, confident_sample_pred8 = [], [], [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
@@ -668,7 +668,7 @@ def main():
         num_hard_samples, entropy_wrong, entropy_correct, entropy_gap, entropy_gap_to_correct, entropy_gap2, entropy_gap_to_correct2 = 0, [], [], [], [], [], []
         max_sim, max_sim1 = [], []
         cls_wrong = []
-        check_sim_correct, check_sim_wrong = [], []
+        check_sim_correct0, check_sim_wrong0, check_sim_correct1, check_sim_wrong1 = [], [], [], []
         num_correct_probes= []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
@@ -763,8 +763,10 @@ def main():
                 confident_sample_pred8.append(0)
             else:
                 confident_sample_pred8.append(1)
-            if all_test_true[fold][0][i]==0: check_sim_correct.append(np.max(all_test_sim_proj[fold][:,i,0]))
-            if all_test_true[fold][0][i]==1: check_sim_wrong.append(np.max(all_test_sim_proj[fold][:,i,0]))
+            if all_test_true[fold][0][i]==0: check_sim_correct0.append(np.max(all_test_sim_proj[fold][:,i,0]))
+            if all_test_true[fold][0][i]==1: check_sim_wrong0.append(np.max(all_test_sim_proj[fold][:,i,0]))
+            if all_test_true[fold][0][i]==0: check_sim_correct1.append(np.max(all_test_sim_proj[fold][:,i,1]))
+            if all_test_true[fold][0][i]==1: check_sim_wrong1.append(np.max(all_test_sim_proj[fold][:,i,1]))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
@@ -810,8 +812,10 @@ def main():
         print('Predict by max similarity to any probe >',max_sim_cutoff[3],':',f1_score(all_test_true[fold][0],confident_sample_pred7),f1_score(all_test_true[fold][0],confident_sample_pred7,pos_label=0))
         print('Predict by max similarity to any probe >',max_sim_cutoff[4],':',f1_score(all_test_true[fold][0],confident_sample_pred8),f1_score(all_test_true[fold][0],confident_sample_pred8,pos_label=0))
         print('Max probe similarity of each test sample:')
-        print(np.histogram(check_sim_correct))
-        print(np.histogram(check_sim_wrong))
+        print(np.histogram(check_sim_correct0))
+        print(np.histogram(check_sim_wrong0))
+        print(np.histogram(check_sim_correct1))
+        print(np.histogram(check_sim_wrong1))
         print('Num correct probes:')
         print(np.histogram(num_correct_probes))
 
