@@ -765,10 +765,10 @@ def main():
                 confident_sample_pred8.append(0)
             else:
                 confident_sample_pred8.append(1)
-            if all_test_true[fold][0][i]==0: check_sim_correct0.append(np.max(all_test_sim_proj[fold][:,i,0]))
-            if all_test_true[fold][0][i]==1: check_sim_wrong0.append(np.max(all_test_sim_proj[fold][:,i,0]))
-            if all_test_true[fold][0][i]==0: check_sim_correct1.append(np.max(all_test_sim_proj[fold][:,i,1]))
-            if all_test_true[fold][0][i]==1: check_sim_wrong1.append(np.max(all_test_sim_proj[fold][:,i,1]))
+            if all_test_true[fold][0][i]==0: check_sim_correct0.append(np.min(all_test_sim_proj[fold][:,i,0]))
+            if all_test_true[fold][0][i]==1: check_sim_wrong0.append(np.min(all_test_sim_proj[fold][:,i,0]))
+            if all_test_true[fold][0][i]==0: check_sim_correct1.append(np.min(all_test_sim_proj[fold][:,i,1]))
+            if all_test_true[fold][0][i]==1: check_sim_wrong1.append(np.min(all_test_sim_proj[fold][:,i,1]))
 
             # min_sim_val = 1
             # # for idx_b in ma5_index:
