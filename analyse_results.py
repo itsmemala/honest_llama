@@ -179,10 +179,10 @@ def main():
         # Project test samples to reduced dimensions
         print('Projecting test samples to probe PCA dimensions...')
         all_test_sim_proj = []
-        for model in all_test_pred[fold].shape[0]:
+        for model in range(all_test_pred[fold].shape[0]):
             layer = args.custom_layers[model]
             model_test_sim_proj = []
-            for i in all_test_pred[fold].shape[1]:
+            for i in range(all_test_pred[fold].shape[1]):
                 act_type = 'mlp' # {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
                 file_end = i-(i%100)+100 # 487: 487-(87)+100
                 # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
