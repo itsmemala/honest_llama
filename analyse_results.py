@@ -140,7 +140,7 @@ def main():
                     sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
             probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
-        print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
+        if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
         probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
         probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
         # print('Probe dimensions:')
@@ -171,7 +171,7 @@ def main():
             all_sim_cls1 += sim_cls1
         print(min(all_sim_cls0),max(all_sim_cls0))
         print(min(all_sim_cls1),max(all_sim_cls1))
-        print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
+        if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
         print(np.histogram(all_sim_cls0))
         print(np.histogram(all_sim_cls1))
             
