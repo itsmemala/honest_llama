@@ -192,7 +192,8 @@ def main():
                 act = act.reshape(1, -1)
                 model_test_sim_proj.append(np.array([pca0.transform(act),pca1.transform(act)]))
             all_test_sim_proj[fold].append(np.stack(model_test_sim_proj))
-        all_test_sim_proj[fold] = np.stack(all_test_sim_proj[fold] )
+        all_test_sim_proj[fold] = np.stack(all_test_sim_proj[fold])
+        print(all_test_sim_proj[fold].shape)
         assert all_test_sim_proj[fold].shape==all_test_sim[fold].shape
 
         print('\n')
