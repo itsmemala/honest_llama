@@ -146,12 +146,13 @@ def main():
         # print('Probe dimensions:')
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         print('PCA:')
+        # Dimensionality reduction on probe vectors
         n_components = 10 if all_test_pred[fold].shape[0]==32 else all_test_pred[fold].shape[0]
-        pca = PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
-        transformed_cls0 = pca.fit_transform(probe_wgts_cls0)
-        transformed_cls1 = pca.fit_transform(probe_wgts_cls1)
+        pca0,pca1 = PCA(n_components=n_components), PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+        transformed_cls0 = pca0.fit_transform(probe_wgts_cls0)
+        transformed_cls1 = pca1.fit_transform(probe_wgts_cls1)
         # print(transformed_cls0.shape)
-        print(np.sum(pca.explained_variance_ratio_))#,pca.explained_variance_ratio_)
+        print(np.sum(pca0.explained_variance_ratio_))#,pca0.explained_variance_ratio_)
         probe_wgts_cls0, probe_wgts_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
         probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
         all_sim_cls0, all_sim_cls1 = [], []
@@ -174,8 +175,25 @@ def main():
         if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
         print(np.histogram(all_sim_cls0))
         print(np.histogram(all_sim_cls1))
-            
 
+        # Project test samples to reduced dimensions
+        print('Projecting test samples to probe PCA dimensions...')
+        all_test_sim_proj = []
+        for model in all_test_pred[fold].shape[0]:
+            layer = args.custom_layers[model]
+            model_test_sim_proj = []
+            for i in all_test_pred[fold].shape[1]:
+                act_type = 'mlp' # {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                file_end = i-(i%100)+100 # 487: 487-(87)+100
+                # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%100][layer]).to(device) #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                model_test_sim_proj.append(np.array(pca0.transform(act),pca1.transform(act)))
+            all_test_sim_proj.append(np.stack(model_test_sim_proj))
+        all_test_sim_proj = np.stack(all_test_sim_proj)
+        assert all_test_sim_proj.shape==all_test_sim.shape
+
+        print('\n')
         print('FOLD',fold,'RESULTS:')
         print('Average:',np.mean(all_test_f1s[fold]),np.mean(test_f1_cls0[fold]))
         print('Best:',all_test_f1s[fold][np.argmax(val_f1_avg)],test_f1_cls0[np.argmax(val_f1_avg)])
