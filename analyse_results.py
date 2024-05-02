@@ -153,6 +153,9 @@ def main():
         pca0,pca1 = PCA(n_components=n_components), PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
         transformed_cls0 = pca0.fit_transform(probe_wgts_cls0)
         transformed_cls1 = pca1.fit_transform(probe_wgts_cls1)
+        # pca = PCA(n_components=n_components)
+        # pca.fit(probe_wgts_cls0+probe_wgts_cls1)
+        # transformed_cls0, transformed_cls1 = pca.transform(probe_wgts_cls0), pca.transform(probe_wgts_cls1)
         # print(transformed_cls0.shape)
         print(np.sum(pca0.explained_variance_ratio_))#,pca0.explained_variance_ratio_)
         probe_wgts_cls0, probe_wgts_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
@@ -547,10 +550,14 @@ def main():
                 sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
                 confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
                 confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
-                if np.max(all_test_sim_proj[fold][:,i,0]) > np.max(all_test_sim_proj[fold][:,i,1]):
+                # if np.max(all_test_sim_proj[fold][:,i,0]) > np.max(all_test_sim_proj[fold][:,i,1]):
+                #     confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
+                # else:
+                #     confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                if np.max(all_test_sim_proj[fold][:,i,0]) > 0:
                     confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
                 else:
-                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                    confident_sample_pred3.append(1)
                 sim_wgt = np.squeeze(all_test_sim_proj[fold][:,i,:])
                 # sim_wgt[sim_wgt<0] = 0 # re-assign negative weights
                 confident_sample_pred4.append(np.argmax(np.sum(sample_pred*sim_wgt,axis=0)))
