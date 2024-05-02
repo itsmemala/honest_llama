@@ -148,7 +148,7 @@ def main():
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         print('PCA:')
         # Dimensionality reduction on probe vectors
-        n_components = 10 if all_test_pred[fold].shape[0]==32 else all_test_pred[fold].shape[0]
+        n_components = 30 if all_test_pred[fold].shape[0]==32 else all_test_pred[fold].shape[0]
         pca0,pca1 = PCA(n_components=n_components), PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
         transformed_cls0 = pca0.fit_transform(probe_wgts_cls0)
         transformed_cls1 = pca1.fit_transform(probe_wgts_cls1)
