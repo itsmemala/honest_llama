@@ -190,6 +190,7 @@ def main():
                 file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
                 act = np.load(file_path,allow_pickle=True)[i%100][layer] #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
                 act = act.reshape(1, -1)
+                act = act / act.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                 act0, act1 = torch.from_numpy(pca0.transform(act)[0]), torch.from_numpy(pca1.transform(act)[0])
                 act0_norm = act0 / act0.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                 act1_norm = act1 / act1.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
