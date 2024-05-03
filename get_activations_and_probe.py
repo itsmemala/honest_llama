@@ -505,7 +505,7 @@ def main():
                                     acts.append(act)
                             acts = torch.stack(acts,axis=0)
                             norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            probs = F.softmax(linear_model(norm_acts), dim=1).detach().numpy()
+                            probs = F.softmax(linear_model(norm_acts), dim=1).detach().cpu().numpy()
                             entropy = (-probs*np.nan_to_num(np.log2(probs),neginf=0)).sum(axis=1)
                             model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<0.2])
                             print('# samples most confident at current layer:',len(model_wise_mc_sample_idxs[-1]))
