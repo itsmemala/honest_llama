@@ -647,9 +647,10 @@ def main():
 
         # Probe selection - l,m,n
         max_sim_cutoff = [0,0.3,0.5,0.6,0.8]
-        ma_top_x = 10
+        ma_top_x = 5
         confident_sample_pred, confident_sample_pred2, confident_sample_pred3 = [], [], []
         confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7, confident_sample_pred8 = [], [], [], [], []
+        confident_sample_pred9, confident_sample_pred10, confident_sample_pred11, confident_sample_pred12, confident_sample_pred13 = [], [], [], [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -ma_top_x)[-ma_top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
         # best_probe_idxs2 = np.argpartition(val_f1_avg, -ma_top_x)[-ma_top_x:]
@@ -681,7 +682,7 @@ def main():
         check_maxsim_correct0, check_maxsim_wrong0, check_maxsim_correct1, check_maxsim_wrong1 = [], [], [], []
         check_minsim_correct0, check_minsim_wrong0, check_minsim_correct1, check_minsim_wrong1 = [], [], [], []
         num_correct_probes= []
-        check_pred = []
+        check_pred, check_sim_conf_overlap = [], []
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_chosen = sample_pred[all_val_f1s[fold]>=top_5_lower_bound_val]
@@ -755,27 +756,54 @@ def main():
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])==all_test_true[fold][0][i]: check_sim_correct.append(np.max(probe_wise_sim))
             # if np.argmax(sample_pred3_chosen[np.argmax(probe_wise_sim)])!=all_test_true[fold][0][i]: check_sim_wrong.append(np.max(probe_wise_sim))
 
-            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[0]:
+            if np.max(all_test_sim_proj[fold][:,i,0][ma5_index])>max_sim_cutoff[0]:
                 confident_sample_pred4.append(0)
-                check_pred.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
+                check_pred.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0][ma5_index])]))
             else:
                 confident_sample_pred4.append(1)
-            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[1]:
+            if np.max(all_test_sim_proj[fold][:,i,0][ma5_index])>max_sim_cutoff[1]:
                 confident_sample_pred5.append(0)
             else:
                 confident_sample_pred5.append(1)
-            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[2]:
+            if np.max(all_test_sim_proj[fold][:,i,0][ma5_index])>max_sim_cutoff[2]:
                 confident_sample_pred6.append(0)
             else:
                 confident_sample_pred6.append(1)
-            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[3]:
+            if np.max(all_test_sim_proj[fold][:,i,0][ma5_index])>max_sim_cutoff[3]:
                 confident_sample_pred7.append(0)
             else:
                 confident_sample_pred7.append(1)
-            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[4]:
+            if np.max(all_test_sim_proj[fold][:,i,0][ma5_index])>max_sim_cutoff[4]:
                 confident_sample_pred8.append(0)
             else:
                 confident_sample_pred8.append(1)
+            
+            ####
+            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[0]:
+                confident_sample_pred9.append(0)
+            else:
+                confident_sample_pred9.append(1)
+            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[1]:
+                confident_sample_pred10.append(0)
+            else:
+                confident_sample_pred10.append(1)
+            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[2]:
+                confident_sample_pred11.append(0)
+            else:
+                confident_sample_pred11.append(1)
+            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[3]:
+                confident_sample_pred12.append(0)
+            else:
+                confident_sample_pred12.append(1)
+            if np.max(all_test_sim_proj[fold][:,i,0])>max_sim_cutoff[4]:
+                confident_sample_pred13.append(0)
+            else:
+                confident_sample_pred13.append(1)
+            
+            ####
+            all_probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            if np.argmax(all_test_sim_proj[fold][:,i,0])==np.argmin(all_probe_wise_entropy):
+                check_sim_conf_overlap.append(np.argmax(all_test_sim_proj[fold][:,i,0]))
             
             if all_test_true[fold][0][i]==0: check_maxsim_correct0.append(np.max(all_test_sim_proj[fold][:,i,0][ma5_index]))
             if all_test_true[fold][0][i]==1: check_maxsim_wrong0.append(np.max(all_test_sim_proj[fold][:,i,0][ma5_index]))
@@ -826,11 +854,18 @@ def main():
         # print(min(all_sim_cls1),max(all_sim_cls1))
         print('MS between most dissimilar 2 probes amongst most accurate (for both cls) 5 probes:',f1_score(all_test_true[fold][0],confident_sample_pred3),f1_score(all_test_true[fold][0],confident_sample_pred3,pos_label=0))
         print(sum(check_pred))
-        print('Predict by max similarity to any probe >',max_sim_cutoff[0],':',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred4,pos_label=0))
-        print('Predict by max similarity to any probe >',max_sim_cutoff[1],':',f1_score(all_test_true[fold][0],confident_sample_pred5),f1_score(all_test_true[fold][0],confident_sample_pred5,pos_label=0))
-        print('Predict by max similarity to any probe >',max_sim_cutoff[2],':',f1_score(all_test_true[fold][0],confident_sample_pred6),f1_score(all_test_true[fold][0],confident_sample_pred6,pos_label=0))
-        print('Predict by max similarity to any probe >',max_sim_cutoff[3],':',f1_score(all_test_true[fold][0],confident_sample_pred7),f1_score(all_test_true[fold][0],confident_sample_pred7,pos_label=0))
-        print('Predict by max similarity to any probe >',max_sim_cutoff[4],':',f1_score(all_test_true[fold][0],confident_sample_pred8),f1_score(all_test_true[fold][0],confident_sample_pred8,pos_label=0))
+        print(len(check_sim_conf_overlap))
+        print('Predict by max similarity to any in top_x probes >',max_sim_cutoff[0],':',f1_score(all_test_true[fold][0],confident_sample_pred4),f1_score(all_test_true[fold][0],confident_sample_pred4,pos_label=0))
+        print('Predict by max similarity to any in top_x probes >',max_sim_cutoff[1],':',f1_score(all_test_true[fold][0],confident_sample_pred5),f1_score(all_test_true[fold][0],confident_sample_pred5,pos_label=0))
+        print('Predict by max similarity to any in top_x probes >',max_sim_cutoff[2],':',f1_score(all_test_true[fold][0],confident_sample_pred6),f1_score(all_test_true[fold][0],confident_sample_pred6,pos_label=0))
+        print('Predict by max similarity to any in top_x probes >',max_sim_cutoff[3],':',f1_score(all_test_true[fold][0],confident_sample_pred7),f1_score(all_test_true[fold][0],confident_sample_pred7,pos_label=0))
+        print('Predict by max similarity to any in top_x probes >',max_sim_cutoff[4],':',f1_score(all_test_true[fold][0],confident_sample_pred8),f1_score(all_test_true[fold][0],confident_sample_pred8,pos_label=0))
+        print('Predict by max similarity to any probe >',max_sim_cutoff[0],':',f1_score(all_test_true[fold][0],confident_sample_pred9),f1_score(all_test_true[fold][0],confident_sample_pred9,pos_label=0))
+        print('Predict by max similarity to any probe >',max_sim_cutoff[1],':',f1_score(all_test_true[fold][0],confident_sample_pred10),f1_score(all_test_true[fold][0],confident_sample_pred10,pos_label=0))
+        print('Predict by max similarity to any probe >',max_sim_cutoff[2],':',f1_score(all_test_true[fold][0],confident_sample_pred11),f1_score(all_test_true[fold][0],confident_sample_pred11,pos_label=0))
+        print('Predict by max similarity to any probe >',max_sim_cutoff[3],':',f1_score(all_test_true[fold][0],confident_sample_pred12),f1_score(all_test_true[fold][0],confident_sample_pred12,pos_label=0))
+        print('Predict by max similarity to any probe >',max_sim_cutoff[4],':',f1_score(all_test_true[fold][0],confident_sample_pred13),f1_score(all_test_true[fold][0],confident_sample_pred13,pos_label=0))
+        print('\n')
         print('Max probe similarity of each test sample:')
         print(np.histogram(check_maxsim_correct0))
         print(np.histogram(check_maxsim_wrong0))
