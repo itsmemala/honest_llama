@@ -290,7 +290,7 @@ def main():
     method_concat = method_concat + '_unitnorm' if args.use_unitnorm==True else method_concat
     method_concat = method_concat + '_no_bias' if args.use_linear_bias==False else method_concat
     method_concat = method_concat + '_' + str(args.kld_wgt) + '_' + str(args.kld_temp) if 'kld' in args.method else method_concat
-    method_concat = method_concat + '_' + str(args.spl_wgt) if 'specialised' in args.method else method_concat
+    method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_entropy_cutoff) if 'specialised' in args.method else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
