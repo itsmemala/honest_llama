@@ -314,9 +314,9 @@ def main():
         probes_saved = []
         loop_layers = range(args.layer_start,args.layer_end+1,1) if args.layer_start is not None else args.custom_layers if args.custom_layers is not None else range(num_layers)
         if 'individual_linear_kld_reverse' in args.method: loop_layers = range(num_layers-1,-1,-1)
-        for layer in tqdm(loop_layers):
+        # for layer in tqdm(loop_layers):
         # for layer in tqdm(range(num_layers)):
-        # for layer in tqdm([0]):
+        for layer in tqdm([14]):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 loop_kld_probes = range(2) if args.method=='individual_linear_kld_perprobe' else [0]
