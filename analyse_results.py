@@ -143,12 +143,12 @@ def main():
             probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
             probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
         if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
-        probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
-        probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
         # print('Probe dimensions:')
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         if args.proj_dims is not None:
             print('PCA:')
+            probe_wgts_cls0 = [val.detach().cpu().numpy() for val in probe_wgts_cls0]
+            probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
             # Dimensionality reduction on probe vectors
             n_components = args.proj_dims
             pca0,pca1 = PCA(n_components=n_components), PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
