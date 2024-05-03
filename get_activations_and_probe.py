@@ -49,7 +49,7 @@ def num_tagged_tokens(tagged_token_idxs_prompt):
 
 def get_acts_at_loc(inputs_idxs,model,layer,head,device,args,tokenized_prompts,answer_token_idxes,tagged_token_idxs,prompt_tokens):
     activations = []
-    for idx in 'inputs_idxs':
+    for idx in inputs_idxs:
         if args.load_act==False:
             act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
             file_end = idx-(idx%100)+100 # 487: 487-(87)+100
