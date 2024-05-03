@@ -503,7 +503,7 @@ def main():
                                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
                                     acts.append(act)
                             norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            probs = F.softmax(linear_model(norm_acts).data, dim=1)
+                            probs = F.softmax(linear_model(norm_acts), dim=1)
                             entropy = (-probs*np.nan_to_num(np.log2(probs),neginf=0)).sum(axis=1)
                             model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<0.2])
                             print('# samples most confident at current layer:',len(model_wise_mc_sample_idxs[-1]))
