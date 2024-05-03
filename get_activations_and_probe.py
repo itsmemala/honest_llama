@@ -406,6 +406,7 @@ def main():
                                 if step==0:
                                     if epoch==0:
                                         batch_hallu_inputs = inputs[targets==0]
+                                        print(batch_hallu_inputs.shape)
                                     cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                                     print(step,torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_0.detach(), dim=-1)))
 
