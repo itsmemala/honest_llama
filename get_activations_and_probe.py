@@ -407,9 +407,10 @@ def main():
                                     if epoch==0:
                                         batch_hallu_inputs = inputs[targets==0]#[:5]
                                         print(batch_hallu_inputs.shape)
+                                        batch_hallu_targets = targets[targets==0]#[:5]
                                     cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                                     cur_norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                                    temp_loss = criterion(linear_model(batch_hallu_inputs), targets[targets==0].to(device))#[:5].to(device))
+                                    temp_loss = criterion(linear_model(batch_hallu_inputs), batch_hallu_targets.to(device))
                                     print(step,torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_0.detach(), dim=-1)),torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_1.detach(), dim=-1)),temp_loss)
 
                             # Get val loss
