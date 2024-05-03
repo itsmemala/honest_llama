@@ -280,7 +280,7 @@ def main():
                     all_train_loss[i].append(np.array(train_loss))
                     all_val_loss[i].append(np.array(val_loss))
                     linear_model.load_state_dict(best_model_state)
-                    print(np.array(val_loss))
+                    # print(np.array(val_loss))
                     if args.save_probes:
                         probe_save_path = f'{args.save_path}/probes/models/NL_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}_{layer}_{head}'
                         torch.save(linear_model, probe_save_path)
@@ -316,7 +316,7 @@ def main():
                     all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
                     all_y_true_val[i].append(y_val_true)
                     all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                    print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                    # print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
                     pred_correct = 0
                     y_test_pred, y_test_true = [], []
                     test_preds = []
@@ -352,8 +352,8 @@ def main():
                     # print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
                     all_val_logits[i].append(torch.cat(val_logits))
                     all_test_logits[i].append(torch.cat(test_logits))
-            break
-        break
+        #     break
+        # break
     
 
     # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
