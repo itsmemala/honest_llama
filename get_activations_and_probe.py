@@ -403,6 +403,11 @@ def main():
                                 if 'individual_linear_kld' in args.method and len(probes_saved)>0:
                                     print('Total loss:',loss.item())
                                     print('KLD loss:',step_kld_loss[-1])
+                                if step in [0,5,10]:
+                                    batch_hallu_inputs = inputs[targets==0]
+                                    cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                                    print(step,torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_0.detach(), dim=-1)))
+
                             # Get val loss
                             linear_model.eval()
                             epoch_val_loss = 0
@@ -541,8 +546,8 @@ def main():
                             all_train_logits[i].append(torch.cat(best_train_logits))
                         all_val_logits[i].append(torch.cat(best_val_logits))
                         all_test_logits[i].append(torch.cat(test_logits))
-                #     break
-                # break
+                    break
+                break
     
         if args.classifier_on_probes:
             train_logits = torch.cat(all_train_logits[i],dim=1)
