@@ -405,7 +405,7 @@ def main():
                                         past_inputs = get_acts_at_loc(batch['inputs_idxs'],model,layer,head,device,args,tokenized_prompts,answer_token_idxes,tagged_token_idxs,prompt_tokens)
                                         if args.use_unitnorm: past_inputs = past_inputs / past_inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                         past_preds_batch = F.softmax(past_linear_model(past_inputs).data / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data / args.kld_temp, dim=1), dim=0)[0] for inp in past_inputs]) # For each sample, get max prob per class across tokens
-                                        probe_kld_loss += 1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
+                                        probe_kld_loss += 1/criterion_kld(train_preds_batch,past_preds_batch)
                                     loss = loss + args.kld_wgt*probe_kld_loss
                                     step_kld_loss.append(probe_kld_loss.item())
                                 if (args.method=='individual_linear_kld_perprobe') and kld_probe==1:
@@ -414,8 +414,8 @@ def main():
                                     past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=args.use_linear_bias).to(device)
                                     past_linear_model = torch.load(probes_saved_path)
                                     past_preds_batch = F.softmax(past_linear_model(inputs).data / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data / args.kld_temp, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                                    loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
-                                    step_kld_loss.append(1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
+                                    loss = loss + args.kld_wgt/criterion_kld(train_preds_batch,past_preds_batch)
+                                    step_kld_loss.append(1/criterion_kld(train_preds_batch,past_preds_batch).item())
                                 if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
                                     if step==0: # Only load once to save time
                                         mc_sample_idxs, acts = [], []
