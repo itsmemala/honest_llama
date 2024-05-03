@@ -402,7 +402,7 @@ def main():
                                 if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
                                     mc_sample_idxs, acts = [], []
                                     for idxs in model_wise_mc_sample_idxs: # for each previous model
-                                        mc_sample_idxs += idxs
+                                        mc_sample_idxs += list(idxs)
                                     mc_sample_idxs = list(set(mc_sample_idxs))
                                     for idx in mc_sample_idxs:
                                         file_end = idx-(idx%100)+100 # 487: 487-(87)+100
