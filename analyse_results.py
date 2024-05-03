@@ -548,12 +548,18 @@ def main():
             confident_sample_pred1, confident_sample_pred2, confident_sample_pred3, confident_sample_pred4, confident_sample_pred5, confident_sample_pred6, confident_sample_pred7 = [], [], [], [], [], [], []
             for i in range(all_test_pred[fold].shape[1]):
                 sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+                probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
                 confident_sample_pred1.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
                 confident_sample_pred2.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
                 if np.max(all_test_sim_proj[fold][:,i,0]) > np.max(all_test_sim_proj[fold][:,i,1]):
-                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
+                    # confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
+                    best_probe = all_test_sim_proj[fold][:,i,0]==np.max(all_test_sim_proj[fold][:,i,0])
+                    confident_sample_pred3.append(np.argmax(sample_pred[best_probe]))
                 else:
-                    confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                    # confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,1])]))
+                    best_probe = all_test_sim_proj[fold][:,i,1]==np.max(all_test_sim_proj[fold][:,i,1])
+                    # best_probe = probe_wise_entropy[best_probe]
+                    confident_sample_pred3.append(np.argmax(sample_pred[best_probe]))
                 # if np.max(all_test_sim_proj[fold][:,i,0]) > 0:
                 #     confident_sample_pred3.append(np.argmax(sample_pred[np.argmax(all_test_sim_proj[fold][:,i,0])]))
                 # else:
