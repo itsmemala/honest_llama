@@ -166,6 +166,7 @@ def main():
     parser.add_argument('--use_unitnorm',type=bool, default=False)
     parser.add_argument('--kld_wgt',type=float, default=1)
     parser.add_argument('--kld_temp',type=float, default=2)
+    parser.add_argument('--spl_wgt',type=float, default=1)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -288,6 +289,7 @@ def main():
     method_concat = method_concat + '_unitnorm' if args.use_unitnorm==True else method_concat
     method_concat = method_concat + '_no_bias' if args.use_linear_bias==False else method_concat
     method_concat = method_concat + '_' + str(args.kld_wgt) + '_' + str(args.kld_temp) if 'kld' in args.method else method_concat
+    method_concat = method_concat + '_' + str(args.spl_wgt) if 'specialised' in args.method else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
@@ -312,11 +314,12 @@ def main():
         all_train_logits[i], all_val_logits[i], all_test_logits[i] = [], [], []
         all_val_sim[i], all_test_sim[i] = [], []
         probes_saved = []
+        model_wise_mc_sample_idxs = []
         loop_layers = range(args.layer_start,args.layer_end+1,1) if args.layer_start is not None else args.custom_layers if args.custom_layers is not None else range(num_layers)
         if 'individual_linear_kld_reverse' in args.method: loop_layers = range(num_layers-1,-1,-1)
-        # for layer in tqdm(loop_layers):
+        for layer in tqdm(loop_layers):
         # for layer in tqdm(range(num_layers)):
-        for layer in tqdm([14]):
+        # for layer in tqdm([14]):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 loop_kld_probes = range(2) if args.method=='individual_linear_kld_perprobe' else [0]
@@ -343,7 +346,7 @@ def main():
                         
                         # iter_bar = tqdm(ds_train, desc='Train Iter (loss=X.XXX)')
 
-                        train_loss, val_loss, step_kld_loss = [], [], []
+                        train_loss, val_loss, step_kld_loss, step_spl_loss = [], [], [], []
                         best_val_loss = torch.inf
                         best_model_state = linear_model.state_dict()
                         best_val_logits = []
@@ -396,6 +399,20 @@ def main():
                                     past_preds_batch = F.softmax(past_linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
                                     step_kld_loss.append(1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
+                                if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
+                                    mc_sample_idxs, norm_acts = [], []
+                                    for idxs in model_wise_mc_sample_idxs: # for each previous model
+                                        mc_sample_idxs += idxs
+                                    mc_sample_idxs = list(set(mc_sample_idxs))
+                                    for idx in mc_sample_idxs:
+                                        file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                        norm_acts.append(act / act.pow(2).sum(dim=1).sqrt().unsqueeze(-1)) # unit normalise
+                                    norm_acts = torch.stack(norm_acts,axis=0).to(device)
+                                    cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                                    loss = loss + args.spl_wgt*torch.mean(torch.sum(norm_acts * cur_norm_weights_0, dim=-1))
+                                    step_spl_loss.append(torch.mean(torch.sum(norm_acts * cur_norm_weights_0, dim=-1).item())
                                 train_loss.append(loss.item())
                                 # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                                 loss.backward()
@@ -403,15 +420,18 @@ def main():
                                 if 'individual_linear_kld' in args.method and len(probes_saved)>0:
                                     print('Total loss:',loss.item())
                                     print('KLD loss:',step_kld_loss[-1])
-                                if step==10:
-                                    if epoch==0:
-                                        batch_hallu_inputs = inputs[targets==0]#[:5]
-                                        print(batch_hallu_inputs.shape)
-                                        batch_hallu_targets = targets[targets==0]#[:5]
-                                    cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                                    cur_norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                                    temp_loss = criterion(linear_model(batch_hallu_inputs), batch_hallu_targets.to(device))
-                                    print(step,torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_0.detach(), dim=-1)),torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_1.detach(), dim=-1)),temp_loss)
+                                if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
+                                    print('Total loss:',loss.item())
+                                    print('KLD loss:',step_spl_loss[-1])
+                                # if step==10:
+                                #     if epoch==0:
+                                #         batch_hallu_inputs = inputs[targets==0]#[:5]
+                                #         print(batch_hallu_inputs.shape)
+                                #         batch_hallu_targets = targets[targets==0]#[:5]
+                                #     cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                                #     cur_norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                                #     temp_loss = criterion(linear_model(batch_hallu_inputs), batch_hallu_targets.to(device))
+                                #     print(step,torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_0.detach(), dim=-1)),torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_1.detach(), dim=-1)),temp_loss)
 
                             # Get val loss
                             linear_model.eval()
@@ -459,13 +479,34 @@ def main():
                             if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch': scheduler.step()
                         all_train_loss[i].append(np.array(train_loss))
                         all_val_loss[i].append(np.array(val_loss))
+                        
                         if len(step_kld_loss)>0: all_kld_loss[i].append(np.array(step_kld_loss))
                         if ((args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse') and len(probes_saved)>0) or (args.method=='individual_linear_kld_perprobe' and kld_probe==1):
                             print(layer,head)
                             print('KLD loss:',step_kld_loss[:10],step_kld_loss[-10:])
                             print('Train and val loss:',train_loss[-1],val_loss[-1])
                             print('\n')
+                        if (args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0):
+                            print(layer,head)
+                            print('SPL loss:',step_spl_loss[:10],step_spl_loss[-10:])
+                            print('Train and val loss:',train_loss[-1],val_loss[-1])
+                            print('\n')
+                        
                         linear_model.load_state_dict(best_model_state)
+                        if args.method=='individual_linear_specialised':
+                            hallu_idxs, norm_acts = [], []
+                            for idx in train_set_idxs:
+                                if labels[idx]==0:
+                                    hallu_idxs.append(idx)
+                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                    norm_acts.append(act / act.pow(2).sum(dim=1).sqrt().unsqueeze(-1)) # unit normalise
+                            probs = F.softmax(linear_model(norm_acts).data, dim=1)
+                            entropy = (-probs*np.nan_to_num(np.log2(probs),neginf=0)).sum(axis=1)
+                            model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<0.2])
+                            print('# samples most confident at current layer:',len(model_wise_mc_sample_idxs[-1]))
+                        
                         if args.save_probes:
                             probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_{kld_probe}'
                             torch.save(linear_model, probe_save_path)
@@ -551,8 +592,8 @@ def main():
                             all_train_logits[i].append(torch.cat(best_train_logits))
                         all_val_logits[i].append(torch.cat(best_val_logits))
                         all_test_logits[i].append(torch.cat(test_logits))
-                break
-            break
+            #     break
+            # break
     
         if args.classifier_on_probes:
             train_logits = torch.cat(all_train_logits[i],dim=1)
@@ -560,31 +601,31 @@ def main():
             test_logits = torch.cat(all_test_logits[i],dim=1)
             train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits,y_test,sampler,device,args)
 
-    # # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_loss.npy', all_val_loss)
-    # # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_train_loss.npy', all_train_loss)
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_kld_loss.npy', all_kld_loss)
-    # all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_pred.npy', all_val_preds)
-    # all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_pred.npy', all_test_preds)
-    # all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_f1.npy', all_val_f1s)
-    # all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_f1.npy', all_test_f1s)
-    # all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_true.npy', all_y_true_val)
-    # all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_true.npy', all_y_true_test)
-    # all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_logits.npy', all_val_logits)
-    # all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_logits.npy', all_test_logits)
-    # all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
-    # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
+    # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_loss.npy', all_val_loss)
+    # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_train_loss.npy', all_train_loss)
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_kld_loss.npy', all_kld_loss)
+    all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_pred.npy', all_val_preds)
+    all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_pred.npy', all_test_preds)
+    all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_f1.npy', all_val_f1s)
+    all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_f1.npy', all_test_f1s)
+    all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_true.npy', all_y_true_val)
+    all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_true.npy', all_y_true_test)
+    all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_logits.npy', all_val_logits)
+    all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_logits.npy', all_test_logits)
+    all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
+    all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
 
 if __name__ == '__main__':
     main()
