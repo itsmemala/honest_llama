@@ -436,9 +436,9 @@ def main():
                                 # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                                 loss.backward()
                                 optimizer.step()
-                                # if 'individual_linear_kld' in args.method and len(probes_saved)>0:
-                                #     print('Total loss:',loss.item())
-                                #     print('KLD loss:',step_kld_loss[-1])
+                                if 'individual_linear_kld' in args.method and len(probes_saved)>0:
+                                    print('Total loss:',loss.item())
+                                    print('KLD loss:',step_kld_loss[-1])
                                 # if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
                                 #     print('Total loss:',loss.item())
                                 #     print('SPL loss:',step_spl_loss[-1])
