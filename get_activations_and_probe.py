@@ -401,17 +401,18 @@ def main():
                                     loss = loss + args.kld_wgt/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0])
                                     step_kld_loss.append(1/criterion_kld(train_preds_batch[:,0],past_preds_batch[:,0]).item())
                                 if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
-                                    mc_sample_idxs, acts = [], []
-                                    for idxs in model_wise_mc_sample_idxs: # for each previous model
-                                        mc_sample_idxs += list(idxs)
-                                    mc_sample_idxs = list(set(mc_sample_idxs))
-                                    for idx in mc_sample_idxs:
-                                        file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                                        acts.append(act)
-                                    acts = torch.stack(acts,axis=0)
-                                    norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                    if step==0: # Only load once to save time
+                                        mc_sample_idxs, acts = [], []
+                                        for idxs in model_wise_mc_sample_idxs: # for each previous model
+                                            mc_sample_idxs += list(idxs)
+                                        mc_sample_idxs = list(set(mc_sample_idxs))
+                                        for idx in mc_sample_idxs:
+                                            file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                            acts.append(act)
+                                        acts = torch.stack(acts,axis=0)
+                                        norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                     cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                                     loss = loss + args.spl_wgt*torch.mean(torch.sum(norm_acts * cur_norm_weights_0, dim=-1))
                                     step_spl_loss.append(torch.mean(torch.sum(norm_acts * cur_norm_weights_0, dim=-1)).item())
