@@ -167,6 +167,7 @@ def main():
     parser.add_argument('--kld_wgt',type=float, default=1)
     parser.add_argument('--kld_temp',type=float, default=2)
     parser.add_argument('--spl_wgt',type=float, default=1)
+    parser.add_argument('--spl_entropy_cutoff',type=float, default=0.2)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -421,9 +422,9 @@ def main():
                                 if 'individual_linear_kld' in args.method and len(probes_saved)>0:
                                     print('Total loss:',loss.item())
                                     print('KLD loss:',step_kld_loss[-1])
-                                if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
-                                    print('Total loss:',loss.item())
-                                    print('KLD loss:',step_spl_loss[-1])
+                                # if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
+                                #     print('Total loss:',loss.item())
+                                #     print('SPL loss:',step_spl_loss[-1])
                                 # if step==10:
                                 #     if epoch==0:
                                 #         batch_hallu_inputs = inputs[targets==0]#[:5]
@@ -507,7 +508,7 @@ def main():
                             norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             probs = F.softmax(linear_model(norm_acts), dim=1).detach().cpu().numpy()
                             entropy = (-probs*np.nan_to_num(np.log2(probs),neginf=0)).sum(axis=1)
-                            model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<0.2])
+                            model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<args.spl_entropy_cutoff])
                             print('# samples most confident at current layer:',len(model_wise_mc_sample_idxs[-1]))
                         
                         if args.save_probes:
