@@ -494,14 +494,15 @@ def main():
                         
                         linear_model.load_state_dict(best_model_state)
                         if args.method=='individual_linear_specialised':
-                            hallu_idxs, norm_acts = [], []
+                            hallu_idxs, acts = [], []
                             for idx in train_set_idxs:
                                 if labels[idx]==0:
                                     hallu_idxs.append(idx)
                                     file_end = idx-(idx%100)+100 # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                                    norm_acts.append(act / act.pow(2).sum(dim=1).sqrt().unsqueeze(-1)) # unit normalise
+                                    acts.append(act)
+                            norm_acts = acts / act.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             probs = F.softmax(linear_model(norm_acts).data, dim=1)
                             entropy = (-probs*np.nan_to_num(np.log2(probs),neginf=0)).sum(axis=1)
                             model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<0.2])
