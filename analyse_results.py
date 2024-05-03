@@ -147,67 +147,71 @@ def main():
         probe_wgts_cls1 = [val.detach().cpu().numpy() for val in probe_wgts_cls1]
         # print('Probe dimensions:')
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
-        print('PCA:')
-        # Dimensionality reduction on probe vectors
-        n_components = args.proj_dims if args.proj_dims is not None else all_test_pred[fold].shape[0]
-        pca0,pca1 = PCA(n_components=n_components), PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
-        transformed_cls0 = pca0.fit_transform(probe_wgts_cls0)
-        transformed_cls1 = pca1.fit_transform(probe_wgts_cls1)
-        # pca = PCA(n_components=n_components)
-        # pca.fit(probe_wgts_cls0+probe_wgts_cls1)
-        # transformed_cls0, transformed_cls1 = pca.transform(probe_wgts_cls0), pca.transform(probe_wgts_cls1)
-        # print(transformed_cls0.shape)
-        print(np.sum(pca0.explained_variance_ratio_))#,pca0.explained_variance_ratio_)
-        probe_wgts_cls0, probe_wgts_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
-        probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
-        all_sim_cls0, all_sim_cls1 = [], []
-        for model_idx_a in range(all_test_pred[fold].shape[0]):
-            sim_cls0, sim_cls1 = [], []
-            norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            for model_idx_b in range(all_test_pred[fold].shape[0]):
-                if model_idx_b!=model_idx_a:
-                    norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
-                    sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
-            probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
-            probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
-            all_sim_cls0 += sim_cls0
-            all_sim_cls1 += sim_cls1
-        print(min(all_sim_cls0),max(all_sim_cls0))
-        print(min(all_sim_cls1),max(all_sim_cls1))
-        if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
-        print(np.histogram(all_sim_cls0))
-        print(np.histogram(all_sim_cls1))
+        if args.proj_dims is not None:
+            print('PCA:')
+            # Dimensionality reduction on probe vectors
+            n_components = args.proj_dims
+            pca0,pca1 = PCA(n_components=n_components), PCA(n_components=n_components) # KernelPCA(n_components=100, kernel='poly') # PCA(n_components=3)
+            transformed_cls0 = pca0.fit_transform(probe_wgts_cls0)
+            transformed_cls1 = pca1.fit_transform(probe_wgts_cls1)
+            # pca = PCA(n_components=n_components)
+            # pca.fit(probe_wgts_cls0+probe_wgts_cls1)
+            # transformed_cls0, transformed_cls1 = pca.transform(probe_wgts_cls0), pca.transform(probe_wgts_cls1)
+            # print(transformed_cls0.shape)
+            print(np.sum(pca0.explained_variance_ratio_))#,pca0.explained_variance_ratio_)
+            probe_wgts_cls0, probe_wgts_cls1 = torch.from_numpy(transformed_cls0), torch.from_numpy(transformed_cls1)
+            probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
+            all_sim_cls0, all_sim_cls1 = [], []
+            for model_idx_a in range(all_test_pred[fold].shape[0]):
+                sim_cls0, sim_cls1 = [], []
+                norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                for model_idx_b in range(all_test_pred[fold].shape[0]):
+                    if model_idx_b!=model_idx_a:
+                        norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                        norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                        sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+                        sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+                probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
+                probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
+                all_sim_cls0 += sim_cls0
+                all_sim_cls1 += sim_cls1
+            print(min(all_sim_cls0),max(all_sim_cls0))
+            print(min(all_sim_cls1),max(all_sim_cls1))
+            if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
+            print(np.histogram(all_sim_cls0))
+            print(np.histogram(all_sim_cls1))
 
-        # Project test samples to reduced dimensions
-        print('Projecting test samples to probe PCA dimensions...')
-        all_test_sim_proj[fold] = []
-        for model in range(all_test_pred[fold].shape[0]):
-            layer = args.custom_layers[model] if 'kld_custom' in args.results_file_name else model
-            model_test_sim_proj = []
-            for i in range(all_test_pred[fold].shape[1]):
-                act_type = 'mlp' # {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                file_end = i-(i%100)+100 # 487: 487-(87)+100
-                # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%100][layer]) #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                act = act / act.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                act = act.detach().cpu().numpy()
-                act = act.reshape(1, -1)
-                act0, act1 = torch.from_numpy(pca0.transform(act)[0]), torch.from_numpy(pca1.transform(act)[0])
-                act0_norm = act0 / act0.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                act1_norm = act1 / act1.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                norm_weights_a0 = probe_wgts_cls0[model] / probe_wgts_cls0[model].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                norm_weights_a1 = probe_wgts_cls1[model] / probe_wgts_cls1[model].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                model_test_sim_proj.append(np.array([torch.sum(norm_weights_a0*act0_norm).item(),torch.sum(norm_weights_a1*act1_norm).item()]))
-            all_test_sim_proj[fold].append(np.stack(model_test_sim_proj))
-        all_test_sim_proj[fold] = np.stack(all_test_sim_proj[fold])
-        # print(all_test_sim_proj[fold].shape)
-        assert all_test_sim_proj[fold].shape==all_test_sim[fold].shape
-        print(np.histogram(all_test_sim_proj[fold][:,:,0]))
-        print(np.histogram(all_test_sim_proj[fold][:,:,1]))
+            # Project test samples to reduced dimensions
+            print('Projecting test samples to probe PCA dimensions...')
+            all_test_sim_proj[fold] = []
+            for model in range(all_test_pred[fold].shape[0]):
+                layer = args.custom_layers[model] if 'kld_custom' in args.results_file_name else model
+                model_test_sim_proj = []
+                for i in range(all_test_pred[fold].shape[1]):
+                    act_type = 'mlp' # {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                    file_end = i-(i%100)+100 # 487: 487-(87)+100
+                    # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                    file_path = f'{args.save_path}/features/llama_7B_trivia_qa_answer_last/llama_7B_trivia_qa_greedy_responses_validation1800_answer_last_mlp_wise_{file_end}.pkl'
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%100][layer]) #if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                    act = act / act.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    act = act.detach().cpu().numpy()
+                    act = act.reshape(1, -1)
+                    act0, act1 = torch.from_numpy(pca0.transform(act)[0]), torch.from_numpy(pca1.transform(act)[0])
+                    act0_norm = act0 / act0.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    act1_norm = act1 / act1.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_a0 = probe_wgts_cls0[model] / probe_wgts_cls0[model].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    norm_weights_a1 = probe_wgts_cls1[model] / probe_wgts_cls1[model].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    model_test_sim_proj.append(np.array([torch.sum(norm_weights_a0*act0_norm).item(),torch.sum(norm_weights_a1*act1_norm).item()]))
+                all_test_sim_proj[fold].append(np.stack(model_test_sim_proj))
+            all_test_sim_proj[fold] = np.stack(all_test_sim_proj[fold])
+            # print(all_test_sim_proj[fold].shape)
+            assert all_test_sim_proj[fold].shape==all_test_sim[fold].shape
+            print(np.histogram(all_test_sim_proj[fold][:,:,0]))
+            print(np.histogram(all_test_sim_proj[fold][:,:,1]))
+        
+        else:
+            all_test_sim_proj[fold]=all_test_sim[fold]
 
         print('\n')
         print('FOLD',fold,'RESULTS:')
