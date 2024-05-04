@@ -399,10 +399,10 @@ def main():
                                 if (args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse') and len(probes_saved)>0:
                                     train_preds_batch = F.log_softmax(linear_model(inputs) / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.log_softmax(linear_model(inp) / args.kld_temp, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     probe_kld_loss = 0
-                                    for probes_saved_path,layer,head in probes_saved:
+                                    for probes_saved_path,past_layer,past_head in probes_saved:
                                         past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=args.use_linear_bias).to(device)
                                         past_linear_model = torch.load(probes_saved_path)
-                                        past_inputs = get_acts_at_loc(batch['inputs_idxs'],model,layer,head,device,args,tokenized_prompts,answer_token_idxes,tagged_token_idxs,prompt_tokens)
+                                        past_inputs = get_acts_at_loc(batch['inputs_idxs'],model,past_layer,past_head,device,args,tokenized_prompts,answer_token_idxes,tagged_token_idxs,prompt_tokens)
                                         if args.use_unitnorm: past_inputs = past_inputs / past_inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                         past_preds_batch = F.softmax(past_linear_model(past_inputs).data / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(past_linear_model(inp).data / args.kld_temp, dim=1), dim=0)[0] for inp in past_inputs]) # For each sample, get max prob per class across tokens
                                         probe_kld_loss += 1/criterion_kld(train_preds_batch,past_preds_batch)
