@@ -181,7 +181,7 @@ def main():
     parser.add_argument('--kld_wgt',type=float, default=1)
     parser.add_argument('--kld_temp',type=float, default=2)
     parser.add_argument('--spl_wgt',type=float, default=1)
-    parser.add_argument('--spl_knn',type=float, default=0.2)
+    parser.add_argument('--spl_knn',type=int, default=0.2)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
