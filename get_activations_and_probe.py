@@ -181,7 +181,7 @@ def main():
     parser.add_argument('--kld_wgt',type=float, default=1)
     parser.add_argument('--kld_temp',type=float, default=2)
     parser.add_argument('--spl_wgt',type=float, default=1)
-    parser.add_argument('--spl_entropy_cutoff',type=float, default=0.2)
+    parser.add_argument('--spl_knn',type=float, default=0.2)
     parser.add_argument('--classifier_on_probes',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -304,7 +304,7 @@ def main():
     method_concat = method_concat + '_unitnorm' if args.use_unitnorm==True else method_concat
     method_concat = method_concat + '_no_bias' if args.use_linear_bias==False else method_concat
     method_concat = method_concat + '_' + str(args.kld_wgt) + '_' + str(args.kld_temp) if 'kld' in args.method else method_concat
-    method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_entropy_cutoff) if 'specialised' in args.method else method_concat
+    method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
@@ -397,7 +397,7 @@ def main():
                                 outputs = linear_model(inputs)
                                 loss = criterion(outputs, targets.to(device))
                                 if (args.method=='individual_linear_kld' or args.method=='individual_linear_kld_reverse') and len(probes_saved)>0:
-                                    train_preds_batch = F.log_softmax(linear_model(inputs).data / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.log_softmax(linear_model(inp).data / args.kld_temp, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                                    train_preds_batch = F.log_softmax(linear_model(inputs) / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.log_softmax(linear_model(inp) / args.kld_temp, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     probe_kld_loss = 0
                                     for probes_saved_path,layer,head in probes_saved:
                                         past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=args.use_linear_bias).to(device)
@@ -409,7 +409,7 @@ def main():
                                     loss = loss + args.kld_wgt*probe_kld_loss
                                     step_kld_loss.append(probe_kld_loss.item())
                                 if (args.method=='individual_linear_kld_perprobe') and kld_probe==1:
-                                    train_preds_batch = F.log_softmax(linear_model(inputs).data / args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.log_softmax(linear_model(inp).data / args.kld_temp, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                                    train_preds_batch = F.log_softmax(linear_model(inputs)/ args.kld_temp, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.log_softmax(linear_model(inp) / args.kld_temp, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                                     probes_saved_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_0'
                                     past_linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=args.use_linear_bias).to(device)
                                     past_linear_model = torch.load(probes_saved_path)
@@ -418,20 +418,20 @@ def main():
                                     step_kld_loss.append(1/criterion_kld(train_preds_batch,past_preds_batch).item())
                                 if args.method=='individual_linear_specialised' and len(model_wise_mc_sample_idxs)>0:
                                     if step==0: # Only load once to save time
-                                        mc_sample_idxs, acts = [], []
+                                        mean_vectors = []
                                         for idxs in model_wise_mc_sample_idxs: # for each previous model
-                                            mc_sample_idxs += list(idxs)
-                                        mc_sample_idxs = list(set(mc_sample_idxs))
-                                        for idx in mc_sample_idxs:
-                                            file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
-                                            acts.append(act)
-                                        acts = torch.stack(acts,axis=0)
-                                        norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                            acts = []
+                                            for idx in idxs: # compute mean vector of all chosen samples in current layer
+                                                file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                                acts.append(act)
+                                            acts = torch.stack(acts,axis=0)
+                                            mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
+                                        mean_vectors = torch.stack(mean_vectors,axis=0)
                                     cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                                    loss = loss + args.spl_wgt*torch.mean(torch.sum(norm_acts * cur_norm_weights_0, dim=-1))
-                                    step_spl_loss.append(torch.mean(torch.sum(norm_acts * cur_norm_weights_0, dim=-1)).item())
+                                    loss = loss + args.spl_wgt*torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0])) # compute sim and convert from [-1,1] to [0,1]
+                                    step_spl_loss.append(torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0])).item())
                                 train_loss.append(loss.item())
                                 # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                                 loss.backward()
@@ -451,6 +451,22 @@ def main():
                                 #     cur_norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                                 #     temp_loss = criterion(linear_model(batch_hallu_inputs), batch_hallu_targets.to(device))
                                 #     print(step,torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_0.detach(), dim=-1)),torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_1.detach(), dim=-1)),temp_loss)
+                            if args.method=='individual_linear_specialised':
+                                cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                                if epoch==0:
+                                    acts = []
+                                    for idx in train_set_idxs:
+                                        if labels[idx]==0:
+                                            file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                                            acts.append(act)
+                                    acts = torch.stack(acts,axis=0)
+                                    norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                    sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
+                                    top_sim_acts = norm_acts[torch.topk(sim,args.spl_knn)[1]]
+                                    print(top_sim_acts.shape)
+                                print(torch.mean(torch.sum(top_sim_acts * cur_norm_weights_0, dim=-1)))
 
                             # Get val loss
                             linear_model.eval()
@@ -523,10 +539,13 @@ def main():
                                     acts.append(act)
                             acts = torch.stack(acts,axis=0)
                             norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            probs = F.softmax(linear_model(norm_acts), dim=1).detach().cpu().numpy()
-                            entropy = (-probs*np.nan_to_num(np.log2(probs),neginf=0)).sum(axis=1)
-                            model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<args.spl_entropy_cutoff])
-                            print('# samples most confident at current layer:',len(model_wise_mc_sample_idxs[-1]))
+                            # probs = F.softmax(linear_model(norm_acts), dim=1).detach().cpu().numpy()
+                            # entropy = (-probs*np.nan_to_num(np.log2(probs),neginf=0)).sum(axis=1)
+                            # model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<args.spl_entropy_cutoff])
+                            cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
+                            model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[torch.topk(sim,args.spl_knn)[1].detach().cpu().numpy()]) # save indices of top k similar vectors
+                            print('Similarity of knn samples at current layer:',torch.topk(sim,args.spl_knn)[0])
                         
                         if args.save_probes:
                             probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_{kld_probe}'
