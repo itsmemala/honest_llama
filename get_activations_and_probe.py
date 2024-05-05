@@ -430,7 +430,7 @@ def main():
                                             mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
                                         mean_vectors = torch.stack(mean_vectors,axis=0)
                                     cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                                    loss = loss + args.spl_wgt*torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0]).to(device)) # compute sim and convert from [-1,1] to [0,1]
+                                    loss = loss + args.spl_wgt*torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0]).to(device)) # compute sim and convert from [-1,1] to [0,2]
                                     step_spl_loss.append(torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0]).to(device)).item())
                                 train_loss.append(loss.item())
                                 # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
@@ -544,8 +544,9 @@ def main():
                             # model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[entropy<args.spl_entropy_cutoff])
                             cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
-                            model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[torch.topk(sim,args.spl_knn)[1].detach().cpu().numpy()]) # save indices of top k similar vectors
-                            print('Similarity of knn samples at current layer:',torch.topk(sim,args.spl_knn)[0])
+                            top_k = torch.topk(sim,args.spl_knn)[1][torch.topk(sim,args.spl_knn)[0]>0].detach().cpu().numpy() # save indices of top k similar vectors (only pos)
+                            model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[top_k])
+                            print('Similarity of knn samples at current layer:',sim[top_k])
                         
                         if args.save_probes:
                             probe_save_path = f'{args.save_path}/probes/models/{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_model{i}_{layer}_{head}_{kld_probe}'
