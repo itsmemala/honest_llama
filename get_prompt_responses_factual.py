@@ -162,7 +162,7 @@ def main():
     labels = []
     rouge = evaluate.load('rouge')
     exact_match_metric = evaluate.load("exact_match")
-    for i,batch in enumerate(list(dataset.take(len_dataset))[start_at:]): # one row at a time
+    for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
         labels_dict = {'exact_match': 0.0,
                         'rouge1_to_target':0.0,
                         'rouge2_to_target':0.0,
