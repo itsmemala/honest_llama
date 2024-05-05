@@ -60,19 +60,19 @@ def main():
 
     print('Loading data..')
     print(args.len_dataset,args.start_at,args.use_split)
+    # Load data
+    len_dataset = args.len_dataset
+    start_at = args.start_at
+    if args.dataset_name=='nq_open':
+        hf_dataset_name = 'nq_open'
+        dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
+    elif args.dataset_name=='trivia_qa':
+        hf_dataset_name = 'mandarjoshi/trivia_qa'
+        dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)[args.use_split]
+    elif args.dataset_name=='cnn_dailymail':
+        hf_dataset_name = 'cnn_dailymail'
+        dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
     if args.hallu_check_prompt is None:
-        # Load data
-        len_dataset = args.len_dataset
-        start_at = args.start_at
-        if args.dataset_name=='nq_open':
-            hf_dataset_name = 'nq_open'
-            dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
-        elif args.dataset_name=='trivia_qa':
-            hf_dataset_name = 'mandarjoshi/trivia_qa'
-            dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)[args.use_split]
-        elif args.dataset_name=='cnn_dailymail':
-            hf_dataset_name = 'cnn_dailymail'
-            dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
         prompts = []
         tokenized_prompts = []
         for idx,val in enumerate(list(dataset.take(len_dataset))[start_at:]):
