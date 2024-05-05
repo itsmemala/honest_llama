@@ -53,10 +53,10 @@ def main():
     np.random.seed(42)
     torch.cuda.manual_seed_all(42)
 
-    # print('Loading model..')
-    # tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-    # model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-    # device = "cuda"
+    print('Loading model..')
+    tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+    model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    device = "cuda"
 
     print('Loading data..')
     print(args.len_dataset,args.start_at,args.use_split)
@@ -88,51 +88,51 @@ def main():
             prompts.append(cur_prompt)
             tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
-    # else:
-    #     # Load greedy responses
-    #     greedy_resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
-    #     with open(greedy_resp_fname, 'r') as read_file:
-    #         greedy_resp_data = []
-    #         for line in read_file:
-    #             greedy_resp_data.append(json.loads(line))
-    #     prompts = []
-    #     tokenized_prompts = []
-    #     for row in greedy_resp_data:
-    #         if args.hallu_check_prompt==1:
-    #             cur_prompt = row['prompt'] + row['response1'] + "\n The above generated answer is incorrect. Revised answer: "
-    #         prompts.append(cur_prompt)
-    #         tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
-    #         tokenized_prompts.append(tokenized_prompt)
+    else:
+        # Load greedy responses
+        greedy_resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
+        with open(greedy_resp_fname, 'r') as read_file:
+            greedy_resp_data = []
+            for line in read_file:
+                greedy_resp_data.append(json.loads(line))
+        prompts = []
+        tokenized_prompts = []
+        for row in greedy_resp_data:
+            if args.hallu_check_prompt==1:
+                cur_prompt = row['prompt'] + row['response1'] + "\n The above generated answer is incorrect. Revised answer: "
+            prompts.append(cur_prompt)
+            tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
+            tokenized_prompts.append(tokenized_prompt)
     
-    # print('Getting model responses..')
-    # # Get model responses
-    # responses = []
-    # if args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
-    #     # period_token_id = tokenizer('. ')['input_ids'][1]
-    #     period_token_id = tokenizer('.')['input_ids']
-    #     eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
-    #                     'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
-    #     # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
-    #     # eos_tokens = ['Question', '\n', 'Answer', ':']
-    #     checkgens = ['QA2:','Q.', 'B:']
-    # elif args.dataset_name=='cnn_dailymail':
-    #     period_token_id = tokenizer('\n')['input_ids']
-    #     eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
-    #                     'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\", 'Summary:', ' Summary:']
-    #     checkgens = ['Summary:']
-    # question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
-    # # print('Bad word ids:',question_framing_ids)
-    # for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
-    #     tokenized_prompt = tokenized_prompt.to(device)
-    #     response = model.generate(tokenized_prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1,
-    #                                 eos_token_id=period_token_id,
-    #                                 bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-    #                                 )[:, tokenized_prompt.shape[-1]:]
-    #     response = tokenizer.decode(response[0], skip_special_tokens=True)
-    #     for check_gen in checkgens: # Fix generation stopping errors
-    #         response = response.split(check_gen)[0]
-    #     responses.append({'prompt':prompts[i],
-    #                         'response1':response})
+    print('Getting model responses..')
+    # Get model responses
+    responses = []
+    if args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
+        # period_token_id = tokenizer('. ')['input_ids'][1]
+        period_token_id = tokenizer('.')['input_ids']
+        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
+        # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
+        # eos_tokens = ['Question', '\n', 'Answer', ':']
+        checkgens = ['QA2:','Q.', 'B:']
+    elif args.dataset_name=='cnn_dailymail':
+        period_token_id = tokenizer('\n')['input_ids']
+        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\", 'Summary:', ' Summary:']
+        checkgens = ['Summary:']
+    question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
+    # print('Bad word ids:',question_framing_ids)
+    for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
+        tokenized_prompt = tokenized_prompt.to(device)
+        response = model.generate(tokenized_prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1,
+                                    eos_token_id=period_token_id,
+                                    bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+                                    )[:, tokenized_prompt.shape[-1]:]
+        response = tokenizer.decode(response[0], skip_special_tokens=True)
+        for check_gen in checkgens: # Fix generation stopping errors
+            response = response.split(check_gen)[0]
+        responses.append({'prompt':prompts[i],
+                            'response1':response})
     # batches = [(0,10)]
     # for batch_start,batch_end in batches:
     #     tokenized_prompt = tokenizer(prompts[batch_start:batch_end], return_tensors = 'pt').input_ids
@@ -148,21 +148,21 @@ def main():
     #         responses.append({'prompt':prompts[batch_start+i],
     #                         'response1':resp})
     
-    # print('Saving model responses..')
-    # if args.hallu_check_prompt is None:
-    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
-    # else:
-    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
-    # with open(save_fname, 'w') as outfile:
-    #     for entry in responses:
-    #         json.dump(entry, outfile)
-    #         outfile.write('\n')
+    print('Saving model responses..')
+    if args.hallu_check_prompt is None:
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
+    else:
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
+    with open(save_fname, 'w') as outfile:
+        for entry in responses:
+            json.dump(entry, outfile)
+            outfile.write('\n')
 
-    resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
-    with open(resp_fname, 'r') as read_file:
-        responses = []
-        for line in read_file:
-            responses.append(json.loads(line))
+    # resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
+    # with open(resp_fname, 'r') as read_file:
+    #     responses = []
+    #     for line in read_file:
+    #         responses.append(json.loads(line))
     
     print('Getting labels for model responses..')
     labels = []
