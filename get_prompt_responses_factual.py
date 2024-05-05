@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--len_dataset', type=int, default=0)
     parser.add_argument('--start_at', type=int, default=0)
     parser.add_argument('--use_split', type=str, default='validation')
+    parser.add_argument('--hallu_check_prompt', type=int, default=None)
     parser.add_argument('--device', type=int, default=0)    
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -59,33 +60,49 @@ def main():
 
     print('Loading data..')
     print(args.len_dataset,args.start_at,args.use_split)
-    # Load data
-    len_dataset = args.len_dataset
-    start_at = args.start_at
-    if args.dataset_name=='nq_open':
-        hf_dataset_name = 'nq_open'
-        dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
-    elif args.dataset_name=='trivia_qa':
-        hf_dataset_name = 'mandarjoshi/trivia_qa'
-        dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)[args.use_split]
-    elif args.dataset_name=='cnn_dailymail':
-        hf_dataset_name = 'cnn_dailymail'
-        dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
-    prompts = []
-    tokenized_prompts = []
-    for val in list(dataset.take(len_dataset))[start_at:]:
+    if args.hallu_check_prompt is None:
+        # Load data
+        len_dataset = args.len_dataset
+        start_at = args.start_at
         if args.dataset_name=='nq_open':
-            question = val['question']
-            cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+            hf_dataset_name = 'nq_open'
+            dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
         elif args.dataset_name=='trivia_qa':
-            question = val['question']
-            cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+            hf_dataset_name = 'mandarjoshi/trivia_qa'
+            dataset = load_dataset(hf_dataset_name, 'rc.nocontext', streaming= True)[args.use_split]
         elif args.dataset_name=='cnn_dailymail':
-            article = val['article']
-            cur_prompt = f"Article: {article}\n Summarize the article in two to three sentences. Summary: "
-        prompts.append(cur_prompt)
-        tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
-        tokenized_prompts.append(tokenized_prompt)
+            hf_dataset_name = 'cnn_dailymail'
+            dataset = load_dataset(hf_dataset_name, streaming= True)[args.use_split]
+        prompts = []
+        tokenized_prompts = []
+        for idx,val in enumerate(list(dataset.take(len_dataset))[start_at:]):
+            if args.dataset_name=='nq_open':
+                question = val['question']
+                cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+            elif args.dataset_name=='trivia_qa':
+                question = val['question']
+                cur_prompt = f"This is a bot that correctly answers questions. \n Q: {question} A: "
+            elif args.dataset_name=='cnn_dailymail':
+                article = val['article']
+                cur_prompt = f"Article: {article}\n Summarize the article in two to three sentences. Summary: "
+            prompts.append(cur_prompt)
+            tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
+            tokenized_prompts.append(tokenized_prompt)
+    else:
+        # Load greedy responses
+        greedy_resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{len_dataset}.json'
+        with open(greedy_resp_fname, 'r') as read_file:
+            greedy_resp_data = []
+            for line in read_file:
+                greedy_resp_data.append(json.loads(line))
+        prompts = []
+        tokenized_prompts = []
+        for row in greedy_resp_data:
+            if args.hallu_check_prompt==1:
+                cur_prompt = row['prompt'] + row['response1'] + "\n The above generated answer is incorrect. Revised answer: "
+            prompts.append(cur_prompt)
+            tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
+            tokenized_prompts.append(tokenized_prompt)
     
     print('Getting model responses..')
     # Get model responses
@@ -132,7 +149,11 @@ def main():
     #                         'response1':resp})
     
     print('Saving model responses..')
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{len_dataset}.json', 'w') as outfile:
+    if args.hallu_check_prompt is None:
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{len_dataset}.json'
+    else:
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{len_dataset}.json'
+    with open(save_fname, 'w') as outfile:
         for entry in responses:
             json.dump(entry, outfile)
             outfile.write('\n')
@@ -170,7 +191,11 @@ def main():
 
 
     print('Saving labels..')
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{len_dataset}.json', 'w') as outfile:
+    if args.hallu_check_prompt is None:
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{len_dataset}.json'
+    else:
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{len_dataset}.json'
+    with open(save_fname, 'w') as outfile:
         for entry in labels:
             json.dump(entry, outfile)
             outfile.write('\n')
