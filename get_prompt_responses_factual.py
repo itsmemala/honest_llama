@@ -90,7 +90,7 @@ def main():
             tokenized_prompts.append(tokenized_prompt)
     else:
         # Load greedy responses
-        greedy_resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{len_dataset}.json'
+        greedy_resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
         with open(greedy_resp_fname, 'r') as read_file:
             greedy_resp_data = []
             for line in read_file:
@@ -150,9 +150,9 @@ def main():
     
     print('Saving model responses..')
     if args.hallu_check_prompt is None:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{len_dataset}.json'
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
     else:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{len_dataset}.json'
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
     with open(save_fname, 'w') as outfile:
         for entry in responses:
             json.dump(entry, outfile)
@@ -192,9 +192,9 @@ def main():
 
     print('Saving labels..')
     if args.hallu_check_prompt is None:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{len_dataset}.json'
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{args.len_dataset}.json'
     else:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{len_dataset}.json'
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{args.len_dataset}.json'
     with open(save_fname, 'w') as outfile:
         for entry in labels:
             json.dump(entry, outfile)
