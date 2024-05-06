@@ -451,7 +451,7 @@ def main():
                                 #     cur_norm_weights_1 = linear_model.linear.weight[1] / linear_model.linear.weight[1].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                                 #     temp_loss = criterion(linear_model(batch_hallu_inputs), batch_hallu_targets.to(device))
                                 #     print(step,torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_0.detach(), dim=-1)),torch.mean(torch.sum(batch_hallu_inputs * cur_norm_weights_1.detach(), dim=-1)),temp_loss)
-                            if args.method=='individual_linear_specialised' or args.method=='individual_linear':
+                            if args.method=='individual_linear_specialised': # or args.method=='individual_linear':
                                 cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                                 if epoch==0:
                                     acts = []
@@ -530,7 +530,7 @@ def main():
                             print('\n')
                         
                         linear_model.load_state_dict(best_model_state)
-                        if args.method=='individual_linear_specialised' or args.method=='individual_linear':
+                        if args.method=='individual_linear_specialised': # or args.method=='individual_linear':
                             hallu_idxs, acts = [], []
                             for idx in train_set_idxs:
                                 if labels[idx]==0:

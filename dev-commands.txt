@@ -1,0 +1,23 @@
+python get_baselines.py alpaca_7B nq_open --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_labels_file_name nq_open_greedy_responses_labels_1800 --train_uncertainty_values_file_name greedy_responses_train5000 --test_uncertainty_values_file_name greedy_responses_1800 --len_dataset 1500 --num_folds 1 --save_path ~/Desktop/honest_llama_data
+
+python analyse_results.py --results_file_name llama_7B_trivia_qa_greedy_responses_train5000_5000_1_layer_answer_last_individual_linear_unitnorm_no_bias_bs128_epochs20_0.05_Adam_w_lr_sch_False_None_None --save_path ~/Desktop/honest_llama_data --use_similarity True
+
+python analyse_results.py --results_file_name alpaca_7B_trivia_qa_greedy_responses_train5000_5000_1_ah_answer_last_individual_linear_bs128_epochs20_0.05_Adam_w_lr_sch_False_None_None --save_path ~/Desktop/honest_llama_data --layer_start 0,4,7,10,13,16,19,22,25,28 --layer_end 3,6,9,12,15,18,21,24,27,31
+
+python get_activations_and_probe.py alpaca_7B trivia_qa --train_file_name trivia_qa_greedy_responses_train5000 --train_labels_file_name trivia_qa_greedy_responses_labels_train5000 --test_file_name trivia_qa_greedy_responses_validation1800 --test_labels_file_name trivia_qa_greedy_responses_labels_validation1800 --len_dataset 5000 --num_folds 1 --using_act mlp --token answer_last --method individual_linear --use_unitnorm True --bs 128 --epochs 20 --lr 0.05 --optimizer Adam_w_lr_sch --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data
+
+python get_activations_and_probe.py alpaca_7B nq_open --train_file_name nq_open_greedy_responses_train5000 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_file_name nq_open_greedy_responses_1800 --test_labels_file_name nq_open_greedy_responses_labels_1800 --len_dataset 5000 --num_folds 1 --using_act mlp --token answer_last --method individual_linear --use_unitnorm True --bs 128 --epochs 20 --lr 0.05 --optimizer Adam_w_lr_sch --classifier_on_probes True --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data
+
+python get_activations_and_probe_non_linear.py llama_7B trivia_qa --train_file_name trivia_qa_greedy_responses_train5000 --train_labels_file_name trivia_qa_greedy_responses_labels_train5000 --test_file_name trivia_qa_greedy_responses_validation1800 --test_labels_file_name trivia_qa_greedy_responses_labels_validation1800 --len_dataset 5000 --num_folds 1 --using_act mlp --token answer_last --method individual_non_linear_b --bs 128 --epochs 20 --lr 0.05 --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data
+
+python get_activations_and_probe.py llama_7B trivia_qa --train_file_name trivia_qa_greedy_responses_train5000 --train_labels_file_name trivia_qa_greedy_responses_labels_train5000 --test_file_name trivia_qa_greedy_responses_validation1800 --test_labels_file_name trivia_qa_greedy_responses_labels_validation1800 --len_dataset 5000 --num_folds 1 --using_act mlp --token answer_last --method individual_linear_kld --use_unitnorm True --kld_wgt 1 --bs 128 --epochs 20 --lr 0.05 --optimizer Adam_w_lr_sch --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data --custom_layers 
+14,24,20,19,29
+
+18 23 19 12 31
+
+13,12,19,23,1
+
+python get_activations.py alpaca_7B trivia_qa --token answer_last --file_name trivia_qa_greedy_responses_train5000  --device 0 --save_path ~/Desktop/honest_llama_data
+
+4) Another approach is to go selfsupervised, try to ask the model to correct its answers and say that the answer is hallucinated. Gather the responses:
+Given a question, extract different responses from the normal questions (maybe 2 suffices), and responses after commenting that the answer is hallucinated. Treat the two normal answers as positives and the answer on the hallucination as negative. Train with contrastive loss. Maybe then train a classifier or estimates prototypes.. to use for classifying test samples based on one answer.
