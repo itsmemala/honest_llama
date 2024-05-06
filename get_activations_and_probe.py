@@ -430,8 +430,18 @@ def main():
                                             mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
                                         mean_vectors = torch.stack(mean_vectors,axis=0)
                                     cur_norm_weights_0 = linear_model.linear.weight[0] / linear_model.linear.weight[0].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                                    loss = loss + args.spl_wgt*torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0]).to(device)) # compute sim and convert from [-1,1] to [0,2]
-                                    step_spl_loss.append(torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0]).to(device)).item())
+                                    # loss = loss + args.spl_wgt*torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0]).to(device)) # compute sim and convert from [-1,1] to [0,2]
+                                    # step_spl_loss.append(torch.mean(torch.sum(mean_vectors * cur_norm_weights_0, dim=-1) + torch.ones(mean_vectors.shape[0]).to(device)).item())
+                                    loss = loss + args.spl_wgt*torch.mean(
+                                                                torch.maximum(torch.zeros(mean_vectors.shape[0]).to(device)
+                                                                            ,torch.sum(mean_vectors * cur_norm_weights_0, dim=-1)
+                                                                            )
+                                                                ) # compute sim and take only positive values
+                                    step_spl_loss.append(torch.mean(
+                                                                torch.maximum(torch.zeros(mean_vectors.shape[0]).to(device)
+                                                                            ,torch.sum(mean_vectors * cur_norm_weights_0, dim=-1)
+                                                                            )
+                                                                ).item())
                                 train_loss.append(loss.item())
                                 # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                                 loss.backward()
