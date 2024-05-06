@@ -124,7 +124,7 @@ def main():
 
         print('\n')
         print('FOLD',fold,'RESULTS:')
-        print('Average:',np.mean(all_test_f1s[fold]),np.mean(test_f1_cls0[fold]))
+        print('Average:',np.mean(all_test_f1s[fold]),np.mean(test_f1_cls0))
         print('Best:',all_test_f1s[fold][np.argmax(val_f1_avg)],test_f1_cls0[np.argmax(val_f1_avg)])
         print('Average using logits:',np.mean(test_f1_using_logits),np.mean(test_f1_cls0_using_logits))
         print('Best using logits:',test_f1_using_logits[np.argmax(val_f1_avg_using_logits)],test_f1_cls0_using_logits[np.argmax(val_f1_avg_using_logits)])
