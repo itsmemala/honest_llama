@@ -467,7 +467,6 @@ def main():
                                     top_sim_acts = norm_acts[torch.topk(sim,args.spl_knn)[1]]
                                     print(top_sim_acts.shape)
                                 print(torch.mean(torch.sum(top_sim_acts * cur_norm_weights_0, dim=-1)))
-                                if epoch==args.epochs: print('Similarity of knn samples at current layer:',torch.sum(top_sim_acts * cur_norm_weights_0, dim=-1))
 
                             # Get val loss
                             linear_model.eval()
@@ -531,7 +530,7 @@ def main():
                             print('\n')
                         
                         linear_model.load_state_dict(best_model_state)
-                        if args.method=='individual_linear_specialised':
+                        if args.method=='individual_linear_specialised' or args.method=='individual_linear':
                             hallu_idxs, acts = [], []
                             for idx in train_set_idxs:
                                 if labels[idx]==0:
