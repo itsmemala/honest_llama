@@ -185,7 +185,7 @@ def main():
                 else:
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
                 if args.token=='answer_last': #last
-                    all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
+                    # all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
                 elif args.token=='prompt_last':
