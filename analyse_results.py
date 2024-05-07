@@ -47,9 +47,9 @@ def main():
     if args.responses_file_name is not None:
         file_path = f'{args.save_path}/responses/{args.responses_file_name}.json'
         with open(file_path, 'r') as read_file:
-        responses = []
-        for line in read_file:
-            responses.append(json.loads(line))
+            responses = []
+            for line in read_file:
+                responses.append(json.loads(line))
         # prompts, _, _, _ = tokenized_from_file(file_path, tokenizer)
         # catg = {}
         # for i in range(4):
