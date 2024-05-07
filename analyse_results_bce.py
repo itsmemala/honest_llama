@@ -376,9 +376,9 @@ def main():
         # print(all_test_pred[fold].shape)
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-            print(sample_pred.shape)
-            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+            # print(sample_pred.shape)
+            pred = 1 if np.max(sample_pred)>0.5 else 0
+            confident_sample_pred.append(pred)
             break
         # print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
 
