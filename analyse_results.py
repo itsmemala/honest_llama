@@ -1010,9 +1010,11 @@ def main():
         print('Avg val loss across probes:',np.mean(best_val_loss_by_model))
         print('\n')
 
+        print_cnt = 0
         for idx,is_correct in enumerate(analyse_idxs):
-            if is_correct==False:
-                print(all_test_true[fold][0],responses['response1'][idx])
+            if is_correct==False and print_cnt<11:
+                print(all_test_true[fold][0],responses[idx]['response1'])
+                print_cnt += 1
 
 if __name__ == '__main__':
     main()
