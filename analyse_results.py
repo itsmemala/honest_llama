@@ -342,6 +342,9 @@ def main():
                     best_sample_pred2.append(correct_answer)
                 else:
                     best_sample_pred2.append(1 if correct_answer==0 else 0)
+                print(sample_pred2==correct_answer)
+                break
+            break
             # print('Oracle (using 5 most accurate on cls1):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
             print('Oracle (using',str(top_x),'most accurate on both cls):',f1_score(all_test_true[fold][0],best_sample_pred2),f1_score(all_test_true[fold][0],best_sample_pred2,pos_label=0))
         
@@ -1010,11 +1013,11 @@ def main():
         print('Avg val loss across probes:',np.mean(best_val_loss_by_model))
         print('\n')
 
-        print_cnt = 0
-        for idx,is_correct in enumerate(analyse_idxs):
-            if is_correct==False and print_cnt<21:
-                print(all_test_true[fold][0][idx],responses[idx]['response1'])
-                print_cnt += 1
+        # print_cnt = 0
+        # for idx,is_correct in enumerate(analyse_idxs):
+        #     if is_correct==False and print_cnt<21:
+        #         print(all_test_true[fold][0][idx],responses[idx]['response1'])
+        #         print_cnt += 1
 
 if __name__ == '__main__':
     main()
