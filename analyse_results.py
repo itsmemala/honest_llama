@@ -47,14 +47,14 @@ def main():
     if args.responses_file_name is not None:
         file_path = f'{args.save_path}/responses/{args.responses_file_name}.json'
         prompts, _, _, _ = tokenized_from_file(file_path, tokenizer)
-        catg = {}
-        for i in range(4):
-            catg[i] = []
-        for idx,prompt in enumerate(prompts):
-            if 'who' in prompt: catg[0].append(idx)
-            if 'when' in prompt: catg[1].append(idx)
-            if 'where' in prompt: catg[2].append(idx)
-            if 'what' in prompt or 'which' in prompt: catg[3].append(idx)
+        # catg = {}
+        # for i in range(4):
+        #     catg[i] = []
+        # for idx,prompt in enumerate(prompts):
+        #     if 'who' in prompt: catg[0].append(idx)
+        #     if 'when' in prompt: catg[1].append(idx)
+        #     if 'where' in prompt: catg[2].append(idx)
+        #     if 'what' in prompt or 'which' in prompt: catg[3].append(idx)
 
     if args.layer_ends is None:
         try:
@@ -508,6 +508,7 @@ def main():
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
         print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
+        analyse_idxs = all_test_true[fold][0]!=confident_sample_pred
         # Probe selection - e
         confident_sample_pred, confident_sample_pred2 = [], []
         best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
@@ -1005,7 +1006,9 @@ def main():
         print('Avg val loss across probes:',np.mean(best_val_loss_by_model))
         print('\n')
 
-
+        for idx,is_correct in enumerate(analyse_idxs):
+            if is_correct==False:
+                print(prompts[idx])
 
 if __name__ == '__main__':
     main()
