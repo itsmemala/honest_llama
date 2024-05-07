@@ -156,7 +156,7 @@ def main():
         if '5000' in args.file_name:
             load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
         else:
-            load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100)) if a>300] # test file
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100)) if a*100>300] # test file
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
