@@ -379,7 +379,7 @@ def main():
             # print(sample_pred.shape)
             pred = 1 if np.max(sample_pred)>0.5 else 0
             confident_sample_pred.append(pred)
-            break
+            # break
         print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
 
         # # best_probes = np.argwhere(all_val_f1s[fold]>=np.mean(all_val_f1s[fold]))
