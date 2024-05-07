@@ -100,6 +100,8 @@ def main():
         for row in greedy_resp_data:
             if args.hallu_check_prompt==1:
                 cur_prompt = row['prompt'] + row['response1'] + "\n The above generated answer is incorrect. Revised answer: "
+            if args.hallu_check_prompt==2:
+                cur_prompt = row['prompt'] + row['response1'] + "\n The above answer may be incorrect. The actual correct answer is: "
             prompts.append(cur_prompt)
             tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
