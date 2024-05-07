@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_su
 from sklearn.decomposition import PCA, KernelPCA
 from matplotlib import pyplot as plt
 import argparse
-from utils import LogisticRegression_Torch
+from utils import LogisticRegression_Torch, tokenized_from_file
 
 # Define a custom argument type for a list of integers
 def list_of_ints(arg):
