@@ -342,7 +342,7 @@ def main():
                     best_sample_pred2.append(correct_answer)
                 else:
                     best_sample_pred2.append(1 if correct_answer==0 else 0)
-                print(sample_pred2==correct_answer)
+                print(sample_pred2,correct_answer,sample_pred2==correct_answer)
                 break
             break
             # print('Oracle (using 5 most accurate on cls1):',f1_score(all_test_true[fold][0],best_sample_pred),f1_score(all_test_true[fold][0],best_sample_pred,pos_label=0))
