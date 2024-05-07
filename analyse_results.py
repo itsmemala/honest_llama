@@ -997,7 +997,8 @@ def main():
             print('Val loss model',model,':',all_val_loss_files[-1][fold][-1],'Val F1:',"{:.2f}".format(all_val_f1s[fold][-1]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][-1]))
         else:
             for model in range(len(all_val_loss[fold])):
-                print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),"{:.2f}".format(val_f1_cls0[model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]),"{:.2f}".format(test_f1_cls0[model]))
+                print(#'Val loss model',model,':',all_val_loss[fold][model],
+                model,'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),"{:.2f}".format(val_f1_cls0[model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]),"{:.2f}".format(test_f1_cls0[model]))
         print('\n')
         print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
         best_val_loss_by_model = [[np.min(model_losses) for model_losses in all_val_loss[fold]] for all_val_loss in all_val_loss_files] if 'ah' in args.results_file_name else [np.min(model_losses) for model_losses in all_val_loss[fold]]
