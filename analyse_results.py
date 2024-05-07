@@ -46,7 +46,11 @@ def main():
 
     if args.responses_file_name is not None:
         file_path = f'{args.save_path}/responses/{args.responses_file_name}.json'
-        prompts, _, _, _ = tokenized_from_file(file_path, tokenizer)
+        with open(file_path, 'r') as read_file:
+        responses = []
+        for line in read_file:
+            responses.append(json.loads(line))
+        # prompts, _, _, _ = tokenized_from_file(file_path, tokenizer)
         # catg = {}
         # for i in range(4):
         #     catg[i] = []
@@ -1008,7 +1012,7 @@ def main():
 
         for idx,is_correct in enumerate(analyse_idxs):
             if is_correct==False:
-                print(prompts[idx])
+                print(all_test_true[fold][0],responses['response1'][idx])
 
 if __name__ == '__main__':
     main()
