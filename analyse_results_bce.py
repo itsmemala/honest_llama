@@ -15,21 +15,21 @@ from utils import LogisticRegression_Torch
 def list_of_ints(arg):
     return list(map(int, arg.split(',')))
 
-def get_probe_wgts(fold,model,results_file_name,save_path,args):
-    act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
-    using_act = 'ah' if '_ah_' in results_file_name else 'mlp_l1' if '_mlp_l1_' in results_file_name else 'mlp'
-    num_layers = 32 if '_7B_' in results_file_name else 40 if '_13B_' in results_file_name else 60
-    layer = args.custom_layers[model] if args.custom_layers is not None else model if using_act in ['mlp','layer'] else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
-    head = 0 if using_act in ['mlp','layer'] else (model%num_layers)
-    use_bias = False if 'no_bias' in results_file_name else True
-    current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2, use_bias)
-    kld_probe = 0
-    sim_file_name = results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'unitnorm' not in results_file_name else results_file_name
-    try:
-        linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}_{kld_probe}')
-    except FileNotFoundError:
-        linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}')
-    return linear_model.linear.weight[0], linear_model.linear.weight[1]
+# def get_probe_wgts(fold,model,results_file_name,save_path,args):
+#     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
+#     using_act = 'ah' if '_ah_' in results_file_name else 'mlp_l1' if '_mlp_l1_' in results_file_name else 'mlp'
+#     num_layers = 32 if '_7B_' in results_file_name else 40 if '_13B_' in results_file_name else 60
+#     layer = args.custom_layers[model] if args.custom_layers is not None else model if using_act in ['mlp','layer'] else np.floor(model/num_layers) # 0 to 31 -> 0, 32 to 63 -> 1, etc.
+#     head = 0 if using_act in ['mlp','layer'] else (model%num_layers)
+#     use_bias = False if 'no_bias' in results_file_name else True
+#     current_linear_model = LogisticRegression_Torch(act_dims[using_act], 2, use_bias)
+#     kld_probe = 0
+#     sim_file_name = results_file_name.replace('individual_linear','individual_linear_unitnorm') if 'unitnorm' not in results_file_name else results_file_name
+#     try:
+#         linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}_{kld_probe}')
+#     except FileNotFoundError:
+#         linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}')
+#     return linear_model.linear.weight[0], linear_model.linear.weight[1]
 
 def main():
 
@@ -371,13 +371,15 @@ def main():
         # print('Oracle (using 5 most accurate for both cls) using logits:',f1_score(all_test_true[fold][0],best_sample_pred2),f1_score(all_test_true[fold][0],best_sample_pred2,pos_label=0))
         # print('\n')
 
-        # # Probe selection - a
-        # confident_sample_pred = []
-        # # print(all_test_pred[fold].shape)
-        # for i in range(all_test_pred[fold].shape[1]):
-        #     sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+        # Probe selection - a
+        confident_sample_pred = []
+        # print(all_test_pred[fold].shape)
+        for i in range(all_test_pred[fold].shape[1]):
+            sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
+            print(sample_pred.shape)
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+            break
         # print('Using most confident probe per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
 
         # # best_probes = np.argwhere(all_val_f1s[fold]>=np.mean(all_val_f1s[fold]))
