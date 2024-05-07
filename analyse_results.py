@@ -1013,7 +1013,7 @@ def main():
         print_cnt = 0
         for idx,is_correct in enumerate(analyse_idxs):
             if is_correct==False and print_cnt<11:
-                print(all_test_true[fold][0],responses[idx]['response1'])
+                print(all_test_true[fold][0][idx],responses[idx]['response1'])
                 print_cnt += 1
 
 if __name__ == '__main__':
