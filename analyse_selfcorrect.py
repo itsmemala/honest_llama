@@ -67,27 +67,27 @@ def main():
             sc_responses.append(json.loads(line))
     
     
-    correct_to_incorrect = 0
-    incorrect_to_correct = 0
+    correct_to_incorrect = []
+    incorrect_to_correct = []
     correct_to_none = 0
     incorrect_to_none = 0
-    remains_correct = 0
-    remains_incorrect = 0
-    sc_labels_val = []
+    remains_correct = []
+    remains_incorrect = []
+    sc_labels_val, combined_labels = [], []
     is_different = 0
     for idx,row in enumerate(greedy_labels):
         if row['rouge1_to_target']>0.3 and sc_responses[idx]['response1']=="":
             correct_to_none += 1
         elif row['rouge1_to_target']>0.3 and sc_labels[idx]['rouge1_to_target']<=0.3:
-            correct_to_incorrect += 1
+            correct_to_incorrect.append(idx)
         elif row['rouge1_to_target']>0.3 and sc_labels[idx]['rouge1_to_target']>0.3:
-            remains_correct += 1
+            remains_correct.append(idx)
         elif row['rouge1_to_target']<=0.3 and sc_responses[idx]['response1']=="":
             incorrect_to_none += 1
         elif row['rouge1_to_target']<=0.3 and sc_labels[idx]['rouge1_to_target']<=0.3:
-            remains_incorrect += 1
+            remains_incorrect.append(idx)
         elif row['rouge1_to_target']<=0.3 and sc_labels[idx]['rouge1_to_target']>0.3:
-            incorrect_to_correct += 1
+            incorrect_to_correct.append(idx)
         
         if sc_responses[idx]['response1'] != "" and sc_responses[idx]['response1'] != greedy_responses[idx]['response1']:
             is_different += 1
@@ -95,18 +95,21 @@ def main():
         sc_label = 1 if sc_labels[idx]['rouge1_to_target']>0.3 else 0
         sc_labels_val.append(sc_label)
     
-    print('Remains correct:',remains_correct*100/len(greedy_labels))
+    print('Remains correct:',len(remains_correct)*100/len(greedy_labels))
     print('Correct to none:',correct_to_none*100/len(greedy_labels))
-    print('Incorrect to correct:',incorrect_to_correct*100/len(greedy_labels))
-    print('Remains incorrect:',remains_incorrect*100/len(greedy_labels))
+    print('Incorrect to correct:',len(incorrect_to_correct)*100/len(greedy_labels))
+    print('Remains incorrect:',len(remains_incorrect)*100/len(greedy_labels))
     print('Incorrect to none:',incorrect_to_none*100/len(greedy_labels))
-    print('Correct to incorrect:',correct_to_incorrect*100/len(greedy_labels))
+    print('Correct to incorrect:',len(correct_to_incorrect)*100/len(greedy_labels))
     
     print('\n')
     print('Total correct:',sum(sc_labels_val)*100/len(greedy_labels))
     print('Total different:',is_different*100/len(greedy_labels))
 
-    print('\nGetting probe predictions...')
+    all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
+    all_test_pred, all_test_true = all_test_pred[0], all_test_true[0] # fold-0
+    
+    print('\nGetting probe predictions on selfcorrect responses...')
     all_sc_preds = []
     # Get predictions from probes trained on greedy responses
     num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
@@ -134,14 +137,27 @@ def main():
     all_sc_preds = np.stack(all_sc_preds)
 
     print('\n')
-    # Probe selection - a
-    confident_sample_pred = []
-    print(all_sc_preds.shape)
-    for i in range(all_sc_preds.shape[1]):
-        sample_pred = np.squeeze(all_sc_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-    print('Using most confident probe per sample:',f1_score(sc_labels_val,confident_sample_pred),f1_score(sc_labels_val,confident_sample_pred,pos_label=0))
+    sc_labels_val = np.array(sc_labels_val)
+    for subset_num,resp_subset in enumerate([remains_correct, incorrect_to_correct, remains_incorrect, correct_to_incorrect]):
+        print(subset_num+1)
+
+        # Probe selection - a
+        confident_sample_pred = []
+        print(all_sc_preds.shape)
+        for i in resp_subset:
+            sample_pred = np.squeeze(all_sc_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+        print('Using most confident probe per sample:',f1_score(sc_labels_val[resp_subset],confident_sample_pred),f1_score(sc_labels_val[resp_subset],confident_sample_pred,pos_label=0))
+
+        # Probe selection - d
+        confident_sample_pred = []
+        for i in resp_subset:
+            sample_pred = np.squeeze(all_sc_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst all probes per sample:',f1_score(sc_labels_val[resp_subset],confident_sample_pred),f1_score(sc_labels_val[resp_subset],confident_sample_pred,pos_label=0))
     
 if __name__ == '__main__':
     main()
