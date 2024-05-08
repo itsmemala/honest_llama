@@ -81,7 +81,7 @@ def main():
         elif row['rouge1_to_target']<=0.3 and sc_labels[idx]['rouge1_to_target']>0.3:
             incorrect_to_correct += 1
         
-        if sc_responses[idx]['response1'] != greedy_responses[idx]['response1']:
+        if sc_responses[idx]['response1'] != "" and sc_responses[idx]['response1'] != greedy_responses[idx]['response1']:
             is_different += 1
         
         sc_label = 1 if sc_labels[idx]['rouge1_to_target']>0.3 else 0
