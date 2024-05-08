@@ -36,6 +36,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--greedy_responses_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--sc_responses_labels_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--greedy_responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--sc_responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
@@ -44,6 +45,10 @@ def main():
     with open(f'{args.save_path}/responses/{args.greedy_responses_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
             greedy_labels.append(json.loads(line))
+    greedy_responses = []
+    with open(f'{args.save_path}/responses/{args.greedy_responses_file_name}.json', 'r') as read_file:
+        for line in read_file:
+            greedy_responses.append(json.loads(line))
     sc_labels = []
     with open(f'{args.save_path}/responses/{args.sc_responses_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
@@ -61,6 +66,7 @@ def main():
     remains_correct = 0
     remains_incorrect = 0
     sc_labels_val = []
+    is_different = 0
     for idx,row in enumerate(greedy_labels):
         if row['rouge1_to_target']>0.3 and sc_responses[idx]['response1']=="":
             correct_to_none += 1
@@ -74,6 +80,10 @@ def main():
             remains_incorrect += 1
         elif row['rouge1_to_target']<=0.3 and sc_labels[idx]['rouge1_to_target']>0.3:
             incorrect_to_correct += 1
+        
+        if sc_responses[idx]['response1'] != greedy_responses[idx]['response1']:
+            is_different += 1
+        
         sc_label = 1 if sc_labels[idx]['rouge1_to_target']>0.3 else 0
         sc_labels_val.append(sc_label)
     
@@ -86,6 +96,7 @@ def main():
     
     print('\n')
     print('Total correct:',sum(sc_labels_val)*100/len(greedy_labels))
+    print('Total different:',is_different*100/len(greedy_labels))
     
 if __name__ == '__main__':
     main()
