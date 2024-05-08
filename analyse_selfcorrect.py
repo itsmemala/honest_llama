@@ -128,6 +128,15 @@ def main():
         sc_preds = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
         all_sc_preds.append(sc_preds.cpu().numpy())
     all_sc_preds = np.stack(all_sc_preds)
+
+    # Probe selection - a
+    confident_sample_pred = []
+    print(all_sc_preds.shape)
+    for i in range(all_sc_preds.shape[1]):
+        sample_pred = np.squeeze(all_sc_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+        confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+    print('Using most confident probe per sample:',f1_score(sc_labels_val,confident_sample_pred),f1_score(sc_labels_val,confident_sample_pred,pos_label=0))
     
 if __name__ == '__main__':
     main()
