@@ -35,7 +35,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--greedy_responses_labels_file_name", type=str, default=None, help='local directory with dataset')
-     parser.add_argument("--sc_responses_labels_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--sc_responses_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--sc_responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
