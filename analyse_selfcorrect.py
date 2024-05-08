@@ -120,7 +120,10 @@ def main():
         head = 0
         kld_probe = 0
         linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=bias).to(device)
-        linear_model = torch.load(f'{args.save_path}/probes/models/{args.greedy_results_file_name}_model0_{layer}_{head}_{kld_probe}')
+        try:
+            linear_model = torch.load(f'{args.save_path}/probes/models/{args.greedy_results_file_name}_model0_{layer}_{head}_{kld_probe}')
+        except FileNotFoundError:
+            linear_model = torch.load(f'{args.save_path}/probes/models/{args.greedy_results_file_name}_model0_{layer}_{head}')
         linear_model.eval()
         # Load activations
         acts = []
