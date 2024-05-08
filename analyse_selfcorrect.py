@@ -47,19 +47,19 @@ def main():
     args = parser.parse_args()
 
     greedy_labels = []
-    with open(f'{args.save_path}/responses/{args.greedy_responses_labels_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.greedy_responses_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
             greedy_labels.append(json.loads(line))
     greedy_responses = []
-    with open(f'{args.save_path}/responses/{args.greedy_responses_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.greedy_responses_file_name}.json', 'r') as read_file:
         for line in read_file:
             greedy_responses.append(json.loads(line))
     sc_labels = []
-    with open(f'{args.save_path}/responses/{args.sc_responses_labels_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.sc_responses_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
             sc_labels.append(json.loads(line))
     sc_responses = []
-    with open(f'{args.save_path}/responses/{args.sc_responses_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.sc_responses_file_name}.json', 'r') as read_file:
         for line in read_file:
             sc_responses.append(json.loads(line))
     
@@ -105,22 +105,22 @@ def main():
 
     all_sc_preds = []
     # Get predictions from probes trained on greedy responses
-    num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name
+    num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
     for layer in range(num_layers):
         # Load model
         act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
-        bias = False if 'no_bias' in args.results_file_name else True
+        bias = False if 'no_bias' in args.greedy_results_file_name else True
         head = 0
         kld_probe = 0
         linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=bias).to(device)
-        linear_model = torch.load(f'{save_path}/probes/models/{results_file_name}_model0_{layer}_{head}_{kld_probe}')
+        linear_model = torch.load(f'{save_path}/probes/models/{greedy_results_file_name}_model0_{layer}_{head}_{kld_probe}')
         linear_model.eval()
         # Load activations
         acts = []
         for i in range(len(sc_labels)):
             act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
             file_end = i-(i%100)+100 # 487: 487-(87)+100
-            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.sc_responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.sc_responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
             act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
             acts.append(act)
         inputs = torch.stack(acts,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
