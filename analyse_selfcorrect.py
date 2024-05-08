@@ -41,15 +41,15 @@ def main():
     args = parser.parse_args()
 
     greedy_labels = []
-    with open(f'{args.greedy_responses_labels_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.greedy_responses_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
             greedy_labels.append(json.loads(line))
     sc_labels = []
-    with open(f'{args.sc_responses_labels_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.sc_responses_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
             sc_labels.append(json.loads(line))
     sc_responses = []
-    with open(f'{args.sc_responses_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.sc_responses_file_name}.json', 'r') as read_file:
         for line in read_file:
             sc_responses.append(json.loads(line))
     
