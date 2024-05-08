@@ -132,7 +132,10 @@ def main():
                                     )[:, tokenized_prompt.shape[-1]:]
         response = tokenizer.decode(response[0], skip_special_tokens=True)
         for check_gen in checkgens: # Fix generation stopping errors
+            before_trunc = response
             response = response.split(check_gen)[0]
+            if before_trunc=="":
+                print(i)
         responses.append({'prompt':prompts[i],
                             'response1':response})
     # batches = [(0,10)]
@@ -150,15 +153,15 @@ def main():
     #         responses.append({'prompt':prompts[batch_start+i],
     #                         'response1':resp})
     
-    print('Saving model responses..')
-    if args.hallu_check_prompt is None:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
-    else:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
-    with open(save_fname, 'w') as outfile:
-        for entry in responses:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print('Saving model responses..')
+    # if args.hallu_check_prompt is None:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
+    # else:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
+    # with open(save_fname, 'w') as outfile:
+    #     for entry in responses:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
     # resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
     # with open(resp_fname, 'r') as read_file:
@@ -166,47 +169,47 @@ def main():
     #     for line in read_file:
     #         responses.append(json.loads(line))
     
-    print('Getting labels for model responses..')
-    labels = []
-    rouge = evaluate.load('rouge')
-    exact_match_metric = evaluate.load("exact_match")
-    for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
-        labels_dict = {'exact_match': 0.0,
-                        'rouge1_to_target':0.0,
-                        'rouge2_to_target':0.0,
-                        'rougeL_to_target':0.0}
-        if args.dataset_name=='nq_open':
-            reference_answers = batch['answer'] 
-        elif args.dataset_name=='trivia_qa':
-            reference_answers_unformatted = batch['answer']
-            reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases']
-        elif args.dataset_name=='cnn_dailymail':
-            reference_answers = [batch['highlights']]
-        for answer in reference_answers:
-            predictions = [responses[i]['response1'].lstrip()]
-            references = [answer]
-            results = exact_match_metric.compute(predictions=predictions,
-                                                    references=references,
-                                                    ignore_case=True,
-                                                    ignore_punctuation=True)
-            labels_dict['exact_match'] = max(results['exact_match'], labels_dict['exact_match'])
-            rouge_results = rouge.compute(predictions=predictions, references=references)
-            for rouge_type in ['rouge1','rouge2','rougeL']:
-                labels_dict[rouge_type + '_to_target'] = max(rouge_results[rouge_type],
-                                                                labels_dict[rouge_type + '_to_target'])
+    # print('Getting labels for model responses..')
+    # labels = []
+    # rouge = evaluate.load('rouge')
+    # exact_match_metric = evaluate.load("exact_match")
+    # for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
+    #     labels_dict = {'exact_match': 0.0,
+    #                     'rouge1_to_target':0.0,
+    #                     'rouge2_to_target':0.0,
+    #                     'rougeL_to_target':0.0}
+    #     if args.dataset_name=='nq_open':
+    #         reference_answers = batch['answer'] 
+    #     elif args.dataset_name=='trivia_qa':
+    #         reference_answers_unformatted = batch['answer']
+    #         reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases']
+    #     elif args.dataset_name=='cnn_dailymail':
+    #         reference_answers = [batch['highlights']]
+    #     for answer in reference_answers:
+    #         predictions = [responses[i]['response1'].lstrip()]
+    #         references = [answer]
+    #         results = exact_match_metric.compute(predictions=predictions,
+    #                                                 references=references,
+    #                                                 ignore_case=True,
+    #                                                 ignore_punctuation=True)
+    #         labels_dict['exact_match'] = max(results['exact_match'], labels_dict['exact_match'])
+    #         rouge_results = rouge.compute(predictions=predictions, references=references)
+    #         for rouge_type in ['rouge1','rouge2','rougeL']:
+    #             labels_dict[rouge_type + '_to_target'] = max(rouge_results[rouge_type],
+    #                                                             labels_dict[rouge_type + '_to_target'])
 
-        labels.append(labels_dict)
+    #     labels.append(labels_dict)
 
 
-    print('Saving labels..')
-    if args.hallu_check_prompt is None:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{args.len_dataset}.json'
-    else:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{args.len_dataset}.json'
-    with open(save_fname, 'w') as outfile:
-        for entry in labels:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print('Saving labels..')
+    # if args.hallu_check_prompt is None:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{args.len_dataset}.json'
+    # else:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{args.len_dataset}.json'
+    # with open(save_fname, 'w') as outfile:
+    #     for entry in labels:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
     
 
 if __name__ == '__main__':
