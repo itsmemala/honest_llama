@@ -106,7 +106,7 @@ def main():
     print('Total correct:',sum(sc_labels_val)*100/len(greedy_labels))
     print('Total different:',is_different*100/len(greedy_labels))
 
-    all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.results_file_name}_test_true.npy')
+    all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_test_true.npy')
     all_test_pred, all_test_true = all_test_pred[0], all_test_true[0] # fold-0
     
     print('\nGetting probe predictions on selfcorrect responses...')
