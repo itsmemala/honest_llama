@@ -85,7 +85,7 @@ def main():
     print('Correct to incorrect:',correct_to_incorrect/len(greedy_labels))
     
     print('\n')
-    print('Total correct:'sum(sc_labels))
+    print('Total correct:',sum(sc_labels))
     
 if __name__ == '__main__':
     main()
