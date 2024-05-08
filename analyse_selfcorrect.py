@@ -105,6 +105,7 @@ def main():
     print('Total correct:',sum(sc_labels_val)*100/len(greedy_labels))
     print('Total different:',is_different*100/len(greedy_labels))
 
+    print('\nGetting probe predictions...')
     all_sc_preds = []
     # Get predictions from probes trained on greedy responses
     num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
@@ -115,7 +116,7 @@ def main():
         head = 0
         kld_probe = 0
         linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=bias).to(device)
-        linear_model = torch.load(f'{save_path}/probes/models/{greedy_results_file_name}_model0_{layer}_{head}_{kld_probe}')
+        linear_model = torch.load(f'{args.save_path}/probes/models/{args.greedy_results_file_name}_model0_{layer}_{head}_{kld_probe}')
         linear_model.eval()
         # Load activations
         acts = []
@@ -131,6 +132,7 @@ def main():
         all_sc_preds.append(sc_preds.cpu().numpy())
     all_sc_preds = np.stack(all_sc_preds)
 
+    print('\n')
     # Probe selection - a
     confident_sample_pred = []
     print(all_sc_preds.shape)
