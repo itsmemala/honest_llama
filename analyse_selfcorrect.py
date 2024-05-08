@@ -77,15 +77,15 @@ def main():
         sc_label = 1 if sc_labels[idx]['rouge1_to_target']>0.3 else 0
         sc_labels_val.append(sc_label)
     
-    print('Remains correct:',remains_correct/len(greedy_labels))
-    print('Correct to none:',correct_to_none/len(greedy_labels))
-    print('Incorrect to correct:',incorrect_to_correct/len(greedy_labels))
-    print('Remains incorrect:',remains_incorrect/len(greedy_labels))
-    print('Incorrect to none:',incorrect_to_none/len(greedy_labels))
-    print('Correct to incorrect:',correct_to_incorrect/len(greedy_labels))
+    print('Remains correct:',remains_correct*100/len(greedy_labels))
+    print('Correct to none:',correct_to_none*100/len(greedy_labels))
+    print('Incorrect to correct:',incorrect_to_correct*100/len(greedy_labels))
+    print('Remains incorrect:',remains_incorrect*100/len(greedy_labels))
+    print('Incorrect to none:',incorrect_to_none*100/len(greedy_labels))
+    print('Correct to incorrect:',correct_to_incorrect*100/len(greedy_labels))
     
     print('\n')
-    print('Total correct:',sum(sc_labels_val))
+    print('Total correct:',sum(sc_labels_val)*100/len(greedy_labels))
     
 if __name__ == '__main__':
     main()
