@@ -144,6 +144,28 @@ def main():
     for subset_num,resp_subset in enumerate([remains_correct, incorrect_to_correct, remains_incorrect, correct_to_incorrect]):
         print(subset_num+1)
 
+        print('On original responses:')
+
+        # Probe selection - a
+        confident_sample_pred = []
+        print(all_test_pred.shape)
+        for i in resp_subset:
+            sample_pred = np.squeeze(all_test_pred[:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+        print('Using most confident probe per sample:',f1_score(all_test_true[0][resp_subset],confident_sample_pred),f1_score(all_test_true[0][resp_subset],confident_sample_pred,pos_label=0))
+
+        # Probe selection - d
+        confident_sample_pred = []
+        for i in resp_subset:
+            sample_pred = np.squeeze(all_test_pred[:,i,:]) # Get predictions of each sample across all layers of model
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst all probes per sample:',f1_score(all_test_true[0][resp_subset],confident_sample_pred),f1_score(all_test_true[0][resp_subset],confident_sample_pred,pos_label=0))
+
+        print('On self-correct responses:')
+
         # Probe selection - a
         confident_sample_pred = []
         print(all_sc_preds.shape)
