@@ -46,6 +46,8 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
+    device = 0
+
     greedy_labels = []
     with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.greedy_responses_labels_file_name}.json', 'r') as read_file:
         for line in read_file:
