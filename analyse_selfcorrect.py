@@ -110,7 +110,7 @@ def main():
     all_test_pred, all_test_true = all_test_pred[0], all_test_true[0] # fold-0
     
     print('\nQualitative Analysis:')
-    for idx in correct_to_incorrect:
+    for idx in remains_correct:
         print(idx, greedy_labels[idx]['rouge1_to_target'], sc_labels[idx]['rouge1_to_target'])
         print(sc_responses[idx])
 
