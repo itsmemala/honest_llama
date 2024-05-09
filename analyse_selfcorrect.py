@@ -147,9 +147,19 @@ def main():
 
         print('On original responses:')
 
-        # Probe selection - a
+        # Baseline - last layer prediction
         confident_sample_pred = []
         print(all_test_pred.shape)
+        for i in resp_subset:
+            sample_pred = np.squeeze(all_test_pred[-1,i,:]) # Get predictions of each sample at last layer
+            confident_sample_pred.append(np.argmax(sample_pred))
+        if display_score=='f1':
+            print('Using most confident probe per sample:',f1_score(all_test_true[0][resp_subset],confident_sample_pred),f1_score(all_test_true[0][resp_subset],confident_sample_pred,pos_label=0))
+        else:
+            print('Using most confident probe per sample:',accuracy_score(all_test_true[0][resp_subset],confident_sample_pred))
+
+        # Probe selection - a
+        confident_sample_pred = []
         for i in resp_subset:
             sample_pred = np.squeeze(all_test_pred[:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
@@ -173,9 +183,19 @@ def main():
 
         print('On self-correct responses:')
 
-        # Probe selection - a
+        # Baseline - last layer prediction
         confident_sample_pred = []
         print(all_sc_preds.shape)
+        for i in resp_subset:
+            sample_pred = np.squeeze(all_sc_preds[-1,i,:]) # Get predictions of each sample at last layer
+            confident_sample_pred.append(np.argmax(sample_pred))
+        if display_score=='f1':
+            print('Using most confident probe per sample:',f1_score(sc_labels_val[resp_subset],confident_sample_pred),f1_score(sc_labels_val[resp_subset],confident_sample_pred,pos_label=0))
+        else:
+            print('Using most confident probe per sample:',accuracy_score(sc_labels_val[resp_subset],confident_sample_pred))
+
+        # Probe selection - a
+        confident_sample_pred = []
         for i in resp_subset:
             sample_pred = np.squeeze(all_sc_preds[:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
