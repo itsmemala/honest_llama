@@ -169,7 +169,7 @@ def main():
         if display_score=='f1':
             print('Voting amongst all probes per sample:',f1_score(all_test_true[0][resp_subset],confident_sample_pred),f1_score(all_test_true[0][resp_subset],confident_sample_pred,pos_label=0))
         else:
-            print('Using most confident probe per sample:',accuracy_score(all_test_true[0][resp_subset],confident_sample_pred))
+            print('Voting amongst all probes per sample:',accuracy_score(all_test_true[0][resp_subset],confident_sample_pred))
 
         print('On self-correct responses:')
 
@@ -183,7 +183,7 @@ def main():
         if display_score=='f1':
             print('Using most confident probe per sample:',f1_score(sc_labels_val[resp_subset],confident_sample_pred),f1_score(sc_labels_val[resp_subset],confident_sample_pred,pos_label=0))
         else:
-            print('Using most confident probe per sample:',accuracy_score(all_test_true[0][resp_subset],confident_sample_pred))
+            print('Using most confident probe per sample:',accuracy_score(sc_labels_val[resp_subset],confident_sample_pred))
 
         # Probe selection - d
         confident_sample_pred = []
@@ -195,7 +195,7 @@ def main():
         if display_score=='f1':
             print('Voting amongst all probes per sample:',f1_score(sc_labels_val[resp_subset],confident_sample_pred),f1_score(sc_labels_val[resp_subset],confident_sample_pred,pos_label=0))
         else:
-            print('Using most confident probe per sample:',accuracy_score(all_test_true[0][resp_subset],confident_sample_pred))
+            print('Voting amongst all probes per sample:',accuracy_score(sc_labels_val[resp_subset],confident_sample_pred))
     
 if __name__ == '__main__':
     main()
