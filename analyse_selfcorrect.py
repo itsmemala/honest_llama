@@ -111,7 +111,7 @@ def main():
     
     print('\nQualitative Analysis:')
     for idx in incorrect_to_correct:
-        print(idx)
+        print(idx, greedy_labels[idx]['rouge1_to_target'], sc_labels[idx]['rouge1_to_target'])
         print(sc_responses[idx])
 
     print('\nGetting probe predictions on selfcorrect responses...')
