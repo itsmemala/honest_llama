@@ -109,6 +109,11 @@ def main():
     all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_test_true.npy')
     all_test_pred, all_test_true = all_test_pred[0], all_test_true[0] # fold-0
     
+    print('\nQualitative Analysis:')
+    for idx in incorrect_to_correct:
+        print(idx)
+        print(sc_responses[idx])
+
     print('\nGetting probe predictions on selfcorrect responses...')
     all_sc_preds = []
     # Get predictions from probes trained on greedy responses
@@ -154,9 +159,9 @@ def main():
             sample_pred = np.squeeze(all_test_pred[-1,i,:]) # Get predictions of each sample at last layer
             confident_sample_pred.append(np.argmax(sample_pred))
         if display_score=='f1':
-            print('Using most confident probe per sample:',f1_score(all_test_true[0][resp_subset],confident_sample_pred),f1_score(all_test_true[0][resp_subset],confident_sample_pred,pos_label=0))
+            print('Using last layer:',f1_score(all_test_true[0][resp_subset],confident_sample_pred),f1_score(all_test_true[0][resp_subset],confident_sample_pred,pos_label=0))
         else:
-            print('Using most confident probe per sample:',accuracy_score(all_test_true[0][resp_subset],confident_sample_pred))
+            print('Using last layer:',accuracy_score(all_test_true[0][resp_subset],confident_sample_pred))
 
         # Probe selection - a
         confident_sample_pred = []
@@ -190,9 +195,9 @@ def main():
             sample_pred = np.squeeze(all_sc_preds[-1,i,:]) # Get predictions of each sample at last layer
             confident_sample_pred.append(np.argmax(sample_pred))
         if display_score=='f1':
-            print('Using most confident probe per sample:',f1_score(sc_labels_val[resp_subset],confident_sample_pred),f1_score(sc_labels_val[resp_subset],confident_sample_pred,pos_label=0))
+            print('Using last layer:',f1_score(sc_labels_val[resp_subset],confident_sample_pred),f1_score(sc_labels_val[resp_subset],confident_sample_pred,pos_label=0))
         else:
-            print('Using most confident probe per sample:',accuracy_score(sc_labels_val[resp_subset],confident_sample_pred))
+            print('Using last layer:',accuracy_score(sc_labels_val[resp_subset],confident_sample_pred))
 
         # Probe selection - a
         confident_sample_pred = []
