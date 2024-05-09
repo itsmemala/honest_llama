@@ -109,10 +109,10 @@ def main():
     all_test_pred, all_test_true = np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_test_true.npy')
     all_test_pred, all_test_true = all_test_pred[0], all_test_true[0] # fold-0
     
-    print('\nQualitative Analysis:')
-    for idx in remains_correct:
-        print(idx, greedy_labels[idx]['rouge1_to_target'], sc_labels[idx]['rouge1_to_target'])
-        print(sc_responses[idx])
+    # print('\nQualitative Analysis:')
+    # for idx in remains_correct:
+    #     print(idx, greedy_labels[idx]['rouge1_to_target'], sc_labels[idx]['rouge1_to_target'])
+    #     print(sc_responses[idx])
 
     print('\nGetting probe predictions on selfcorrect responses...')
     all_sc_preds = []

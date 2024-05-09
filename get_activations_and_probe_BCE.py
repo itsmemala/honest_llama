@@ -13,6 +13,7 @@ import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
 from utils import LogisticRegression_Torch, FeedforwardNeuralNetModel
+from copy import deepcopy
 import llama
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
@@ -334,7 +335,7 @@ def main():
 
                     train_loss, val_loss, kld_loss = [], [], []
                     best_val_loss = torch.inf
-                    best_model_state = linear_model.state_dict()
+                    best_model_state = deepcopy(linear_model.state_dict())
                     best_val_logits = []
                     if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch':
                         optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
@@ -415,7 +416,7 @@ def main():
                         # Choose best model
                         if epoch_val_loss.item() < best_val_loss:
                             best_val_loss = epoch_val_loss.item()
-                            best_model_state = linear_model.state_dict()
+                            best_model_state = deepcopy(linear_model.state_dict())
                             best_val_logits = epoch_val_logits
                         # Early stopping
                         patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0

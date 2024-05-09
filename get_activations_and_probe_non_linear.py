@@ -13,6 +13,7 @@ import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
 from utils import MIND_Classifier, My_NonLinear_Classifier
+from copy import deepcopy
 import llama
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
@@ -213,7 +214,7 @@ def main():
 
                     train_loss, val_loss = [], []
                     best_val_loss = torch.inf
-                    best_model_state = nlinear_model.state_dict()
+                    best_model_state = deepcopy(nlinear_model.state_dict())
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = list(nlinear_model.named_parameters())
                     optimizer_grouped_parameters = [
@@ -280,7 +281,7 @@ def main():
                         # Choose best model
                         if epoch_val_loss.item() < best_val_loss:
                             best_val_loss = epoch_val_loss.item()
-                            best_model_state = nlinear_model.state_dict()
+                            best_model_state = deepcopy(nlinear_model.state_dict())
                     all_train_loss[i].append(np.array(train_loss))
                     all_val_loss[i].append(np.array(val_loss))
                     nlinear_model.load_state_dict(best_model_state)

@@ -13,6 +13,7 @@ import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
 from utils import LogisticRegression_Torch, FeedforwardNeuralNetModel
+from copy import deepcopy
 import llama
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
@@ -87,7 +88,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
 
     val_loss = []
     best_val_loss = torch.inf
-    best_model_state = linear_model.state_dict()
+    best_model_state = deepcopy(linear_model.state_dict())
     if args.optimizer=='Adam_w_lr_sch' or args.optimizer=='SGD_w_lr_sch':
         optimizer = torch.optim.Adam(linear_model.parameters(), lr=lr) if 'Adam' in args.optimizer else torch.optim.SGD(linear_model.parameters(), lr=lr)
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
@@ -111,7 +112,7 @@ def train_classifier_on_probes(train_logits,y_train,val_logits,y_val,test_logits
         # Choose best model
         if epoch_val_loss.item() < best_val_loss:
             best_val_loss = epoch_val_loss.item()
-            best_model_state = linear_model.state_dict()
+            best_model_state = deepcopy(linear_model.state_dict())
         # Early stopping
         patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0
         if len(val_loss)>=patience:
