@@ -235,6 +235,7 @@ def main():
                         {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
                     ]
+                    print(named_params)
                     optimizer = torch.optim.Adam(optimizer_grouped_parameters)
                     for epoch in range(args.supcon_epochs):
                         epoch_train_loss = 0
