@@ -57,6 +57,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_non_linear') # individual_non_linear, individual_non_linear_b
+    parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--bs',type=int, default=4)
@@ -169,7 +170,7 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    method_concat = args.method
+    method_concat = args.method + '_' + str(args.supcon_temp)
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
@@ -224,7 +225,7 @@ def main():
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = [] # list(nlinear_model.named_parameters())
                     for n,m in nlinear_model.named_modules(): # Do not train final layer
-                        print(n)
+                        # print(n)
                         if n==final_layer_name:
                             for param in m.parameters():
                                 param.requires_grad = False
@@ -258,12 +259,14 @@ def main():
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                             embeddings = nlinear_model.relu1(nlinear_model.linear1(nlinear_model.dropout(inputs)))
-                            loss = criterion_supcon(embeddings, targets.to(device))
-                            train_loss.append(loss.item())
+                            embeddings = F.normalize(embeddings, p=2, dim=1) # normalise embeddings
+                            logits = torch.div(torch.matmul(embeddings, torch.transpose(embeddings, 0, 1)),args.supcon_temp)
+                            loss = criterion_supcon(logits, targets.to(device))
                             epoch_train_loss += loss.item()
                             loss.backward()
                             optimizer.step()
                         print(epoch_train_loss)
+                        train_loss.append(epoch_train_loss)
                     all_supcon_train_loss[i].append(np.array(train_loss))
                     
                     # Final layer classifier training
@@ -272,7 +275,14 @@ def main():
                     best_val_loss = torch.inf
                     best_model_state = deepcopy(nlinear_model.state_dict())
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-                    named_params = list(nlinear_model.named_parameters())
+                    named_params = [] # list(nlinear_model.named_parameters())
+                    for n,m in nlinear_model.named_modules(): # Only train final layer
+                        # print(n)
+                        if n!=final_layer_name:
+                            for param in m.parameters():
+                                param.requires_grad = False
+                        else:
+                            named_params += m.named_parameters()
                     optimizer_grouped_parameters = [
                         {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
@@ -378,7 +388,7 @@ def main():
                     all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
                     all_y_true_val[i].append(y_val_true)
                     all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                    # print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                    print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
                     pred_correct = 0
                     y_test_pred, y_test_true = [], []
                     test_preds = []
@@ -411,7 +421,7 @@ def main():
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                    # print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                    print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
                     all_val_logits[i].append(torch.cat(val_logits))
                     all_test_logits[i].append(torch.cat(test_logits))
         #     break
