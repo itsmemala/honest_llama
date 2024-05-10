@@ -194,7 +194,7 @@ def main():
         all_y_true_val[i], all_y_true_test[i] = [], []
         all_val_logits[i], all_test_logits[i] = [], []
         all_val_sim[i], all_test_sim[i] = [], []
-        num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else raise ValueError("Unknown model size.")
+        num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
         for layer in tqdm(range(num_layers)):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
