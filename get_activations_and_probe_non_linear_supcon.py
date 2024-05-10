@@ -232,7 +232,7 @@ def main():
                             for param in m.parameters():
                                 param.requires_grad = False
                         else:
-                            print('Including params for training:',m.named_parameters())
+                            print('Including params for training:',[param_name for param_name,_ in m.named_parameters()])
                             named_params += m.named_parameters()
                             for param in m.parameters():
                                 param.requires_grad = True
