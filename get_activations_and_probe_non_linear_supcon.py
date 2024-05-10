@@ -13,7 +13,7 @@ import statistics
 import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
-from utils import My_NonLinear_Classifier
+from utils import My_NonLinear_Classifier, MIND_Classifier
 from copy import deepcopy
 import llama
 import argparse
@@ -56,7 +56,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear') # individual_non_linear, individual_non_linear_b
+    parser.add_argument('--method',type=str, default='individual_non_linear') # individual_non_linear_2, individual_non_linear_4
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -208,21 +208,21 @@ def main():
                     samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
                     ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train = DataLoader(ds_train, batch_size=args.bs, shuffle=True) if args.method=='individual_non_linear' else DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
+                    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
                     ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                     ds_val = DataLoader(ds_val, batch_size=args.bs)
                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                     act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
-                    nlinear_model = My_NonLinear_Classifier(input_size=act_dims[args.using_act]).model.to(device)
+                    nlinear_model = My_NonLinear_Classifier(input_size=act_dims[args.using_act]).model.to(device) if args.method=='individual_non_linear_2' else MIND_Classifier(input_size=act_dims[args.using_act]).model.to(device)
                     wgt_0 = np.sum(y_train)/len(y_train)
                     criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.CrossEntropyLoss()
                     criterion_supcon = NTXentLoss()
 
                     # Sup-Con training
                     print('Sup-Con training...')
-                    final_layer_name = 'linear2'
+                    final_layer_name = 'linear2' if args.method=='individual_non_linear_2' else 'linear4'
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = [] # list(nlinear_model.named_parameters())
@@ -239,8 +239,9 @@ def main():
                     ]
                     # print([n for n,p in named_params])
                     ds_train_sc = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train_sc = DataLoader(ds_train_sc, batch_size=args.supcon_bs, shuffle=True) if args.method=='individual_non_linear' else DataLoader(ds_train_sc, batch_size=args.supcon_bs, sampler=sampler)
+                    ds_train_sc = DataLoader(ds_train_sc, batch_size=args.supcon_bs, sampler=sampler)
                     optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+                    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
                     for epoch in range(args.supcon_epochs):
                         epoch_train_loss = 0
                         nlinear_model.train()
@@ -263,13 +264,17 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            embeddings = nlinear_model.relu1(nlinear_model.linear1(nlinear_model.dropout(inputs)))
+                            if args.method=='individual_non_linear_2':
+                                embeddings = nlinear_model.relu1(nlinear_model.linear1(nlinear_model.dropout(inputs)))
+                            else:
+                                embeddings = nlinear_model.relu3(nlinear_model.linear3(nlinear_model.relu2(nlinear_model.linear2(nlinear_model.relu1(nlinear_model.linear1(nlinear_model.dropout(inputs)))))))
                             embeddings = F.normalize(embeddings, p=2, dim=1) # normalise embeddings
                             logits = torch.div(torch.matmul(embeddings, torch.transpose(embeddings, 0, 1)),args.supcon_temp)
                             loss = criterion_supcon(logits, targets.to(device))
                             epoch_train_loss += loss.item()
                             loss.backward()
                             optimizer.step()
+                        scheduler.step()
                         print(epoch_train_loss)
                         train_loss.append(epoch_train_loss)
                     all_supcon_train_loss[i].append(np.array(train_loss))
