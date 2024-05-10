@@ -64,6 +64,7 @@ def main():
     parser.add_argument('--bs',type=int, default=4)
     parser.add_argument('--supcon_epochs',type=int, default=10)
     parser.add_argument('--epochs',type=int, default=3)
+    parser.add_argument('--supcon_lr',type=float, default=0.05)
     parser.add_argument('--lr',type=float, default=0.05)
     parser.add_argument('--optimizer',type=str, default='Adam')
     parser.add_argument('--use_class_wgt',type=bool, default=False)
@@ -233,10 +234,10 @@ def main():
                             named_params.append((n,param))
                             param.requires_grad = True
                     optimizer_grouped_parameters = [
-                        {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
-                        {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
+                        {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.supcon_lr},
+                        {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.supcon_lr}
                     ]
-                    print([n for n,p in named_params])
+                    # print([n for n,p in named_params])
                     ds_train_sc = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
                     ds_train_sc = DataLoader(ds_train_sc, batch_size=args.supcon_bs, shuffle=True) if args.method=='individual_non_linear' else DataLoader(ds_train_sc, batch_size=args.supcon_bs, sampler=sampler)
                     optimizer = torch.optim.Adam(optimizer_grouped_parameters)
