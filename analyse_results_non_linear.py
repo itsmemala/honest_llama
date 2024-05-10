@@ -603,13 +603,13 @@ def main():
         print('Using accuracy (ind cls acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred1),f1_score(all_test_true[fold][0],confident_sample_pred1,pos_label=0))
         print('Using accuracy (avg acc) weighted voting - using logits:',f1_score(all_test_true[fold][0],confident_sample_pred2),f1_score(all_test_true[fold][0],confident_sample_pred2,pos_label=0))
 
-        # print('\n')
-        # np.set_printoptions(precision=2)
-        # if 'ah' in args.results_file_name:
-        #     print('Val loss model',model,':',all_val_loss_files[-1][fold][-1],'Val F1:',"{:.2f}".format(all_val_f1s[fold][-1]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][-1]))
-        # else:
-        #     for model in range(len(all_val_loss[fold])):
-        #         print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
+        print('\n')
+        np.set_printoptions(precision=2)
+        if 'ah' in args.results_file_name:
+            print('Val loss model',model,':',all_val_loss_files[-1][fold][-1],'Val F1:',"{:.2f}".format(all_val_f1s[fold][-1]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][-1]))
+        else:
+            for model in range(len(all_val_loss[fold])):
+                print('Val loss model',model,':',all_val_loss[fold][model],'Val F1:',"{:.2f}".format(all_val_f1s[fold][model]),'Test F1:',"{:.2f}".format(all_test_f1s[fold][model]))
         print('\n')
         print('Val and Test f1 correlation across probes:',np.corrcoef(all_val_f1s[fold],all_test_f1s[fold])[0][1])
         best_val_loss_by_model = [[np.min(model_losses) for model_losses in all_val_loss[fold]] for all_val_loss in all_val_loss_files] if 'ah' in args.results_file_name else [np.min(model_losses) for model_losses in all_val_loss[fold]]
