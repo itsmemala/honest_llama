@@ -225,7 +225,7 @@ def main():
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = [] # list(nlinear_model.named_parameters())
-                    print(nlinear_model.named_parameters())
+                    print([n for n,_ in nlinear_model.named_parameters()])
                     # for _,m in nlinear_model.named_modules():
                     #     for n,param in m.named_parameters(): # we only want index 0 from named_modules() which is a superset module of all params
                     #         print(n)
