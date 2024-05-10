@@ -222,8 +222,8 @@ def main():
                     final_layer_name = 'linear2'
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-                    print(nlinear_model.named_modules())
                     for n,m in nlinear_model.named_modules(): # Do not train final layer
+                        print(n)
                         if n==final_layer_name:
                             for param in m.parameters():
                                 param.requires_grad = False
