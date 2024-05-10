@@ -57,41 +57,55 @@ class LogisticRegression_Torch(torch.nn.Module):
         y_pred = self.linear(x)
         return y_pred
 
-class FeedforwardNeuralNetModel(nn.Module):
-    def __init__(self, input_dim, hidden_dim1, output_dim):
-        super(FeedforwardNeuralNetModel, self).__init__()
-        # Linear function
-        self.fc1 = nn.Linear(input_dim, hidden_dim)
+# class FeedforwardNeuralNetModel(nn.Module):
+#     def __init__(self, input_dim, hidden_dim1, output_dim):
+#         super(FeedforwardNeuralNetModel, self).__init__()
+#         # Linear function
+#         self.fc1 = nn.Linear(input_dim, hidden_dim)
 
-        # Non-linearity
-        self.sigmoid = nn.Sigmoid()
-        # Linear function (readout)
-        # self.fc3 = nn.Linear(hidden_dim, output_dim)
+#         # Non-linearity
+#         self.sigmoid = nn.Sigmoid()
+#         # Linear function (readout)
+#         # self.fc3 = nn.Linear(hidden_dim, output_dim)
 
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_dim, 128)
-        self.fc3 = nn.Linear(128, 64)
-        # self.fc4 = nn.Linear(64,2)
-        self.fc4 = nn.Linear(64,1)
+#         self.relu = nn.ReLU()
+#         self.fc2 = nn.Linear(hidden_dim, 128)
+#         self.fc3 = nn.Linear(128, 64)
+#         # self.fc4 = nn.Linear(64,2)
+#         self.fc4 = nn.Linear(64,1)
 
-    def forward(self, x):
-        # Linear function  # LINEAR
-        out = self.fc1(x)
+#     def forward(self, x):
+#         # Linear function  # LINEAR
+#         out = self.fc1(x)
 
-        # # Non-linearity  # NON-LINEAR
-        # out = self.sigmoid(out)
-        # # Linear function (readout)  # LINEAR
-        # out = self.fc2(out)
+#         # # Non-linearity  # NON-LINEAR
+#         # out = self.sigmoid(out)
+#         # # Linear function (readout)  # LINEAR
+#         # out = self.fc2(out)
 
-        out = self.relu(out)
-        out = self.fc2(out)
-        out = self.relu(out)
-        out = self.fc3(out)
-        out = self.relu(out)
-        out = self.fc4(out)
-        # out = self.sigmoid(out)
+#         out = self.relu(out)
+#         out = self.fc2(out)
+#         out = self.relu(out)
+#         out = self.fc3(out)
+#         out = self.relu(out)
+#         out = self.fc4(out)
+#         # out = self.sigmoid(out)
 
-        return out
+#         return out
+
+# class My_SupCon_NonLinear_Classifier(nn.Module):
+#     def __init__(self, input_size, path=None):
+#         input_size = input_size
+#         self.dropout = nn.Dropout(0.2)
+#         self.linear1 = nn.Linear(input_size, 256)
+#         self.relu1 = nn.ReLU()
+#         self.linear2 = nn.Linear(256, 2)
+#     def forward(self,x):
+#         emb = self.dropout(x)
+#         emb = self.linear1(x)
+#         emb = self.relu1(x)
+#         output = self.linear2(emb)
+#         return emb,output
 
 class My_NonLinear_Classifier():
     def __init__(self, input_size, path=None):
