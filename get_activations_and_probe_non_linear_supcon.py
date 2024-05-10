@@ -222,12 +222,14 @@ def main():
                     final_layer_name = 'linear2'
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+                    named_params = [] # list(nlinear_model.named_parameters())
                     for n,m in nlinear_model.named_modules(): # Do not train final layer
                         print(n)
                         if n==final_layer_name:
                             for param in m.parameters():
                                 param.requires_grad = False
-                    named_params = [m.named_parameters() for n,m in nlinear_model.named_modules() if n!=final_layer_name] # list(nlinear_model.named_parameters())
+                        else:
+                            named_params += m.named_parameters()
                     optimizer_grouped_parameters = [
                         {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
