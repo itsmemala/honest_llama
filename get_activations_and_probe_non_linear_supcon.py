@@ -225,17 +225,15 @@ def main():
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = [] # list(nlinear_model.named_parameters())
-                    for n,m in nlinear_model.named_modules(): # Do not train final layer
+                    for n,param in nlinear_model.named_modules()[0].named_parameters(): # we only want index 0 from named_modules() which is a superset module of all params
                         print(n)
-                        if n==final_layer_name:
+                        if final_layer_name in n: # Do not train final layer
                             print('Excluding param from training:',n)
-                            for param in m.parameters():
-                                param.requires_grad = False
+                            param.requires_grad = False
                         else:
-                            print('Including params for training:',[param_name for param_name,_ in m.named_parameters()])
-                            named_params += m.named_parameters()
-                            for param in m.parameters():
-                                param.requires_grad = True
+                            print('Including param for training:',n)
+                            named_params.append((n,param))
+                            param.requires_grad = True
                     optimizer_grouped_parameters = [
                         {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
