@@ -50,9 +50,10 @@ def main():
     with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
         data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
-            responses.append(data['model_completion'])
-            labels.append(data['is_correct'])
-            print(data['is_correct'])
+            responses.append(data['model_completion'][i])
+            label = 1 if data['is_correct'][i]==True else False
+            print(label,data['is_correct'][i])
+            labels.append(label)            
     
     if args.dataset_name=='strqa':
         acts_per_file = 50
