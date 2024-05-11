@@ -36,10 +36,10 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
+    parser.add_argument('dataset_name', type=str, default='strqa')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
-    parser.add_argument("--activations_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
@@ -47,7 +47,7 @@ def main():
     device = 0
 
     responses, labels = [], []
-    with open(f'{args.save_path}/responses/{args.responses_file_name}.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
         data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             responses.append(data['model_completion'])
@@ -79,7 +79,7 @@ def main():
         for i in range(len(sc_labels)):
             act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
             file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
-            file_path = f'{args.save_path}/features/{args.activations_file_name}_{file_end}.pkl'
+            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
             act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
             acts.append(act)
         inputs = torch.stack(acts,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
