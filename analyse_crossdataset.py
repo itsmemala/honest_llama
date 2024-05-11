@@ -51,8 +51,7 @@ def main():
         data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             responses.append(data['model_completion'][i])
-            label = 1 if data['is_correct'][i]==True else False
-            print(label,data['is_correct'][i])
+            label = 1 if data['is_correct'][i]==True else 0
             labels.append(label)            
     
     if args.dataset_name=='strqa':
