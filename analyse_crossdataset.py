@@ -53,7 +53,7 @@ def main():
             responses.append(data['model_completion'])
             labels.append(data['is_correct'])
     
-    if 'strqa' in args.responses_file_name:
+    if args.dataset_name=='strqa':
         acts_per_file = 50
     else:
         acts_per_file = 100
