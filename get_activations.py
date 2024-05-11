@@ -5,7 +5,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
 import pickle
-from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file
+from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file, tokenized_from_file_v2
 import llama
 import pickle
 import argparse
@@ -101,7 +101,7 @@ def main():
     elif args.dataset_name == 'nq': 
         dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
         formatter = tokenized_nq
-    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
+    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'strqa':
         pass
     else: 
         raise ValueError("Invalid dataset name")
@@ -119,6 +119,10 @@ def main():
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
+        np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
+    elif args.dataset_name == 'strqa':
+        file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
     else: 
         prompts, labels = formatter(dataset, tokenizer)
@@ -157,6 +161,9 @@ def main():
             load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
         else:
             load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
+    elif args.dataset_name == 'strqa':
+        load_ranges = [(a*100,(a*100)+100) for a in range(int(2300/100))] # all responses
+
     
     for start, end in load_ranges:
         all_layer_wise_activations = []

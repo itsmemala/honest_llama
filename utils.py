@@ -309,6 +309,24 @@ def tokenized_from_file(file_path, tokenizer):
         
     return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
 
+def tokenized_from_file_v2(file_path, tokenizer): 
+
+    all_prompts, all_tokenized_prompts, resp_tokenized = [], [], []
+    answer_token_idxes = []
+    with open(file_path, 'r') as read_file:
+            data = json.load(read_file)
+    for i in range(len(data['full_input_text'])):
+        question = data['full_input_text'][i]
+        answer = data['model_completion'][i]
+        prompt = question + answer
+        all_prompts.append(prompt)
+        tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+        all_tokenized_prompts.append(tokenized_prompt)
+        resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in tokenized_prompt[0]])
+        answer_token_idxes.append(len(tokenizer(question, return_tensors = 'pt').input_ids[0]))
+        
+    return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
+
 def tokenized_mi(file_path, tokenizer): 
 
     all_prompts = []
