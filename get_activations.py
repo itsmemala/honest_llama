@@ -162,7 +162,7 @@ def main():
         else:
             load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
     elif args.dataset_name == 'strqa':
-        load_ranges = [(a*100,(a*100)+100) for a in range(int(2300/100))] # all responses
+        load_ranges = [(a*50,(a*50)+50) for a in range(int(2300/50))] # all responses
 
     
     for start, end in load_ranges:
