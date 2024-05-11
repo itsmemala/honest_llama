@@ -48,7 +48,15 @@ def main():
 
     responses, labels = [], []
     with open(f'{args.save_path}/responses/{args.responses_file_name}.json', 'r') as read_file:
-        
+        data = json.load(read_file)
+        for i in range(len(data['full_input_text'])):
+            responses.append(data['model_completion'])
+            labels.append(data['is_correct'])
+    
+    if 'strqa' in args.responses_file_name:
+        acts_per_file = 50
+    else:
+        acts_per_file = 100
     
     print('\nGetting probe predictions on generated responses...')
     all_preds = []
@@ -57,7 +65,7 @@ def main():
     for layer in range(num_layers):
         # Load model
         act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
-        bias = False if 'no_bias' in args.greedy_results_file_name else True
+        bias = False if 'no_bias' in args.probes_file_name else True
         head = 0
         kld_probe = 0
         linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=bias).to(device)
@@ -70,19 +78,24 @@ def main():
         acts = []
         for i in range(len(sc_labels)):
             act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-            file_end = i-(i%100)+100 # 487: 487-(87)+100
+            file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.activations_file_name}_{file_end}.pkl'
-            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
             acts.append(act)
         inputs = torch.stack(acts,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-        if 'unitnorm' in args.greedy_results_file_name: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        if 'unitnorm' in args.probes_file_name: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
         preds = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
         all_preds.append(preds.cpu().numpy())
     all_preds = np.stack(all_preds)
 
     print('\n')
     # Find most confident layers
-    
+    confident_sample_pred = []
+    for i in range(all_preds.shape[1]):
+        sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+        confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+    print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
     
 if __name__ == '__main__':
     main()

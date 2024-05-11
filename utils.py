@@ -314,7 +314,7 @@ def tokenized_from_file_v2(file_path, tokenizer):
     all_prompts, all_tokenized_prompts, resp_tokenized = [], [], []
     answer_token_idxes = []
     with open(file_path, 'r') as read_file:
-            data = json.load(read_file)
+        data = json.load(read_file)
     for i in range(len(data['full_input_text'])):
         question = data['full_input_text'][i]
         answer = data['model_completion'][i]
