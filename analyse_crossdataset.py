@@ -52,6 +52,7 @@ def main():
         for i in range(len(data['full_input_text'])):
             responses.append(data['model_completion'])
             labels.append(data['is_correct'])
+            print(data['is_correct'])
     
     if args.dataset_name=='strqa':
         acts_per_file = 50
