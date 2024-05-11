@@ -76,7 +76,7 @@ def main():
         linear_model.eval()
         # Load activations
         acts = []
-        for i in range(len(sc_labels)):
+        for i in range(len(responses)):
             act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
             file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
@@ -90,12 +90,14 @@ def main():
 
     print('\n')
     # Find most confident layers
-    confident_sample_pred = []
-    for i in range(all_preds.shape[1]):
-        sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-    print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+    if len(labels)>0:
+        print('Validating probe performance...')
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+        print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
     
 if __name__ == '__main__':
     main()
