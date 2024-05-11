@@ -89,15 +89,29 @@ def main():
     all_preds = np.stack(all_preds)
 
     print('\n')
-    # Find most confident layers
     if len(labels)>0:
         print('Validating probe performance...')
+        # Probe selection - a
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+
+        # Probe selection - d
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+    # Find most confident layers
+    for i in range(all_preds.shape[1][:10]):
+        sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+        print(np.argpartition(probe_wise_entropy, -5)[-5:])
     
 if __name__ == '__main__':
     main()
