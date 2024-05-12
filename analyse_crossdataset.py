@@ -118,7 +118,7 @@ def main():
         mc_layers.append(np.argpartition(probe_wise_entropy, top_x)[:top_x])
     
     mc_layers = np.array(mc_layers)
-    np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers.npy', all_val_loss)
+    np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers.npy', mc_layers)
 
 if __name__ == '__main__':
     main()
