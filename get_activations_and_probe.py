@@ -283,7 +283,7 @@ def main():
                 label = 1 if data['is_correct'][i]==True else 0
                 labels.append(label)
         labels = labels[:args.len_dataset]
-        test_labels = [] # No test file
+        test_prompts, test_labels = [], [] # No test file
     
     if args.token=='tagged_tokens':
         tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
