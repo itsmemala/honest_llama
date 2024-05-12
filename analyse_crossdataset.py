@@ -116,8 +116,9 @@ def main():
         probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
         if i<10: print(np.argpartition(probe_wise_entropy, top_x)[:top_x])
         mc_layers.append(np.argpartition(probe_wise_entropy, top_x)[:top_x])
-    
     mc_layers = np.array(mc_layers)
+    print(np.hist(np.min(mc_layers,axis=1)))
+
     np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers.npy', mc_layers)
 
 if __name__ == '__main__':
