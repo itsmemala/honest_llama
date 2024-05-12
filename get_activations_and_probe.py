@@ -272,7 +272,7 @@ def main():
             for line in read_file:
                 data = json.loads(line)
                 test_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
-    elif args.dataset_name == 'gsm8k':
+    elif args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer)
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
