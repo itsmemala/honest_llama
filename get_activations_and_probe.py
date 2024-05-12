@@ -665,14 +665,16 @@ def main():
                                     if args.token in ['all','tagged_tokens']: test_logits.append(torch.stack([torch.max(linear_model(inp).data, dim=0)[0] for inp in inputs]))
                                     if args.token in ['all','tagged_tokens']: inputs = torch.cat(activations,dim=0)  # stack for calculating sim
                                     test_sim.append(torch.stack((torch.sum(inputs * norm_weights_0.detach(), dim=-1),torch.sum(inputs * norm_weights_1.detach(), dim=-1)),dim=1)) # + linear_model.linear.bias
-                        all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
-                        all_test_sim[i].append(torch.cat(test_sim).cpu().numpy())
-                        all_y_true_test[i].append(y_test_true)
-                        all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+                        if args.test_file_name is not None:
+                            all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
+                            all_test_sim[i].append(torch.cat(test_sim).cpu().numpy())
+                            all_y_true_test[i].append(y_test_true)
+                            all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+                            all_test_logits[i].append(torch.cat(test_logits))
                         if args.classifier_on_probes:
                             all_train_logits[i].append(torch.cat(best_train_logits))
                         all_val_logits[i].append(torch.cat(best_val_logits))
-                        all_test_logits[i].append(torch.cat(test_logits))
+                        
                 break
             break
     
