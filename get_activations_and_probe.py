@@ -371,8 +371,9 @@ def main():
                         ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
                         ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                         ds_val = DataLoader(ds_val, batch_size=args.bs)
-                        ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                        ds_test = DataLoader(ds_test, batch_size=args.bs)
+                        if args.test_file_name is not None:
+                            ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
+                            ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                         act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
                         linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=args.use_linear_bias).to(device)
