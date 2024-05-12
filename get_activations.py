@@ -165,7 +165,7 @@ def main():
     elif args.dataset_name == 'strqa':
         load_ranges = [(a*50,(a*50)+50) for a in range(int(2300/50))] # all responses
     elif args.dataset_name == 'gsm8k':
-        load_ranges = [(a*50,(a*50)+50) for a in range(int(1400/50))] # all responses
+        load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
     
     for start, end in load_ranges:
