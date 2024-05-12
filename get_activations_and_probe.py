@@ -675,8 +675,8 @@ def main():
                             all_train_logits[i].append(torch.cat(best_train_logits))
                         all_val_logits[i].append(torch.cat(best_val_logits))
                         
-                break
-            break
+            #     break
+            # break
     
         if args.classifier_on_probes and args.test_file_name is not None:
             train_logits = torch.cat(all_train_logits[i],dim=1)
