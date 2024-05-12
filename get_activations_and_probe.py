@@ -280,7 +280,6 @@ def main():
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
-                responses.append(data['model_completion'][i])
                 label = 1 if data['is_correct'][i]==True else 0
                 labels.append(label)
         labels = labels[:args.len_dataset]
