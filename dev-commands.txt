@@ -17,7 +17,7 @@ python get_activations_and_probe.py llama_7B trivia_qa --train_file_name trivia_
 
 13,12,19,23,1
 
-python get_activations.py alpaca_7B trivia_qa --token answer_last --file_name trivia_qa_greedy_responses_train5000  --device 0 --save_path ~/Desktop/honest_llama_data
+python get_activations_and_probe.py hl_llama_7B gsm8k --train_file_name gsm8k_baseline_responses --len_dataset 1319 --num_folds 1 --using_act layer --token answer_last --method individual_linear --use_linear_bias True --bs 128 --epochs 20 --lr 0.05 --optimizer Adam_w_lr_sch --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data
 
 4) Another approach is to go selfsupervised, try to ask the model to correct its answers and say that the answer is hallucinated. Gather the responses:
 Given a question, extract different responses from the normal questions (maybe 2 suffices), and responses after commenting that the answer is hallucinated. Treat the two normal answers as positives and the answer on the hallucination as negative. Train with contrastive loss. Maybe then train a classifier or estimates prototypes.. to use for classifying test samples based on one answer.
