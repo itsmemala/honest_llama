@@ -56,6 +56,8 @@ def main():
     
     if args.dataset_name=='strqa':
         acts_per_file = 50
+    elif args.dataset_name=='gsm8k':
+        acts_per_file = 20
     else:
         acts_per_file = 100
     
