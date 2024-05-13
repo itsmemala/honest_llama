@@ -518,10 +518,11 @@ def main():
         print('Voting amongst all probes per sample:',f1_score(all_test_true[fold][0],confident_sample_pred),f1_score(all_test_true[fold][0],confident_sample_pred,pos_label=0))
         analyse_idxs = all_test_true[fold][0]!=confident_sample_pred
         # Probe selection - e
+        top_x = 4
         confident_sample_pred, confident_sample_pred2 = [], []
-        best_probe_idxs = np.argpartition(all_val_f1s[fold], -5)[-5:]
+        best_probe_idxs = np.argpartition(all_val_f1s[fold], -top_x)[-top_x:]
         top_5_lower_bound_val = np.min(all_val_f1s[fold][best_probe_idxs])
-        best_probe_idxs2 = np.argpartition(val_f1_avg, -5)[-5:]
+        best_probe_idxs2 = np.argpartition(val_f1_avg, -top_x)[-top_x:]
         top_5_lower_bound_val2 = np.min(val_f1_avg[best_probe_idxs2])
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
