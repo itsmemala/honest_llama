@@ -56,7 +56,7 @@ def main():
             labels.append(label)
     if  args.mitigated_responses_file_name is not None:
         m_responses, m_labels = [], []
-        samples_neg_affected = []
+        samples_neg_affected, samples_pos_affected = [], []
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
@@ -64,7 +64,9 @@ def main():
                 label = 1 if data['is_correct'][i]==True else 0
                 m_labels.append(label)
                 if labels[i]==1 and label==0: samples_neg_affected.append(i)
+                if labels[i]==0 and label==1: samples_pos_affected.append(i)
         print('Num of samples negatively affected:',len(samples_neg_affected))
+        print('Num of samples positively affected:',len(samples_pos_affected))
     
     if args.dataset_name=='strqa':
         acts_per_file = 50
