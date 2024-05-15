@@ -129,7 +129,7 @@ def main():
         if len(top_layers_hallu)>0: min_mc_layers_entropy.append(np.min(probe_wise_entropy[top_layers_hallu]))
     # mc_layers = np.array(mc_layers)
     print(np.histogram(min_mc_layers, bins=range(33)))
-    print(np.histogram(min_mc_layers_entropy, bins=range(11)))
+    print(np.histogram(min_mc_layers_entropy, bins=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]))
 
     np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers.npy', mc_layers)
 
