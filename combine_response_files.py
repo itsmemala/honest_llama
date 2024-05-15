@@ -58,9 +58,9 @@ def main():
     response_data_pd = pd.DataFrame.from_dict(response_data)
     train, test = train_test_split(response_data_pd, test_size=0.2, stratify=response_data_pd['is_correct'])
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'w') as outfile:
-        json.dump(train.to_json(), outfile)
+        json.dump(train.to_dict(orient='list'), outfile)
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'w') as outfile:
-        json.dump(test.to_json(), outfile)
+        json.dump(test.to_dict(orient='list'), outfile)
 
 if __name__ == '__main__':
     main()
