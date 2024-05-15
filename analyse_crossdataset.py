@@ -104,7 +104,7 @@ def main():
             sample_pred_chosen = sample_pred[best_probe_idxs]
             sample_pred_chosen = np.argmax(sample_pred_chosen,axis=1)
             correct_answer = labels[i]
-            if i==0: print(sample_pred_chosen,sample_pred_chosen==correct_answer)
+            # if i==0: print(sample_pred_chosen,sample_pred_chosen==correct_answer)
             if sum(sample_pred_chosen==correct_answer)>0: # If any one is correct
                 best_sample_pred.append(correct_answer)
             else:
@@ -112,6 +112,13 @@ def main():
         print('Oracle (using 5 most confident):',f1_score(labels,best_sample_pred),f1_score(labels,best_sample_pred,pos_label=0))
 
         print('\nValidating probe performance...')
+        # Last layer probe
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
+            confident_sample_pred.append(np.argmax(sample_pred))
+        print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+
         # Probe selection - a
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
