@@ -111,13 +111,17 @@ def main():
             confident_sample_pred.append(maj_vote)
         print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
     # Find most confident layers
+    print('\nMost confident layers for hallu...')
     top_x = 5
     mc_layers = []
     for i in range(all_preds.shape[1]):
         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
         probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        if i<10: print(np.argpartition(probe_wise_entropy, top_x)[:top_x])
-        mc_layers.append(np.argpartition(probe_wise_entropy, top_x)[:top_x])
+        top_layers = np.argpartition(probe_wise_entropy, top_x)[:top_x]
+        top_layers_hallu = []
+        for layer in top_layers:
+            if np.argmax(sample_pred[layer])==0: top_layers_hallu.append(layer)
+        mc_layers.append(top_layers_hallu)
     mc_layers = np.array(mc_layers)
     print(np.histogram(np.min(mc_layers,axis=1), bins=range(33)))
 
