@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--mitigated_responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
@@ -52,7 +53,18 @@ def main():
         for i in range(len(data['full_input_text'])):
             responses.append(data['model_completion'][i])
             label = 1 if data['is_correct'][i]==True else 0
-            labels.append(label)            
+            labels.append(label)
+    if  args.mitigated_responses_file_name is not None:
+        m_responses, m_labels = [], []
+        samples_neg_affected = []
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
+            data = json.load(read_file)
+            for i in range(len(data['full_input_text'])):
+                m_responses.append(data['model_completion'][i])
+                label = 1 if data['is_correct'][i]==True else 0
+                m_labels.append(label)
+                if labels[i]==1 and label==0: samples_neg_affected.append(i)
+        print('Num of samples negatively affected:',len(samples_neg_affected))
     
     if args.dataset_name=='strqa':
         acts_per_file = 50
