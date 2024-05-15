@@ -279,11 +279,22 @@ def main():
         labels = []
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
+        for i in range(len(data['full_input_text'])):
+            label = 1 if data['is_correct'][i]==True else 0
+            labels.append(label)
+        labels = labels[:args.len_dataset]
+        if args.test_file_name is None:
+            test_prompts, test_labels = [], [] # No test file
+        else:
+            file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
+            test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file_v2(file_path, tokenizer)
+            test_labels = []
+            with open(file_path, 'r') as read_file:
+                data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
                 label = 1 if data['is_correct'][i]==True else 0
-                labels.append(label)
-        labels = labels[:args.len_dataset]
-        if args.test_file_name is None: test_prompts, test_labels = [], [] # No test file
+                test_labels.append(label)
+
     
     if args.token=='tagged_tokens':
         tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
