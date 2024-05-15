@@ -104,6 +104,7 @@ def main():
             sample_pred_chosen = sample_pred[best_probe_idxs]
             sample_pred_chosen = np.argmax(sample_pred_chosen,axis=1)
             correct_answer = labels[i]
+            if i==0: print(sample_pred_chosen,sample_pred_chosen==correct_answer)
             if sum(sample_pred_chosen==correct_answer)>0: # If any one is correct
                 best_sample_pred.append(correct_answer)
             else:
