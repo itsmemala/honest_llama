@@ -121,7 +121,7 @@ def main():
         top_layers_hallu = []
         for layer in top_layers:
             if np.argmax(sample_pred[layer])==0: top_layers_hallu.append(layer)
-        mc_layers.append(top_layers_hallu)
+        mc_layers.append(np.array(top_layers_hallu))
     mc_layers = np.array(mc_layers)
     print(np.histogram(np.min(mc_layers,axis=1), bins=range(33)))
 
