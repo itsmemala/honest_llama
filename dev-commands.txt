@@ -1,6 +1,6 @@
 python get_baselines.py alpaca_7B nq_open --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_labels_file_name nq_open_greedy_responses_labels_1800 --train_uncertainty_values_file_name greedy_responses_train5000 --test_uncertainty_values_file_name greedy_responses_1800 --len_dataset 1500 --num_folds 1 --save_path ~/Desktop/honest_llama_data
 
-python analyse_results.py --results_file_name llama_7B_trivia_qa_greedy_responses_train5000_5000_1_layer_answer_last_individual_linear_unitnorm_no_bias_bs128_epochs20_0.05_Adam_w_lr_sch_False_None_None --save_path ~/Desktop/honest_llama_data --use_similarity True
+python analyse_results.py --results_file_name llama_7B_trivia_qa_greedy_responses_train5000_5000_1_layer_answer_last_individual_linear_spl_unitnorm_no_bias_2.0_10_bs128_epochs20_0.05_Adam_w_lr_sch_False_None_None --save_path ~/Desktop/honest_llama_data --use_similarity True
 
 python analyse_results.py --results_file_name alpaca_7B_trivia_qa_greedy_responses_train5000_5000_1_ah_answer_last_individual_linear_bs128_epochs20_0.05_Adam_w_lr_sch_False_None_None --save_path ~/Desktop/honest_llama_data --layer_start 0,4,7,10,13,16,19,22,25,28 --layer_end 3,6,9,12,15,18,21,24,27,31
 
