@@ -114,6 +114,8 @@ def main():
     print('\nMost confident layers for hallu...')
     top_x = 5
     mc_layers = []
+    min_mc_layers = []
+    min_mc_layers_entropy = []
     for i in range(all_preds.shape[1]):
         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
         probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
@@ -121,9 +123,13 @@ def main():
         top_layers_hallu = []
         for layer in top_layers:
             if np.argmax(sample_pred[layer])==0: top_layers_hallu.append(layer)
-        mc_layers.append(np.array(top_layers_hallu))
-    mc_layers = np.array(mc_layers)
-    print(np.histogram(np.min(mc_layers,axis=1), bins=range(33)))
+        top_layers_hallu = np.array(top_layers_hallu)
+        mc_layers.append(top_layers_hallu)
+        min_mc_layers.append(np.min(top_layers_hallu))
+        min_mc_layers_entropy.append(np.min(probe_wise_entropy[top_layers_hallu]))
+    # mc_layers = np.array(mc_layers)
+    print(np.histogram(min_mc_layers, bins=range(33)))
+    print(np.histogram(min_mc_layers_entropy, bins=range(11)))
 
     np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers.npy', mc_layers)
 
