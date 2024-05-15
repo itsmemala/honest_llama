@@ -93,7 +93,24 @@ def main():
 
     print('\n')
     if len(labels)>0:
-        print('Validating probe performance...')
+         # Oracle 2
+        best_sample_pred =[]
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            best_probe_idxs = np.argpartition(probe_wise_entropy, -5)[-5:]
+            top_5_lower_bound_val = np.min(probe_wise_entropy[best_probe_idxs])
+            best_probe_idxs = probe_wise_entropy>=top_5_lower_bound_val
+            sample_pred_chosen = sample_pred[best_probe_idxs]
+            sample_pred_chosen = np.argmax(sample_pred_chosen,axis=1)
+            correct_answer = labels[i]
+            if sum(sample_pred_chosen==correct_answer)>0: # If any one is correct
+                best_sample_pred.append(correct_answer)
+            else:
+                best_sample_pred.append(1 if correct_answer==0 else 0)
+        print('Oracle (using 5 most confident):',f1_score(labels,best_sample_pred),f1_score(labels,best_sample_pred,pos_label=0))
+
+        print('\nValidating probe performance...')
         # Probe selection - a
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
