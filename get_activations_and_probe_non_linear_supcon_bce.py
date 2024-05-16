@@ -181,6 +181,7 @@ def main():
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
+        y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
         y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
         y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
@@ -234,7 +235,7 @@ def main():
                         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.supcon_lr}
                     ]
                     # print([n for n,p in named_params])
-                    ds_train_sc = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
+                    ds_train_sc = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train_supcon}).with_format("torch")
                     ds_train_sc = DataLoader(ds_train_sc, batch_size=args.supcon_bs, sampler=sampler)
                     optimizer = torch.optim.Adam(optimizer_grouped_parameters)
                     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
