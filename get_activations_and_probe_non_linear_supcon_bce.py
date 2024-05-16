@@ -238,7 +238,7 @@ def main():
                     ds_train_sc = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train_supcon}).with_format("torch")
                     ds_train_sc = DataLoader(ds_train_sc, batch_size=args.supcon_bs, sampler=sampler)
                     optimizer = torch.optim.Adam(optimizer_grouped_parameters)
-                    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+                    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
                     for epoch in range(args.supcon_epochs):
                         epoch_train_loss = 0
                         nlinear_model.train()
@@ -268,7 +268,7 @@ def main():
                             epoch_train_loss += loss.item()
                             loss.backward()
                             optimizer.step()
-                        scheduler.step()
+                        # scheduler.step()
                         print(epoch_train_loss)
                         train_loss.append(epoch_train_loss)
                     all_supcon_train_loss[i].append(np.array(train_loss))
@@ -292,6 +292,7 @@ def main():
                     ]
                     optimizer = torch.optim.Adam(optimizer_grouped_parameters)
                     for epoch in range(args.epochs):
+                        epoch_train_loss = 0
                         nlinear_model.train()
                         for step,batch in enumerate(ds_train):
                             optimizer.zero_grad()
@@ -317,9 +318,11 @@ def main():
                             outputs = nlinear_model(inputs)
                             loss = criterion(outputs, targets.to(device).float())
                             train_loss.append(loss.item())
+                            epoch_train_loss += loss.item()
                             # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
                             loss.backward()
                             optimizer.step()
+                        print(epoch_train_loss)
                         # Get val loss
                         nlinear_model.eval()
                         epoch_val_loss = 0
