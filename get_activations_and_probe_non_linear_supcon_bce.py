@@ -219,7 +219,7 @@ def main():
 
                     # Sup-Con training
                     print('Sup-Con training...')
-                    final_layer_name = 'linear2'
+                    final_layer_name = 'linear3'
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = [] # list(nlinear_model.named_parameters())
