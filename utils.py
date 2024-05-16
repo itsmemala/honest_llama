@@ -107,6 +107,19 @@ class LogisticRegression_Torch(torch.nn.Module):
 #         output = self.linear2(emb)
 #         return emb,output
 
+class My_SupCon_NonLinear_Classifier():
+    def __init__(self, input_size, output_size=2, path=None):
+        input_size = input_size
+        self.model = nn.Sequential()
+        # self.model.add_module("dropout", nn.Dropout(0.2))
+        self.model.add_module(f"linear1", nn.Linear(input_size, 256))
+        self.model.add_module(f"relu1", nn.ReLU())
+        self.model.add_module(f"linear2", nn.Linear(256, 128))
+        self.model.add_module(f"linear3", nn.Linear(128, output_size))
+        if path is not None:
+            self.model.load_state_dict(torch.load(path, map_location = "cpu")["model_state_dict"])
+        # self.model.to(args.device)
+
 class My_NonLinear_Classifier():
     def __init__(self, input_size, path=None):
         input_size = input_size
