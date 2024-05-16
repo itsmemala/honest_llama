@@ -285,9 +285,9 @@ def main():
                             named_params.append((n,param))
                             param.requires_grad = True
                         else:
-                            # param.requires_grad = False
-                            named_params.append((n,param))
-                            param.requires_grad = True
+                            param.requires_grad = False
+                            # named_params.append((n,param))
+                            # param.requires_grad = True
                     optimizer_grouped_parameters = [
                         {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
@@ -351,7 +351,7 @@ def main():
                             outputs = nlinear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device).float())
                         val_loss.append(epoch_val_loss.item())
-                        print(epoch_train_loss, epoch_val_loss)
+                        print(epoch_train_loss, epoch_val_loss.item())
                         # Choose best model
                         if epoch_val_loss.item() < best_val_loss:
                             best_val_loss = epoch_val_loss.item()
