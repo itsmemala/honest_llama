@@ -286,7 +286,7 @@ def main():
                             param.requires_grad = True
                         else:
                             param.requires_grad = False
-                            # named_params.append((n,param))
+                            # named_params.append((n,param)) # Debug by training all params
                             # param.requires_grad = True
                     optimizer_grouped_parameters = [
                         {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
