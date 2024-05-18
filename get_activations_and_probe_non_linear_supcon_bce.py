@@ -56,7 +56,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear') # individual_non_linear_2, individual_non_linear_4
+    parser.add_argument('--method',type=str, default='individual_non_linear_3') # individual_non_linear_3, individual_non_linear_3_supcon
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -172,7 +172,7 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    method_concat = args.method + '_' + str(args.supcon_temp)
+    method_concat = args.method + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs)  '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else args.method
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
@@ -198,26 +198,27 @@ def main():
         for layer in tqdm(range(num_layers)):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
-                if 'individual_non_linear' in args.method:
-                    train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
-                    class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
-                    weight = 1. / class_sample_count
-                    samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
-                    sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-                    ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
-                    ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
-                    ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-                    ds_val = DataLoader(ds_val, batch_size=args.bs)
-                    ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                    ds_test = DataLoader(ds_test, batch_size=args.bs)
+                # if 'individual_non_linear' in args.method:
+                train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
+                class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
+                weight = 1. / class_sample_count
+                samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
+                sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+                ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
+                ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
+                ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
+                ds_val = DataLoader(ds_val, batch_size=args.bs)
+                ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
+                ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                    act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
-                    nlinear_model = My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1).model.to(device)
-                    wgt_0 = np.sum(y_train)/len(y_train)
-                    criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
-                    criterion_supcon = NTXentLoss()
+                act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
+                nlinear_model = My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1).model.to(device)
+                wgt_0 = np.sum(y_train)/len(y_train)
+                criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
+                criterion_supcon = NTXentLoss()
 
-                    # Sup-Con training
+                # Sup-Con training
+                if 'supcon' in args.method:
                     print('Sup-Con training...')
                     final_layer_name = 'linear3'
                     train_loss = []
@@ -272,195 +273,199 @@ def main():
                         print(epoch_train_loss)
                         train_loss.append(epoch_train_loss)
                     all_supcon_train_loss[i].append(np.array(train_loss))
-                    
-                    # Final layer classifier training
-                    print('Final layer classifier training...')
-                    train_loss, val_loss = [], []
-                    best_val_loss = torch.inf
-                    best_model_state = deepcopy(nlinear_model.state_dict())
-                    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-                    named_params = [] # list(nlinear_model.named_parameters())
-                    for n,param in nlinear_model.named_parameters():
-                        if final_layer_name in n: # Only train final layer params
-                            named_params.append((n,param))
-                            param.requires_grad = True
-                        else:
+                
+                # Final layer classifier training
+                print('Final layer classifier training...')
+                train_loss, val_loss = [], []
+                best_val_loss = torch.inf
+                best_model_state = deepcopy(nlinear_model.state_dict())
+                no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+                named_params = [] # list(nlinear_model.named_parameters())
+                for n,param in nlinear_model.named_parameters():
+                    if final_layer_name in n: # Always train final layer params
+                        named_params.append((n,param))
+                        param.requires_grad = True
+                    else:
+                        if 'supcon' in args.method: # Do not train non-final layer params when using supcon
                             param.requires_grad = False
                             # named_params.append((n,param)) # Debug by training all params
                             # param.requires_grad = True
-                    optimizer_grouped_parameters = [
-                        {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
-                        {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
-                    ]
-                    optimizer = torch.optim.Adam(optimizer_grouped_parameters)
-                    for epoch in range(args.epochs):
-                        epoch_train_loss = 0
-                        nlinear_model.train()
-                        for step,batch in enumerate(ds_train):
-                            optimizer.zero_grad()
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']:
-                                targets = batch['labels']
-                            elif args.token=='all':
-                                # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                            if args.token=='tagged_tokens':
-                                # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                                targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            outputs = nlinear_model(inputs)
-                            loss = criterion(outputs, targets.to(device).float())
-                            train_loss.append(loss.item())
-                            epoch_train_loss += loss.item()
-                            # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
-                            loss.backward()
-                            optimizer.step()
-                        # Get val loss
-                        nlinear_model.eval()
-                        epoch_val_loss = 0
-                        for step,batch in enumerate(ds_val):
-                            optimizer.zero_grad()
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']:
-                                targets = batch['labels']
-                            elif args.token=='all':
-                                # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                            if args.token=='tagged_tokens':
-                                # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                                targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            outputs = nlinear_model(inputs)
-                            epoch_val_loss += criterion(outputs, targets.to(device).float())
-                        val_loss.append(epoch_val_loss.item())
-                        print(epoch_train_loss, epoch_val_loss.item())
-                        # Choose best model
-                        if epoch_val_loss.item() < best_val_loss:
-                            best_val_loss = epoch_val_loss.item()
-                            best_model_state = deepcopy(nlinear_model.state_dict())
-                    all_train_loss[i].append(np.array(train_loss))
-                    all_val_loss[i].append(np.array(val_loss))
-                    nlinear_model.load_state_dict(best_model_state)
-                    
-                    # print(np.array(val_loss))
-                    if args.save_probes:
-                        probe_save_path = f'{args.save_path}/probes/models/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}_{layer}_{head}'
-                        torch.save(nlinear_model, probe_save_path)
-                        # probes_saved.append(probe_save_path)
-                    
-                    # Val and Test performance
-                    pred_correct = 0
-                    y_val_pred, y_val_true = [], []
-                    val_preds = []
-                    val_logits = []
-                    val_sim = []
-                    with torch.no_grad():
-                        nlinear_model.eval()
-                        for step,batch in enumerate(ds_val):
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            y_val_pred += predicted
-                            y_val_true += batch['labels'].tolist()
-                            val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                            val_preds.append(val_preds_batch)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']: val_logits.append(nlinear_model(inputs))
-                            if args.token in ['all','tagged_tokens']: val_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
-                    all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
-                    all_y_true_val[i].append(y_val_true)
-                    all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                    print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
-                    pred_correct = 0
-                    y_test_pred, y_test_true = [], []
-                    test_preds = []
-                    test_logits = []
-                    test_sim = []
-                    with torch.no_grad():
-                        nlinear_model.eval()
-                        use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
-                        use_answer_token_idxes = answer_token_idxes if args.num_folds>1 else test_answer_token_idxes
-                        use_tagged_token_idxs = tagged_token_idxs if args.num_folds>1 else test_tagged_token_idxs
-                        for step,batch in enumerate(ds_test):
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%100)+100 # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                            predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
-                            y_test_pred += predicted
-                            y_test_true += batch['labels'].tolist()
-                            test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                            test_preds.append(test_preds_batch)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']: test_logits.append(nlinear_model(inputs))
-                            if args.token in ['all','tagged_tokens']: test_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
-                    all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
-                    all_y_true_test[i].append(y_test_true)
-                    all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                    print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
-                    all_val_logits[i].append(torch.cat(val_logits))
-                    all_test_logits[i].append(torch.cat(test_logits))
+                        else: # Train all params when not using supcon
+                            named_params.append((n,param))
+                            param.requires_grad = True
+                optimizer_grouped_parameters = [
+                    {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
+                    {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
+                ]
+                optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+                for epoch in range(args.epochs):
+                    epoch_train_loss = 0
+                    nlinear_model.train()
+                    for step,batch in enumerate(ds_train):
+                        optimizer.zero_grad()
+                        activations = []
+                        for idx in batch['inputs_idxs']:
+                            if args.load_act==False:
+                                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
+                            else:
+                                act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                            activations.append(act)
+                        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+                        if args.token in ['answer_last','prompt_last','maxpool_all']:
+                            targets = batch['labels']
+                        elif args.token=='all':
+                            # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
+                            targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                        if args.token=='tagged_tokens':
+                            # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                            targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+                        outputs = nlinear_model(inputs)
+                        loss = criterion(outputs, targets.to(device).float())
+                        train_loss.append(loss.item())
+                        epoch_train_loss += loss.item()
+                        # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
+                        loss.backward()
+                        optimizer.step()
+                    # Get val loss
+                    nlinear_model.eval()
+                    epoch_val_loss = 0
+                    for step,batch in enumerate(ds_val):
+                        optimizer.zero_grad()
+                        activations = []
+                        for idx in batch['inputs_idxs']:
+                            if args.load_act==False:
+                                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
+                            else:
+                                act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                            activations.append(act)
+                        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+                        if args.token in ['answer_last','prompt_last','maxpool_all']:
+                            targets = batch['labels']
+                        elif args.token=='all':
+                            # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
+                            targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                        if args.token=='tagged_tokens':
+                            # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                            targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+                        outputs = nlinear_model(inputs)
+                        epoch_val_loss += criterion(outputs, targets.to(device).float())
+                    val_loss.append(epoch_val_loss.item())
+                    print(epoch_train_loss, epoch_val_loss.item())
+                    # Choose best model
+                    if epoch_val_loss.item() < best_val_loss:
+                        best_val_loss = epoch_val_loss.item()
+                        best_model_state = deepcopy(nlinear_model.state_dict())
+                all_train_loss[i].append(np.array(train_loss))
+                all_val_loss[i].append(np.array(val_loss))
+                nlinear_model.load_state_dict(best_model_state)
+                
+                # print(np.array(val_loss))
+                if args.save_probes:
+                    probe_save_path = f'{args.save_path}/probes/models/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}_{layer}_{head}'
+                    torch.save(nlinear_model, probe_save_path)
+                    # probes_saved.append(probe_save_path)
+                
+                # Val and Test performance
+                pred_correct = 0
+                y_val_pred, y_val_true = [], []
+                val_preds = []
+                val_logits = []
+                val_sim = []
+                with torch.no_grad():
+                    nlinear_model.eval()
+                    for step,batch in enumerate(ds_val):
+                        activations = []
+                        for idx in batch['inputs_idxs']:
+                            if args.load_act==False:
+                                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
+                            else:
+                                act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                            activations.append(act)
+                        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                        predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                        y_val_pred += predicted
+                        y_val_true += batch['labels'].tolist()
+                        val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                        val_preds.append(val_preds_batch)
+                        if args.token in ['answer_last','prompt_last','maxpool_all']: val_logits.append(nlinear_model(inputs))
+                        if args.token in ['all','tagged_tokens']: val_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
+                all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
+                all_y_true_val[i].append(y_val_true)
+                all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+                print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                pred_correct = 0
+                y_test_pred, y_test_true = [], []
+                test_preds = []
+                test_logits = []
+                test_sim = []
+                with torch.no_grad():
+                    nlinear_model.eval()
+                    use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
+                    use_answer_token_idxes = answer_token_idxes if args.num_folds>1 else test_answer_token_idxes
+                    use_tagged_token_idxs = tagged_token_idxs if args.num_folds>1 else test_tagged_token_idxs
+                    for step,batch in enumerate(ds_test):
+                        activations = []
+                        for idx in batch['inputs_idxs']:
+                            if args.load_act==False:
+                                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                file_end = idx-(idx%100)+100 # 487: 487-(87)+100
+                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer]).to(device)
+                            else:
+                                act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
+                            activations.append(act)
+                        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                        predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                        y_test_pred += predicted
+                        y_test_true += batch['labels'].tolist()
+                        test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                        test_preds.append(test_preds_batch)
+                        if args.token in ['answer_last','prompt_last','maxpool_all']: test_logits.append(nlinear_model(inputs))
+                        if args.token in ['all','tagged_tokens']: test_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
+                all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
+                all_y_true_test[i].append(y_test_true)
+                all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+                print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                all_val_logits[i].append(torch.cat(val_logits))
+                all_test_logits[i].append(torch.cat(test_logits))
         #     break
         # break
     
 
     # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
     # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_train_loss.npy', all_train_loss)
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon_train_loss.npy', all_supcon_train_loss)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_train_loss.npy', all_train_loss)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon_train_loss.npy', all_supcon_train_loss)
     all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_pred.npy', all_val_preds)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_pred.npy', all_val_preds)
     all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_pred.npy', all_test_preds)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_pred.npy', all_test_preds)
     all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_f1.npy', all_val_f1s)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_f1.npy', all_val_f1s)
     all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_f1.npy', all_test_f1s)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_f1.npy', all_test_f1s)
     all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_true.npy', all_y_true_val)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_true.npy', all_y_true_val)
     all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
     all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_logits.npy', all_val_logits)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_logits.npy', all_val_logits)
     all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
+    np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
     # all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
+    # np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
     # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_supconbs_{args.supcon_bs}_bs{args.bs}_supconepochs{args.supcon_epochs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
+    # np.save(f'{args.save_path}/probes/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
 
 if __name__ == '__main__':
     main()
