@@ -213,6 +213,7 @@ def main():
 
                 act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                 nlinear_model = My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1).model.to(device)
+                final_layer_name = 'linear3'
                 wgt_0 = np.sum(y_train)/len(y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                 criterion_supcon = NTXentLoss()
@@ -220,7 +221,6 @@ def main():
                 # Sup-Con training
                 if 'supcon' in args.method:
                     print('Sup-Con training...')
-                    final_layer_name = 'linear3'
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = [] # list(nlinear_model.named_parameters())
