@@ -56,7 +56,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear_3') # individual_non_linear_3, individual_non_linear_3_supcon
+    parser.add_argument('--method',type=str, default='individual_non_linear_3') # individual_non_linear_3 (<_hallu_pos>), individual_non_linear_3_supcon (<_hallu_pos>)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -131,7 +131,9 @@ def main():
         with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
-                labels.append(1 if data['rouge1_to_target']>0.3 else 0)
+                if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                labels.append(label)
         labels = labels[:args.len_dataset]
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
         test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer)
@@ -139,7 +141,9 @@ def main():
         with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
-                test_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
+                if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                test_labels.append(label)
     
     if args.token=='tagged_tokens':
         tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
