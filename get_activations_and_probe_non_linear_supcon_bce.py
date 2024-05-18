@@ -172,7 +172,7 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    method_concat = args.method + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs)  '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else args.method
+    method_concat = args.method + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else args.method
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
