@@ -122,74 +122,38 @@ def main():
 
     print('\n')
     if len(labels)>0:
-        # Oracle 2
-        best_sample_pred =[]
+        print('\nValidating probe performance...')
+        # Last layer probe
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
+            confident_sample_pred.append(1 if sample_pred>0.5 else 0)
+        print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+
+        # Best probe from validation data
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
+            confident_sample_pred.append(1 if sample_pred>0.5 else 0)
+        print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+
+        # Probe selection - a
+        confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            print(sample_pred.shape)
-            break
-            best_probe_idxs = np.argmax(sample_pred)
-            sample_pred_chosen = sample_pred[best_probe_idxs]
-            sample_pred_chosen = np.argmax(sample_pred_chosen,axis=1)
-            correct_answer = labels[i]
-            # if i==0: print(sample_pred_chosen,sample_pred_chosen==correct_answer)
-            if sum(sample_pred_chosen==correct_answer)>0: # If any one is correct
-                best_sample_pred.append(correct_answer)
-            else:
-                best_sample_pred.append(1 if correct_answer==0 else 0)
-        # print('Oracle (using 5 most confident):',f1_score(labels,best_sample_pred),f1_score(labels,best_sample_pred,pos_label=0))
+            confident_sample_pred.append(1 if np.max(sample_pred)>0.5 else 0)
+        print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
-        # print('\nValidating probe performance...')
-        # # Last layer probe
-        # confident_sample_pred = []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
-        #     confident_sample_pred.append(1 if sample_pred>0.5 else 0)
-        # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-
-        # # Best probe from validation data
-        # confident_sample_pred = []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
-        #     confident_sample_pred.append(np.argmax(sample_pred))
-        # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-
-        # # Probe selection - a
-        # confident_sample_pred = []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-        # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-
-        # Probe selection
-        # confident_sample_pred = []
-        # mc5_entropy_hallu, mc5_entropy_nonhallu = [], []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     best_probe_idxs = np.argpartition(probe_wise_entropy, -5)[-5:]
-        #     top_5_lower_bound_val = np.min(probe_wise_entropy[best_probe_idxs])
-        #     best_probe_idxs = probe_wise_entropy>=top_5_lower_bound_val
-        #     sample_pred_chosen = sample_pred[best_probe_idxs][:,hallu_cls] # Take pred prob for hallucinated class
-        #     mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum()
-        #     if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
-        #     if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
-        #     # if mc5_entropy
-        #     #     confident_sample_pred.append()
-        # # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('MC5 entropy for hallucinations:',np.histogram(mc5_entropy_hallu))
-        # print('MC5 entropy for non-hallucinations:',np.histogram(mc5_entropy_nonhallu))
-
-    #     # Probe selection - d
-    #     confident_sample_pred = []
-    #     for i in range(all_preds.shape[1]):
-    #         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-    #         class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
-    #         maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
-    #         confident_sample_pred.append(maj_vote)
-    #     print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-    # # Find most confident layers
+        # Probe selection - d
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            class_1_vote_cnt = sum(sample_pred>0.5)
+            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            confident_sample_pred.append(maj_vote)
+        print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+    
+    # Find most confident layers
     # print('\nMost confident layers for hallu...')
     # top_x = 5
     # mc_layers = []
