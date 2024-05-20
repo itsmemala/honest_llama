@@ -100,7 +100,7 @@ class My_SupCon_NonLinear_Classifier(nn.Module):
         self.linear1 = nn.Linear(input_size, 256)
         self.relu1 = nn.ReLU()
         self.projection = nn.Linear(256,128)
-        self.classifier = nn.Linear(256, 2)
+        self.classifier = nn.Linear(256, output_size)
     def forward(self,x):
         # x = self.dropout(x)
         x = self.linear1(x)
