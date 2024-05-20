@@ -143,6 +143,13 @@ def main():
             confident_sample_pred.append(np.argmax(sample_pred))
         print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
+        # Best probe from validation data
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
+            confident_sample_pred.append(np.argmax(sample_pred))
+        print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+
         # Probe selection - a
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
