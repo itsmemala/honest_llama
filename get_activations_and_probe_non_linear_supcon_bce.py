@@ -248,8 +248,8 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                 act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
-                nlinear_model = My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1).model.to(device)
-                final_layer_name = 'linear3'
+                nlinear_model = My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1).to(device)
+                final_layer_name, projection_layer_name = 'classifier', 'projection'
                 wgt_0 = np.sum(y_train)/len(y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                 criterion_supcon = NTXentLoss()
@@ -260,7 +260,7 @@ def main():
                     train_loss = []
                     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                     named_params = [] # list(nlinear_model.named_parameters())
-                    # print([n for n,_ in nlinear_model.named_parameters()])
+                    print([n for n,_ in nlinear_model.named_parameters()])
                     for n,param in nlinear_model.named_parameters():
                         if final_layer_name in n: # Do not train final layer params
                             param.requires_grad = False
@@ -298,9 +298,11 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            embeddings = nlinear_model.linear2(nlinear_model.relu1(nlinear_model.linear1(inputs)))
-                            embeddings = F.normalize(embeddings, p=2, dim=1) # normalise embeddings
-                            logits = torch.div(torch.matmul(embeddings, torch.transpose(embeddings, 0, 1)),args.supcon_temp)
+                            emb = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            norm_emb = F.normalize(emb, p=2, dim=-1)
+                            emb_projection = nlinear_model.projection(norm_emb)
+                            emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
+                            logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
                             loss = criterion_supcon(logits, targets.to(device))
                             epoch_train_loss += loss.item()
                             loss.backward()
@@ -326,7 +328,7 @@ def main():
                             param.requires_grad = False
                             # named_params.append((n,param)) # Debug by training all params
                             # param.requires_grad = True
-                        else: # Train all params when not using supcon
+                        else: # Train all params when not using supcon (NoteL projection layer is detached from loss so does not matter)
                             named_params.append((n,param))
                             param.requires_grad = True
                 optimizer_grouped_parameters = [
