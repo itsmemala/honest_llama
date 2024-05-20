@@ -119,6 +119,7 @@ def main():
         val_f1_cls0.append(cls0_f1)
         val_f1_cls1.append(cls1_f1)
         val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
+    print('\nValidation performance:\n',val_f1_avg)
 
     print('\n')
     if len(labels)>0:
