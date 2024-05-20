@@ -5,6 +5,7 @@ from tqdm import tqdm
 import numpy as np
 import pickle
 import json
+from copy import deepcopy
 from itertools import combinations
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score
 from sklearn.decomposition import PCA, KernelPCA
@@ -42,7 +43,7 @@ def main():
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--mitigated_responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
-    parser.add_argument("--pred_threshold", type=float, default=0.5, help='local directory with dataset')
+    # parser.add_argument("--pred_threshold", type=float, default=0.5, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -111,10 +112,22 @@ def main():
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
     fold = 0
     val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], []
+    layer_pred_thresholds = []
     for model in range(all_val_pred[fold].shape[0]):
-        val_pred_model = all_val_pred[fold][model]
-        val_pred_model[val_pred_model>args.pred_threshold] = 1
-        val_pred_model[val_pred_model<=args.pred_threshold] = 0
+        best_val_perf, best_t = 0, 0.5
+        for t in [0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]:
+            val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
+            val_pred_model[val_pred_model>t] = 1
+            val_pred_model[val_pred_model<=t] = 0
+            cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
+            cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
+            perf = np.mean((cls1_f1,cls0_f1))
+            if perf>best_val_perf:
+                best_val_perf, best_t = perf, t
+        layer_pred_thresholds.append(best_t)
+        val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
+        val_pred_model[val_pred_model>best_t] = 1
+        val_pred_model[val_pred_model<=best_t] = 0
         cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
         cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
         val_f1_cls0.append(cls0_f1)
@@ -129,28 +142,29 @@ def main():
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
-            confident_sample_pred.append(1 if sample_pred>args.pred_threshold else 0)
+            confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
         print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
         # Best probe from validation data
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
-            confident_sample_pred.append(1 if sample_pred>args.pred_threshold else 0)
+            confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[np.argmax(val_f1_avg)] else 0)
         print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
         # Probe selection - a
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            confident_sample_pred.append(1 if np.max(sample_pred)>args.pred_threshold else 0)
+            confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
         print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
         # Probe selection - d
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            class_1_vote_cnt = sum(sample_pred>args.pred_threshold)
+            sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
+            class_1_vote_cnt = sum(sample_pred_val)
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
         print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
