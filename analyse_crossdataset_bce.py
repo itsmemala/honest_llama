@@ -42,6 +42,7 @@ def main():
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--mitigated_responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--pred_threshold", type=float, default=0.5, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -112,8 +113,8 @@ def main():
     val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], []
     for model in range(all_val_pred[fold].shape[0]):
         val_pred_model = all_val_pred[fold][model]
-        val_pred_model[val_pred_model>0.5] = 1
-        val_pred_model[val_pred_model<0.5] = 0
+        val_pred_model[val_pred_model>args.pred_threshold] = 1
+        val_pred_model[val_pred_model<=args.pred_threshold] = 0
         cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
         cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
         val_f1_cls0.append(cls0_f1)
@@ -128,28 +129,28 @@ def main():
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
-            confident_sample_pred.append(1 if sample_pred>0.5 else 0)
+            confident_sample_pred.append(1 if sample_pred>args.pred_threshold else 0)
         print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
         # Best probe from validation data
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
-            confident_sample_pred.append(1 if sample_pred>0.5 else 0)
+            confident_sample_pred.append(1 if sample_pred>args.pred_threshold else 0)
         print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
         # Probe selection - a
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            confident_sample_pred.append(1 if np.max(sample_pred)>0.5 else 0)
+            confident_sample_pred.append(1 if np.max(sample_pred)>args.pred_threshold else 0)
         print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
 
         # Probe selection - d
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            class_1_vote_cnt = sum(sample_pred>0.5)
+            class_1_vote_cnt = sum(sample_pred>args.pred_threshold)
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
         print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
