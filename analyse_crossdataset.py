@@ -108,7 +108,7 @@ def main():
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
     fold = 0
     val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], []
-    for model in all_val_pred[fold].shape[0]:
+    for model in range(all_val_pred[fold].shape[0]):
         cls1_f1 = f1_score(all_val_true[fold][0],np.argmax(all_val_pred[fold][model], axis=1))
         cls0_f1 = f1_score(all_val_true[fold][0],np.argmax(all_val_pred[fold][model], axis=1),pos_label=0)
         val_f1_cls1.append(cls1_f1)
