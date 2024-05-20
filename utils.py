@@ -115,6 +115,7 @@ class My_SupCon_NonLinear_Classifier():
         self.model.add_module(f"linear1", nn.Linear(input_size, 256))
         self.model.add_module(f"relu1", nn.ReLU())
         self.model.add_module(f"linear2", nn.Linear(256, 128))
+        self.model.add_module(f"relu2", nn.ReLU())
         self.model.add_module(f"linear3", nn.Linear(128, output_size))
         if path is not None:
             self.model.load_state_dict(torch.load(path, map_location = "cpu")["model_state_dict"])
