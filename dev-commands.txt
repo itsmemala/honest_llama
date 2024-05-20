@@ -21,7 +21,7 @@ python get_activations_and_probe.py hl_llama_7B gsm8k --train_file_name gsm8k_ba
 
 python get_activations_and_probe.py hl_llama_7B strqa --train_file_name strqa_baseline_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 1832 --num_folds 1 --using_act layer --token answer_last --method individual_linear --use_linear_bias True --bs 128 --epochs 20 --lr 0.05 --optimizer Adam_w_lr_sch --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data
 
-python analyse_crossdataset.py hl_llama_7B strqa --responses_file_name baseline_responses_test --probes_file_name hl_llama_7B_strqa_baseline_responses_train_1832_1_layer_answer_last_individual_non_linear_3_bs128_epochs20_0.005_False --save_path ~/Desktop/honest_llama_data
+python analyse_crossdataset.py hl_llama_7B strqa --responses_file_name baseline_responses_test --probes_file_name NLSC_hl_llama_7B_strqa_baseline_responses_train_1832_1_layer_answer_last_individual_non_linear_3_hallu_pos_bs128_epochs20_0.005_False --save_path ~/Desktop/honest_llama_data
 
 4) Another approach is to go selfsupervised, try to ask the model to correct its answers and say that the answer is hallucinated. Gather the responses:
 Given a question, extract different responses from the normal questions (maybe 2 suffices), and responses after commenting that the answer is hallucinated. Treat the two normal answers as positives and the answer on the hallucination as negative. Train with contrastive loss. Maybe then train a classifier or estimates prototypes.. to use for classifying test samples based on one answer.
