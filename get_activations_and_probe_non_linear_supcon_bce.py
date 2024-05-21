@@ -57,7 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear_3') # individual_non_linear_3 (<_hallu_pos>), individual_non_linear_3_supcon (<_hallu_pos>)
+    parser.add_argument('--method',type=str, default='individual_non_linear_3') # individual_non_linear_2, individual_non_linear_3 (<_supcon>, <_specialised>, <_hallu_pos>) 
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--spl_wgt',type=float, default=1)
     parser.add_argument('--spl_knn',type=int, default=5)
@@ -446,9 +446,9 @@ def main():
                             # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                             targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                         outputs = nlinear_model(inputs)
-                        epoch_val_loss += criterion(outputs, targets.to(device).float())
-                    val_loss.append(epoch_val_loss.item())
-                    print(epoch_train_loss, epoch_val_loss.item())
+                        epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                    val_loss.append(epoch_val_loss)
+                    print(epoch_spl_loss, epoch_train_loss, epoch_val_loss)
                     # Choose best model
                     if epoch_val_loss.item() < best_val_loss:
                         best_val_loss = epoch_val_loss.item()
