@@ -7,7 +7,7 @@ import pickle
 import json
 from copy import deepcopy
 from itertools import combinations
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score, classification_report
 from sklearn.decomposition import PCA, KernelPCA
 from matplotlib import pyplot as plt
 import argparse
@@ -143,21 +143,24 @@ def main():
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
             confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
-        print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        print('Using final layer probe:',classification_report(labels,confident_sample_pred))
 
         # Best probe from validation data
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
             confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[np.argmax(val_f1_avg)] else 0)
-        print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        print('Using best layer probe:',classification_report(labels,confident_sample_pred))
 
         # Probe selection - a
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
-        print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        print('Using most confident probe per sample:',classification_report(labels,confident_sample_pred))
 
         # Probe selection - d
         confident_sample_pred = []
@@ -167,7 +170,8 @@ def main():
             class_1_vote_cnt = sum(sample_pred_val)
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
-        print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        print('Voting amongst all probes per sample:',classification_report(labels,confident_sample_pred))
     
     print('\n')
 
