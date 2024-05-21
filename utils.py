@@ -93,6 +93,26 @@ class LogisticRegression_Torch(torch.nn.Module):
 
 #         return out
 
+class My_SupCon_NonLinear_Classifier4(nn.Module):
+    def __init__(self, input_size, output_size=2, path=None):
+        super().__init__()
+        # self.dropout = nn.Dropout(0.2)
+        self.linear1 = nn.Linear(input_size, 256)
+        self.relu1 = nn.ReLU()
+        self.linear2 = nn.Linear(256, 128)
+        self.relu2 = nn.ReLU()
+        self.linear3 = nn.Linear(128, 64)
+        self.relu3 = nn.ReLU()
+        # self.projection = nn.Linear(256,128)
+        self.classifier = nn.Linear(64, output_size)
+    def forward(self,x):
+        # x = self.dropout(x)
+        x = self.linear1(x)
+        emb = self.relu1(x)
+        norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        output = self.classifier(norm_emb)
+        return output
+
 class My_SupCon_NonLinear_Classifier(nn.Module):
     def __init__(self, input_size, output_size=2, path=None):
         super().__init__()

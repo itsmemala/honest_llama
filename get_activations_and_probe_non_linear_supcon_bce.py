@@ -13,7 +13,7 @@ import statistics
 import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
-from utils import My_SupCon_NonLinear_Classifier
+from utils import My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier4
 from copy import deepcopy
 import llama
 import argparse
@@ -248,7 +248,7 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                 act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
-                nlinear_model = My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1).to(device)
+                nlinear_model = My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1).to(device)
                 final_layer_name, projection_layer_name = 'classifier', 'projection'
                 wgt_0 = np.sum(y_train)/len(y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
