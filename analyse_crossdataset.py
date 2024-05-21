@@ -145,7 +145,7 @@ def main():
             sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
             confident_sample_pred.append(np.argmax(sample_pred))
         # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Using final layer probe:',classification_report(labels,confident_sample_pred))
+        print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
 
         # Best probe from validation data
         confident_sample_pred = []
@@ -153,7 +153,7 @@ def main():
             sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
             confident_sample_pred.append(np.argmax(sample_pred))
         # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Using best layer probe:',classification_report(labels,confident_sample_pred))
+        print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
 
         # Probe selection - a
         confident_sample_pred = []
@@ -162,7 +162,7 @@ def main():
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Using most confident probe per sample:',classification_report(labels,confident_sample_pred))
+        print('Using most confident probe per sample:\n',classification_report(labels,confident_sample_pred))
 
         # Probe selection
         # confident_sample_pred = []
@@ -191,7 +191,7 @@ def main():
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Voting amongst all probes per sample:',classification_report(labels,confident_sample_pred))
+        print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
     
     # Find most confident layers
     print('\nMost confident layers for hallu...')
