@@ -337,7 +337,7 @@ def main():
                 ]
                 optimizer = torch.optim.Adam(optimizer_grouped_parameters)
                 for epoch in range(args.epochs):
-                    epoch_train_loss = 0
+                    epoch_train_loss, epoch_spl_loss = 0, 0
                     nlinear_model.train()
                     for step,batch in enumerate(ds_train):
                         optimizer.zero_grad()
@@ -362,11 +362,61 @@ def main():
                             targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                         outputs = nlinear_model(inputs)
                         loss = criterion(outputs, targets.to(device).float())
-                        train_loss.append(loss.item())
                         epoch_train_loss += loss.item()
-                        # iter_bar.set_description('Train Iter (loss=%5.3f)' % loss.item())
+                        if 'specialised' in args.method and len(model_wise_mc_sample_idxs)>0:
+                            if step==0: # Only load once to save time
+                                mean_vectors = []
+                                for idxs in model_wise_mc_sample_idxs: # for each previous model
+                                    acts = []
+                                    for idx in idxs: # compute mean vector of all chosen samples in current layer
+                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                                        acts.append(act)
+                                    acts = torch.stack(acts,axis=0)
+                                    if 'non_linear_2' in args.method:
+                                        acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
+                                    elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
+                                        pass
+                                    mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
+                                mean_vectors = torch.stack(mean_vectors,axis=0)
+                            # Note: with bce, there is only one probe, i.e only one weight vector
+                            cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            spl_loss = torch.mean(
+                                                torch.maximum(torch.zeros(mean_vectors.shape[0]).to(device)
+                                                            ,torch.sum(mean_vectors * cur_norm_weights_0, dim=-1)
+                                                            )
+                                                ) # compute sim and take only positive values
+                            loss = loss + args.spl_wgt*spl_loss
+                            epoch_spl_loss.append(spl_loss.item())
+                        train_loss.append(loss.item())
                         loss.backward()
                         optimizer.step()
+                    
+                    # Specialise
+                    if 'specialised' in args.method:
+                        # Note: with bce, there is only one probe, i.e only one weight vector
+                        cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                        if epoch==0:
+                            acts = []
+                            for idx in train_set_idxs:
+                                if labels[idx]==0:
+                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                                    acts.append(act)
+                            acts = torch.stack(acts,axis=0)
+                            if 'non_linear_2' in args.method:
+                                acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
+                            elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
+                                pass
+                                # acts = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                            sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
+                            top_sim_acts = norm_acts[torch.topk(sim,args.spl_knn)[1]]
+                            print(top_sim_acts.shape)
+                        print(torch.mean(torch.sum(top_sim_acts * cur_norm_weights_0, dim=-1)))
+
                     # Get val loss
                     nlinear_model.eval()
                     epoch_val_loss = 0
@@ -402,6 +452,28 @@ def main():
                 all_train_loss[i].append(np.array(train_loss))
                 all_val_loss[i].append(np.array(val_loss))
                 nlinear_model.load_state_dict(best_model_state)
+
+                if 'specialised' in args.method:
+                    hallu_idxs, acts = [], []
+                    for idx in train_set_idxs:
+                        if labels[idx]==hallu_cls:
+                            hallu_idxs.append(idx)
+                            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                            acts.append(act)
+                    acts = torch.stack(acts,axis=0)
+                    if 'non_linear_2' in args.method:
+                        acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
+                    elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
+                        pass
+                    norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                    # Note: with bce, there is only one probe, i.e only one weight vector
+                    cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
+                    top_k = torch.topk(sim,args.spl_knn)[1][torch.topk(sim,args.spl_knn)[0]>0].detach().cpu().numpy() # save indices of top k similar vectors (only pos)
+                    model_wise_mc_sample_idxs.append(np.array(hallu_idxs)[top_k])
+                    print('Similarity of knn samples at current layer:',sim[top_k])
                 
                 # print(np.array(val_loss))
                 if args.save_probes:
