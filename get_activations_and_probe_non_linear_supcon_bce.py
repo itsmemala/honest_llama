@@ -328,7 +328,7 @@ def main():
                             param.requires_grad = False
                             # named_params.append((n,param)) # Debug by training all params
                             # param.requires_grad = True
-                        else: # Train all params when not using supcon (NoteL projection layer is detached from loss so does not matter)
+                        else: # Train all params when not using supcon (Note: projection layer is detached from loss so does not matter)
                             named_params.append((n,param))
                             param.requires_grad = True
                 optimizer_grouped_parameters = [

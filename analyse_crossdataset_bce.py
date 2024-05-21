@@ -80,7 +80,7 @@ def main():
     hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
     
     print('\nGetting probe predictions on generated responses...')
-    all_preds = [], all_preds_by_token = []
+    all_preds, all_preds_by_token = [], []
     # Get predictions from probes trained on greedy responses
     num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
     for layer in range(num_layers):
