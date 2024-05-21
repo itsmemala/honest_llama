@@ -59,6 +59,8 @@ def main():
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_non_linear_3') # individual_non_linear_3 (<_hallu_pos>), individual_non_linear_3_supcon (<_hallu_pos>)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
+    parser.add_argument('--spl_wgt',type=float, default=1)
+    parser.add_argument('--spl_knn',type=int, default=5)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--supcon_bs',type=int, default=128)
@@ -208,6 +210,7 @@ def main():
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
     method_concat = args.method + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else args.method
+    method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
