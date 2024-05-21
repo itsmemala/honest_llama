@@ -450,8 +450,8 @@ def main():
                     val_loss.append(epoch_val_loss)
                     print(epoch_spl_loss, epoch_train_loss, epoch_val_loss)
                     # Choose best model
-                    if epoch_val_loss.item() < best_val_loss:
-                        best_val_loss = epoch_val_loss.item()
+                    if epoch_val_loss < best_val_loss:
+                        best_val_loss = epoch_val_loss
                         best_model_state = deepcopy(nlinear_model.state_dict())
                 all_train_loss[i].append(np.array(train_loss))
                 all_val_loss[i].append(np.array(val_loss))
