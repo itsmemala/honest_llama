@@ -394,7 +394,7 @@ def main():
                                                             )
                                                 ) # compute sim and take only positive values
                             loss = loss + args.spl_wgt*spl_loss
-                            epoch_spl_loss.append(spl_loss.item())
+                            epoch_spl_loss += spl_loss.item()
                         train_loss.append(loss.item())
                         loss.backward()
                         optimizer.step()
