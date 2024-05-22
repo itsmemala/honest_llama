@@ -171,6 +171,8 @@ def main():
                 label = 1 if data['is_correct'][i]==True else 0
                 test_labels.append(label)
     
+    hallu_cls = 1 if 'hallu_pos' in args.method else 0
+
     if args.token=='tagged_tokens':
         tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
         test_tagged_token_idxs = get_token_tags(test_prompts,test_prompt_tokens)
