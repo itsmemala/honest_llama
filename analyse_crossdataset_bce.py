@@ -88,7 +88,7 @@ def main():
     try:
         all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')
         labels = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_true.npy')[0][0]
-        print(labels.shape)
+        print(all_preds.shape)
     except:
         try:
             all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy')
