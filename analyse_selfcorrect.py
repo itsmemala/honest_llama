@@ -222,5 +222,50 @@ def main():
         else:
             print('Voting amongst all probes per sample:',accuracy_score(sc_labels_val[resp_subset],confident_sample_pred))
     
+    hallu_cls = 1 if 'hallu_pos' in args.greedy_results_file_name else 0
+
+    print('\n\nOriginal perf:',sum(all_test_true[0]))
+
+    # Self-correct using last layer pred
+    final_labels = []
+    for i,row in enumerate(greedy_labels):
+        # Get prediction on orig response
+        sample_pred = np.squeeze(all_test_preds[-1,i,:]) # Get predictions of each sample at last layer
+        orig_response_pred = np.argmax(sample_pred)
+        if orig_response_pred!=hallu_cls:
+            final_labels.append(all_test_true[0][i])
+        else:
+            final_labels.append(sc_labels_val[i])
+    print('\n\Self-correct using last layer:',sum(all_test_true[0]))
+    
+    
+    # Self-correct using most confident pred
+    final_labels = []
+    for idx,row in enumerate(greedy_labels):
+        # Get prediction on orig response
+        sample_pred = np.squeeze(all_test_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+        orig_response_pred = np.argmax(sample_pred[np.argmin(probe_wise_entropy)])
+        if orig_response_pred!=hallu_cls:
+            final_labels.append(all_test_true[0][i])
+        else:
+            final_labels.append(sc_labels_val[i])
+    print('\n\Self-correct using most confident:',sum(all_test_true[0]))
+    
+    # Self-correct using majority voting pred
+    final_labels = []
+    for idx,row in enumerate(greedy_labels):
+        # Get prediction on orig response
+        sample_pred = np.squeeze(all_test_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
+        maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+        orig_response_pred = maj_vote
+        if orig_response_pred!=hallu_cls:
+            final_labels.append(all_test_true[0][i])
+        else:
+            final_labels.append(sc_labels_val[i])
+    print('\n\Self-correct using majority voting:',sum(all_test_true[0]))
+    
+    
 if __name__ == '__main__':
     main()
