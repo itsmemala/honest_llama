@@ -117,9 +117,9 @@ def main():
     print('\nGetting probe predictions on selfcorrect responses...')
     all_sc_preds = []
     # Get predictions from probes trained on greedy responses
-    if :
-        all_sc_preds = 
-    else:
+    try:
+        all_sc_preds = np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_{sc_responses_file_name}.npy')
+    except FileNotFoundError:
         num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
         for layer in range(num_layers):
             # Load model
