@@ -125,19 +125,22 @@ def main():
 
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
     fold = 0
-    val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], []
+    test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], []
     layer_pred_thresholds = []
     for model in range(all_val_pred[fold].shape[0]):
-        best_val_perf, best_t = 0, 0.5
-        for t in [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]:
-            val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-            val_pred_model[val_pred_model>t] = 1
-            val_pred_model[val_pred_model<=t] = 0
-            cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
-            cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
-            perf = np.mean((cls1_f1,cls0_f1))
-            if perf>best_val_perf:
-                best_val_perf, best_t = perf, t
+        if args.best_threshold:
+            best_val_perf, best_t = 0, 0.5
+            for t in [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]:
+                val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
+                val_pred_model[val_pred_model>t] = 1
+                val_pred_model[val_pred_model<=t] = 0
+                cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
+                cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
+                perf = np.mean((cls1_f1,cls0_f1))
+                if perf>best_val_perf:
+                    best_val_perf, best_t = perf, t
+        else:
+            best_t = 0.5
         layer_pred_thresholds.append(best_t)
         val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
         val_pred_model[val_pred_model>best_t] = 1
@@ -147,7 +150,15 @@ def main():
         val_f1_cls0.append(cls0_f1)
         val_f1_cls1.append(cls1_f1)
         val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
-    print('\nValidation performance:\n',val_f1_avg)
+        test_pred_model = deepcopy(all_preds[model]) # Deep copy so as to not touch orig values
+        test_pred_model[test_pred_model>best_t] = 1
+        test_pred_model[test_pred_model<=best_t] = 0
+        cls1_f1 = f1_score(labels,test_pred_model)
+        cls0_f1 = f1_score(labels,test_pred_model,pos_label=0)
+        test_f1_cls0.append(cls0_f1)
+        test_f1_cls1.append(cls1_f1)
+    # print('\nValidation performance:\n',val_f1_avg)
+    print('\nAverage:',test_f1_cls0,test_f1_cls1,'\n')
 
     print('\n')
     if len(labels)>0:
