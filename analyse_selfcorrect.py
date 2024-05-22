@@ -228,7 +228,7 @@ def main():
     
     hallu_cls = 1 if 'hallu_pos' in args.greedy_results_file_name else 0
 
-    print('\n\nOriginal perf:',sum(all_test_true[0]))
+    print('\n\nOriginal perf:',sum(all_test_true[0])/len(all_test_true[0]))
 
     # Self-correct using last layer pred
     final_labels = []
@@ -240,7 +240,7 @@ def main():
             final_labels.append(all_test_true[0][i])
         else:
             final_labels.append(sc_labels_val[i])
-    print('\n\Self-correct using last layer:',sum(final_labels))
+    print('\n\Self-correct using last layer:',sum(final_labels)/len(final_labels))
     
     
     # Self-correct using most confident pred
@@ -254,7 +254,7 @@ def main():
             final_labels.append(all_test_true[0][i])
         else:
             final_labels.append(sc_labels_val[i])
-    print('\n\Self-correct using most confident:',sum(final_labels))
+    print('\n\Self-correct using most confident:',sum(final_labels)/len(final_labels))
     
     # Self-correct using majority voting pred
     final_labels = []
@@ -268,7 +268,7 @@ def main():
             final_labels.append(all_test_true[0][i])
         else:
             final_labels.append(sc_labels_val[i])
-    print('\n\Self-correct using majority voting:',sum(final_labels))
+    print('\n\Self-correct using majority voting:',sum(final_labels)/len(final_labels))
     
     
 if __name__ == '__main__':
