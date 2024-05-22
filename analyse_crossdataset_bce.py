@@ -52,13 +52,14 @@ def main():
     hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
 
     responses, labels = [], []
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
-        data = json.load(read_file)
-        for i in range(len(data['full_input_text'])):
-            responses.append(data['model_completion'][i])
-            if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
-            if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
-            labels.append(label)
+    if args.responses_file_name is not None:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
+            data = json.load(read_file)
+            for i in range(len(data['full_input_text'])):
+                responses.append(data['model_completion'][i])
+                if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
+                if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
+                labels.append(label)
     if  args.mitigated_responses_file_name is not None:
         m_responses, m_labels = [], []
         samples_neg_affected, samples_pos_affected = [], []
@@ -84,6 +85,8 @@ def main():
     print('\nGetting probe predictions on generated responses...')
     try:
         all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')
+        labels = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_true.npy')[0][0]
+        print(labels.shape)
     except:
         try:
             all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy')
