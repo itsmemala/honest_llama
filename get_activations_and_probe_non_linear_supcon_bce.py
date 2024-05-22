@@ -370,22 +370,21 @@ def main():
                         loss = criterion(outputs, targets.to(device).float())
                         epoch_train_loss += loss.item()
                         if 'specialised' in args.method and len(model_wise_mc_sample_idxs)>0:
-                            if step==0: # Only load once to save time
-                                mean_vectors = []
-                                for idxs in model_wise_mc_sample_idxs: # for each previous model
-                                    acts = []
-                                    for idx in idxs: # compute mean vector of all chosen samples in current layer
-                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
-                                        acts.append(act)
-                                    acts = torch.stack(acts,axis=0)
-                                    if 'non_linear_2' in args.method:
-                                        acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
-                                    elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
-                                        pass
-                                    mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
-                                mean_vectors = torch.stack(mean_vectors,axis=0)
+                            mean_vectors = []
+                            for idxs in model_wise_mc_sample_idxs: # for each previous model
+                                acts = []
+                                for idx in idxs: # compute mean vector of all chosen samples in current layer
+                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                                    acts.append(act)
+                                acts = torch.stack(acts,axis=0)
+                                if 'non_linear_2' in args.method:
+                                    acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
+                                elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
+                                    pass
+                                mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
+                            mean_vectors = torch.stack(mean_vectors,axis=0)
                             # Note: with bce, there is only one probe, i.e only one weight vector
                             cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             spl_loss = torch.mean(
