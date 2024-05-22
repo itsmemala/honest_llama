@@ -240,12 +240,12 @@ def main():
             final_labels.append(all_test_true[0][i])
         else:
             final_labels.append(sc_labels_val[i])
-    print('\n\Self-correct using last layer:',sum(final_labels)/len(final_labels))
+    print('\nSelf-correct using last layer:',sum(final_labels)/len(final_labels))
     
     
     # Self-correct using most confident pred
     final_labels = []
-    for idx,row in enumerate(greedy_labels):
+    for i,row in enumerate(greedy_labels):
         # Get prediction on orig response
         sample_pred = np.squeeze(all_test_pred[:,i,:]) # Get predictions of each sample across all layers of model
         probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
@@ -254,11 +254,11 @@ def main():
             final_labels.append(all_test_true[0][i])
         else:
             final_labels.append(sc_labels_val[i])
-    print('\n\Self-correct using most confident:',sum(final_labels)/len(final_labels))
+    print('\nSelf-correct using most confident:',sum(final_labels)/len(final_labels))
     
     # Self-correct using majority voting pred
     final_labels = []
-    for idx,row in enumerate(greedy_labels):
+    for i,row in enumerate(greedy_labels):
         # Get prediction on orig response
         sample_pred = np.squeeze(all_test_pred[:,i,:]) # Get predictions of each sample across all layers of model
         class_1_vote_cnt = sum(np.argmax(sample_pred,axis=1))
@@ -268,7 +268,7 @@ def main():
             final_labels.append(all_test_true[0][i])
         else:
             final_labels.append(sc_labels_val[i])
-    print('\n\Self-correct using majority voting:',sum(final_labels)/len(final_labels))
+    print('\nSelf-correct using majority voting:',sum(final_labels)/len(final_labels))
     
     
 if __name__ == '__main__':
