@@ -158,7 +158,8 @@ def main():
         test_f1_cls0.append(cls0_f1)
         test_f1_cls1.append(cls1_f1)
     # print('\nValidation performance:\n',val_f1_avg)
-    print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n')
+    if 'hallu_pos' in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
+    if 'hallu_pos' not in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
 
     print('\n')
     if len(labels)>0:
