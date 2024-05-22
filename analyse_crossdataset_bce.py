@@ -125,7 +125,7 @@ def main():
 
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
     fold = 0
-    test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], []
+    test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], []
     layer_pred_thresholds = []
     for model in range(all_val_pred[fold].shape[0]):
         if args.best_threshold:
