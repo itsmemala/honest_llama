@@ -118,7 +118,7 @@ def main():
     all_sc_preds = []
     # Get predictions from probes trained on greedy responses
     try:
-        all_sc_preds = np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_{sc_responses_file_name}.npy')
+        all_sc_preds = np.load(f'{args.save_path}/probes/{args.greedy_results_file_name}_{args.sc_responses_file_name}.npy')
     except FileNotFoundError:
         num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
         for layer in range(num_layers):
@@ -146,7 +146,7 @@ def main():
             sc_preds = F.softmax(linear_model(inputs).data, dim=1) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(F.softmax(linear_model(inp).data, dim=1), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
             all_sc_preds.append(sc_preds.cpu().numpy())
         all_sc_preds = np.stack(all_sc_preds)
-        np.save(f'{args.save_path}/probes/{args.greedy_results_file_name}_{sc_responses_file_name}.npy',all_sc_preds)
+        np.save(f'{args.save_path}/probes/{args.greedy_results_file_name}_{args.sc_responses_file_name}.npy',all_sc_preds)
 
     print('\n')
     display_score = 'acc' # f1
