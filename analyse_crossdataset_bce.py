@@ -49,12 +49,15 @@ def main():
 
     device = 0
 
+    hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
+
     responses, labels = [], []
     with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
         data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             responses.append(data['model_completion'][i])
-            label = 1 if data['is_correct'][i]==True else 0
+            if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
+            if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
             labels.append(label)
     if  args.mitigated_responses_file_name is not None:
         m_responses, m_labels = [], []
@@ -63,10 +66,11 @@ def main():
             data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
                 m_responses.append(data['model_completion'][i])
-                label = 1 if data['is_correct'][i]==True else 0
+                if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
+                if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
                 m_labels.append(label)
-                if labels[i]==1 and label==0: samples_neg_affected.append(i)
-                if labels[i]==0 and label==1: samples_pos_affected.append(i)
+                if labels[i]!=hallu_cls and label==hallu_cls: samples_neg_affected.append(i)
+                if labels[i]==hallu_cls and label!=hallu_cls: samples_pos_affected.append(i)
         print('Num of samples negatively affected:',len(samples_neg_affected))
         print('Num of samples positively affected:',len(samples_pos_affected))
     
@@ -77,37 +81,43 @@ def main():
     else:
         acts_per_file = 100
     
-    hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
-    
     print('\nGetting probe predictions on generated responses...')
-    all_preds, all_preds_by_token = [], []
-    # Get predictions from probes trained on greedy responses
-    num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
-    for layer in range(num_layers):
-        # Load model
-        act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
-        bias = False if 'no_bias' in args.probes_file_name else True
-        head = 0
-        kld_probe = 0
-        linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=bias).to(device)
+    try:
+        all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')
+    except:
         try:
-            linear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}_model0_{layer}_{head}_{kld_probe}')
+            all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy')
         except FileNotFoundError:
-            linear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}_model0_{layer}_{head}')
-        linear_model.eval()
-        # Load activations
-        acts = []
-        for i in range(len(responses)):
-            act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-            file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
-            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
-            acts.append(act)
-        inputs = torch.stack(acts,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-        if 'unitnorm' in args.probes_file_name: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-        preds = torch.sigmoid(linear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-        all_preds.append(preds.cpu().numpy())
-    all_preds = np.stack(all_preds)
+            all_preds, all_preds_by_token = [], []
+            # Get predictions from probes trained on greedy responses
+            num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
+            for layer in range(num_layers):
+                # Load model
+                act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
+                bias = False if 'no_bias' in args.probes_file_name else True
+                head = 0
+                kld_probe = 0
+                linear_model = LogisticRegression_Torch(act_dims[args.using_act], 2, bias=bias).to(device)
+                try:
+                    linear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}_model0_{layer}_{head}_{kld_probe}')
+                except FileNotFoundError:
+                    linear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}_model0_{layer}_{head}')
+                linear_model.eval()
+                # Load activations
+                acts = []
+                for i in range(len(responses)):
+                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                    file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
+                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                    acts.append(act)
+                inputs = torch.stack(acts,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+                if 'unitnorm' in args.probes_file_name: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                preds = torch.sigmoid(linear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                all_preds.append(preds.cpu().numpy())
+            all_preds = np.stack(all_preds)
+            np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy',all_preds)
+
 
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
     fold = 0
