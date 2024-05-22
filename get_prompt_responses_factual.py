@@ -102,7 +102,7 @@ def main():
                 cur_prompt = row['prompt'] + row['response1'] + "\n The above generated answer is incorrect. Revised answer: "
             if args.hallu_check_prompt==2:
                 cur_prompt = row['prompt'] + row['response1'] + "\n The above answer may be incorrect. The actual correct answer is: "
-            if args.hallu_check_prompt==3 and args.dataset_name=='trivia_qa':
+            if args.hallu_check_prompt==3 and (args.dataset_name=='trivia_qa' or args.dataset_name=='nq_open'):
                 question = val['question']
                 cur_prompt = f"This is a bot that correctly answers questions. Consider the below question and a possible answer, which may or may not be correct. Provide the correct answer to the question. \n Q: {question} Possible answer: {row['response1']}\n Correct answer:"
             prompts.append(cur_prompt)
