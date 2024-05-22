@@ -66,6 +66,14 @@ def main():
         for line in read_file:
             sc_responses.append(json.loads(line))
     
+    if args.dataset_name=='strqa':
+        acts_per_file = 50
+    elif args.dataset_name=='gsm8k':
+        acts_per_file = 20    
+    elif args.dataset_name=='nq_open' and 'hallucheck3' in args.sc_responses_file_name:
+        acts_per_file = 50
+    else:
+        acts_per_file = 100
     
     correct_to_incorrect = []
     incorrect_to_correct = []
@@ -137,9 +145,9 @@ def main():
             acts = []
             for i in range(len(sc_labels)):
                 act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                file_end = i-(i%100)+100 # 487: 487-(87)+100
+                file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.sc_responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%100][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%100][layer][head*128:(head*128)+128]).to(device)
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
                 acts.append(act)
             inputs = torch.stack(acts,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
             if 'unitnorm' in args.greedy_results_file_name: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
