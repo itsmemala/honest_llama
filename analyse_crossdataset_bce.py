@@ -43,7 +43,7 @@ def main():
     parser.add_argument("--responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--mitigated_responses_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
-    # parser.add_argument("--pred_threshold", type=float, default=0.5, help='local directory with dataset')
+    parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
