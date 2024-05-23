@@ -213,7 +213,7 @@ def main():
             best_probe_idxs = sample_pred>=top_5_lower_bound_val
             sample_pred_chosen = np.array(sample_pred_cls)[best_probe_idxs]
             cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
-            vote_distri = [cls1_vote, 1 - cls1_vote]
+            vote_distri = np.array([cls1_vote, 1 - cls1_vote])
             mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
