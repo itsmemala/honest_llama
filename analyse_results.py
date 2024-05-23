@@ -124,29 +124,29 @@ def main():
             val_f1_cls0.append(cls0_f1)
             val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
         
-        probe_wgts_cls0 = []
-        probe_wgts_cls1 = []
-        # Load probe weights
-        for model in range(all_test_pred[fold].shape[0]):
-            wgt_cls0, wgt_cls1 = get_probe_wgts(fold,model,args.results_file_name,args.save_path,args)
-            probe_wgts_cls0.append(wgt_cls0)
-            probe_wgts_cls1.append(wgt_cls1)
-        # Get mean similarity of each probe to every other probe
-        probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
-        all_sim_cls0, all_sim_cls1 = [], []
-        for model_idx_a in range(all_test_pred[fold].shape[0]):
-            sim_cls0, sim_cls1 = [], []
-            norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-            for model_idx_b in range(all_test_pred[fold].shape[0]):
-                if model_idx_b!=model_idx_a:
-                    norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                    sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
-                    sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
-            probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
-            probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
-        if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
+        # probe_wgts_cls0 = []
+        # probe_wgts_cls1 = []
+        # # Load probe weights
+        # for model in range(all_test_pred[fold].shape[0]):
+        #     wgt_cls0, wgt_cls1 = get_probe_wgts(fold,model,args.results_file_name,args.save_path,args)
+        #     probe_wgts_cls0.append(wgt_cls0)
+        #     probe_wgts_cls1.append(wgt_cls1)
+        # # Get mean similarity of each probe to every other probe
+        # probe_wise_mean_sim_cls0, probe_wise_mean_sim_cls1 = [], []
+        # all_sim_cls0, all_sim_cls1 = [], []
+        # for model_idx_a in range(all_test_pred[fold].shape[0]):
+        #     sim_cls0, sim_cls1 = [], []
+        #     norm_weights_a0 = probe_wgts_cls0[model_idx_a] / probe_wgts_cls0[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #     norm_weights_a1 = probe_wgts_cls1[model_idx_a] / probe_wgts_cls1[model_idx_a].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #     for model_idx_b in range(all_test_pred[fold].shape[0]):
+        #         if model_idx_b!=model_idx_a:
+        #             norm_weights_b0 = probe_wgts_cls0[model_idx_b] / probe_wgts_cls0[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #             norm_weights_b1 = probe_wgts_cls1[model_idx_b] / probe_wgts_cls1[model_idx_b].pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+        #             sim_cls0.append(torch.sum(norm_weights_a0*norm_weights_b0).item())
+        #             sim_cls1.append(torch.sum(norm_weights_a1*norm_weights_b1).item())
+        #     probe_wise_mean_sim_cls0.append(np.mean(sim_cls0))
+        #     probe_wise_mean_sim_cls1.append(np.mean(sim_cls1))
+        # if len(probe_wise_mean_sim_cls0)>5: print(np.argpartition(probe_wise_mean_sim_cls0, 5)[:5])
         # print('Probe dimensions:')
         # print(np.histogram(np.argmax(probe_wgts_cls0, axis=1)))
         if args.proj_dims is not None:
@@ -286,7 +286,7 @@ def main():
         for i in range(all_test_pred[fold].shape[1]):
             sample_pred = np.squeeze(all_test_pred[fold][:,i,:]) # Get predictions of each sample across all layers of model
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-            best_probe_idxs = np.argpartition(probe_wise_entropy, -5)[-5:]
+            best_probe_idxs = np.argpartition(probe_wise_entropy, 5)[:5]
             top_5_lower_bound_val = np.min(probe_wise_entropy[best_probe_idxs])
             best_probe_idxs = probe_wise_entropy>=top_5_lower_bound_val
             sample_pred_chosen = sample_pred[best_probe_idxs]

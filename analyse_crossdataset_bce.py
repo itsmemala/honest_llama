@@ -198,6 +198,22 @@ def main():
             confident_sample_pred.append(maj_vote)
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
+
+        # Probe selection
+        confident_sample_pred = []
+        mc5_entropy_hallu, mc5_entropy_nonhallu = [], []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            best_probe_idxs = np.argpartition(sample_pred, 5)[:5]
+            sample_pred_chosen = sample_pred[best_probe_idxs] # Take pred prob for hallucinated class
+            mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum()
+            if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
+            if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
+            # if mc5_entropy
+            #     confident_sample_pred.append()
+        # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        print('MC5 entropy for hallucinations:',np.histogram(mc5_entropy_hallu))
+        print('MC5 entropy for non-hallucinations:',np.histogram(mc5_entropy_nonhallu))
     
     print('\n')
 
