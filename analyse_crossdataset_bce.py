@@ -185,7 +185,7 @@ def main():
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred = np.hstack((sample_pred, 1-sample_pred))
-            print(sample_pred.shape,sample_pred[0])
+            print(sample_pred.shape,sample_pred[:5])
             # confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
             break
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
