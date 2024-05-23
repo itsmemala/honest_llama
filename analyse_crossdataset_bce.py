@@ -184,7 +184,7 @@ def main():
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred = np.stack((sample_pred, 1-sample_pred))
+            sample_pred = np.concatenate((sample_pred, 1-sample_pred),axis=1)
             print(sample_pred.shape,sample_pred[:5])
             # confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
             break
