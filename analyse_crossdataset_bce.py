@@ -199,29 +199,40 @@ def main():
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
 
-        # Probe selection
+        # MC5 Statistics
         confident_sample_pred = []
         mc5_entropy_hallu, mc5_entropy_nonhallu = [], []
+        mc5_entropy_hallu_mis, mc5_entropy_nonhallu_mis = 0, 0
+        mc5_conf_gap_hallu, mc5_conf_gap_nonhallu = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred_cls = []
-            for layer,pred in enumerate(sample_pred):
-                sample_pred_cls.append(1 if pred>layer_pred_thresholds[layer] else 0)
+            sample_pred_cls = np.array([1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)])
             # Note: With BCE, most confident would be the ones with highest probability
             best_probe_idxs = np.argpartition(sample_pred, -5)[-5:] # Note: sort is asc, so take last x values for largest x
             top_5_lower_bound_val = np.min(sample_pred[best_probe_idxs])
             best_probe_idxs = sample_pred>=top_5_lower_bound_val
-            sample_pred_chosen = np.array(sample_pred_cls)[best_probe_idxs]
+            sample_pred_chosen = sample_pred_cls[best_probe_idxs]
             cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
             vote_distri = np.array([cls1_vote, 1 - cls1_vote])
             mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
+            maj_vote = 1 if cls1_vote>0.5 else 0
+            if labels[i]==hallu_cls and maj_vote!=hallu_cls: mc5_entropy_hallu_mis += 1
+            if labels[i]!=hallu_cls and maj_vote==hallu_cls: mc5_entropy_nonhallu_mis += 1
+            probe_wise_conf = []
+            hallu_vote = cls1_vote if 'hallu_pos' in args.probes_file_name else 1-cls1_vote
+            if hallu_vote>0:
+                for layer in best_probe_idxs:
+                    probe_wise_conf.append((sample_pred[layer]-layer_pred_thresholds[layer])/(1-layer_pred_thresholds[layer]))
+                mc5_conf_gap = np.max(probe_wise_conf) - np.min(probe_wise_conf)
             # if mc5_entropy
             #     confident_sample_pred.append()
         # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('MC5 entropy for hallucinations:\n',np.histogram(mc5_entropy_hallu))
+        print('Low entropy and mis-classified as hallucination:',mc5_entropy_hallu_mis)
         print('MC5 entropy for non-hallucinations:\n',np.histogram(mc5_entropy_nonhallu))
+        print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_nonhallu_mis)
     
     print('\n')
 
