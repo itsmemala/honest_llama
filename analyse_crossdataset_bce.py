@@ -220,12 +220,12 @@ def main():
             maj_vote = 1 if cls1_vote>0.5 else 0
             if labels[i]==hallu_cls and maj_vote!=hallu_cls: mc5_entropy_hallu_mis += 1
             if labels[i]!=hallu_cls and maj_vote==hallu_cls: mc5_entropy_nonhallu_mis += 1
-            probe_wise_conf = []
-            hallu_vote = cls1_vote if 'hallu_pos' in args.probes_file_name else 1-cls1_vote
-            if hallu_vote>0:
-                for layer in best_probe_idxs:
-                    probe_wise_conf.append((sample_pred[layer]-layer_pred_thresholds[layer])/(1-layer_pred_thresholds[layer]))
-                mc5_conf_gap = np.max(probe_wise_conf) - np.min(probe_wise_conf)
+            # probe_wise_conf = []
+            # hallu_vote = cls1_vote if 'hallu_pos' in args.probes_file_name else 1-cls1_vote
+            # if hallu_vote>0:
+            #     for layer in best_probe_idxs:
+            #         probe_wise_conf.append((sample_pred[layer]-layer_pred_thresholds[layer])/(1-layer_pred_thresholds[layer]))
+            #     mc5_conf_gap_hallu = np.max(probe_wise_conf) - np.min(probe_wise_conf)
             # if mc5_entropy
             #     confident_sample_pred.append()
         # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
