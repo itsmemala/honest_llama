@@ -209,6 +209,8 @@ def main():
                 sample_pred_cls.append(1 if pred>layer_pred_thresholds[layer] else 0)
             # Note: With BCE, most confident would be the ones with highest probability
             best_probe_idxs = np.argpartition(sample_pred, -5)[-5:] # Note: sort is asc, so take last x values for largest x
+            top_5_lower_bound_val = np.min(sample_pred[best_probe_idxs])
+            best_probe_idxs = sample_pred>=top_5_lower_bound_val
             sample_pred_chosen = sample_pred_cls[best_probe_idxs]
             cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
             vote_distri = [cls1_vote, 1 - cls1_vote]
