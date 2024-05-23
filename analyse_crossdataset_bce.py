@@ -184,9 +184,20 @@ def main():
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
+            sample_pred = np.hstack(sample_pred, 1-sample_pred)
+            print(sample_pred.shape,sample_pred[0])
+            # confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
+            break
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Using most confident probe per sample:\n',classification_report(labels,confident_sample_pred))
+        # print('Using most confident probe per sample:\n',classification_report(labels,confident_sample_pred))
+
+        # Probe selection - a
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
+        # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        print('Using max prob probe per sample:\n',classification_report(labels,confident_sample_pred))
 
         # Probe selection - d
         confident_sample_pred = []
@@ -230,9 +241,9 @@ def main():
             #     confident_sample_pred.append()
         # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('MC5 entropy for hallucinations:\n',np.histogram(mc5_entropy_hallu))
-        print('Low entropy and mis-classified as hallucination:',mc5_entropy_hallu_mis)
+        print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_hallu_mis)
         print('MC5 entropy for non-hallucinations:\n',np.histogram(mc5_entropy_nonhallu))
-        print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_nonhallu_mis)
+        print('Low entropy and mis-classified as hallucination:',mc5_entropy_nonhallu_mis)
     
     print('\n')
 
