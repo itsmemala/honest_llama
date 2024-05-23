@@ -206,6 +206,7 @@ def main():
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             best_probe_idxs = np.argpartition(sample_pred, -5)[-5:] # Note: sort is asc, so take last x values for largest x
             sample_pred_chosen = sample_pred[best_probe_idxs] # Take pred prob for hallucinated class
+            sample_pred_chosen = np.softmax(sample_pred_chosen) # Softmax over the 5 values before entropy computation
             mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
