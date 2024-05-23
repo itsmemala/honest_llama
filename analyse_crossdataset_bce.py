@@ -220,8 +220,8 @@ def main():
             # if mc5_entropy
             #     confident_sample_pred.append()
         # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('MC5 entropy for hallucinations:',np.histogram(mc5_entropy_hallu))
-        print('MC5 entropy for non-hallucinations:',np.histogram(mc5_entropy_nonhallu))
+        print('MC5 entropy for hallucinations:\n',np.histogram(mc5_entropy_hallu))
+        print('MC5 entropy for non-hallucinations:\n',np.histogram(mc5_entropy_nonhallu))
     
     print('\n')
 
