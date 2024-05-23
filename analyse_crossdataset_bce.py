@@ -204,12 +204,15 @@ def main():
         mc5_entropy_hallu, mc5_entropy_nonhallu = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            sample_pred_cls = []
+            for layer,pred in enumerate(sample_pred):
+                sample_pred_cls.append(1 if pred>layer_pred_thresholds[layer] else 0)
             # Note: With BCE, most confident would be the ones with highest probability
             best_probe_idxs = np.argpartition(sample_pred, -5)[-5:] # Note: sort is asc, so take last x values for largest x
-            sample_pred_chosen = sample_pred[best_probe_idxs] # Take pred prob for hallucinated class
-            sample_pred_chosen = np.exp(sample_pred_chosen) / np.sum(np.exp(sample_pred_chosen), axis=0) # Softmax over the 5 values before entropy computation
-            sample_pred_chosen = sample_pred_chosen/np.log2(5) # Scale by logk to keep values wihtin [0,1]
-            mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum()
+            sample_pred_chosen = sample_pred_cls[best_probe_idxs]
+            cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
+            vote_distri = [cls1_vote, 1 - cls1_vote]
+            mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
             # if mc5_entropy
