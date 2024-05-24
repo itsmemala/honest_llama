@@ -53,7 +53,7 @@ def main():
     hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
 
     responses, labels = [], []
-    if args.responses_file_name is not None:
+    if args.responses_file_name!='':
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
@@ -61,7 +61,7 @@ def main():
                 if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
                 if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
                 labels.append(label)
-    if  args.mitigated_responses_file_name is not None:
+    if  args.mitigated_responses_file_name!='':
         m_responses, m_labels = [], []
         samples_neg_affected, samples_pos_affected = [], []
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
