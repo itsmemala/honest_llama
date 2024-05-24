@@ -87,10 +87,13 @@ def main():
     
     print('\nGetting probe predictions on generated responses...')
     try:
-        # all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')[0]
-        # labels = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_true.npy')[0][0]
-        # print(all_preds.shape)
-        raise FileNotFoundError
+        if 'greedy' in args.probes_file_name and ('baseline' in args.responses_file_name or 'dola' in args.responses_file_name):
+            # Do not use test split results of greedy responses when probes and test file are mismatched
+            raise FileNotFoundError
+        else:
+            all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')[0]
+            labels = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_true.npy')[0][0]
+            print(all_preds.shape)
     except:
         try:
             all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy')
