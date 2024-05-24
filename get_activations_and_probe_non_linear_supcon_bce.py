@@ -57,7 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear, individual_non_linear_2, individual_non_linear_3 (<_supcon>, <_specialised>, <_hallu_pos>) 
+    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_specialised>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <_hallu_pos>) 
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--spl_wgt',type=float, default=1)
     parser.add_argument('--spl_knn',type=int, default=5)
@@ -156,7 +156,8 @@ def main():
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
-            label = 1 if data['is_correct'][i]==True else 0
+            if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+            if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
             labels.append(label)
         labels = labels[:args.len_dataset]
         if args.test_file_name is None:
@@ -168,7 +169,8 @@ def main():
             with open(file_path, 'r') as read_file:
                 data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
-                label = 1 if data['is_correct'][i]==True else 0
+                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
                 test_labels.append(label)
     
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
@@ -385,6 +387,8 @@ def main():
                                         acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
                                     elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                                         pass
+                                    elif 'individual_linear' in args.method:
+                                        acts = nlinear_model(inputs)
                                     mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
                             mean_vectors = torch.stack(mean_vectors,axis=0)
                             # Note: with bce, there is only one probe, i.e only one weight vector
@@ -418,6 +422,8 @@ def main():
                             elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                                 pass
                                 # acts = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            elif 'individual_linear' in args.method:
+                                acts = nlinear_model(inputs)
                             norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
                             top_sim_acts = norm_acts[torch.topk(sim,args.spl_knn)[1]]
@@ -481,6 +487,8 @@ def main():
                         acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
                     elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                         pass
+                    elif 'individual_linear' in args.method:
+                        acts = nlinear_model(inputs)
                     norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                     # Note: with bce, there is only one probe, i.e only one weight vector
                     cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
