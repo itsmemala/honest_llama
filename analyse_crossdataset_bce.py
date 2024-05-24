@@ -87,9 +87,10 @@ def main():
     
     print('\nGetting probe predictions on generated responses...')
     try:
-        all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')[0]
-        labels = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_true.npy')[0][0]
-        print(all_preds.shape)
+        # all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')[0]
+        # labels = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_true.npy')[0][0]
+        # print(all_preds.shape)
+        raise FileNotFoundError
     except:
         try:
             all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy')
