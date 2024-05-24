@@ -49,7 +49,8 @@ def main():
 
     device = 0
 
-    hallu_cls = 1 if args.probes_file_name is None or 'hallu_pos' in args.probes_file_name else 0
+    if args.probes_file_name is None: args.probes_file_name = 'hallu_pos'
+    hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
 
     responses, labels = [], []
     if args.responses_file_name is not None:
