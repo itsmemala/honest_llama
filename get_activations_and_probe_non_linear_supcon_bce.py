@@ -411,7 +411,7 @@ def main():
                         if epoch==0:
                             acts = []
                             for idx in train_set_idxs:
-                                if labels[idx]==0:
+                                if labels[idx]==hallu_cls:
                                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
