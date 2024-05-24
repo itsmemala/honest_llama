@@ -13,7 +13,7 @@ import statistics
 import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
-from utils import My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier4
+from utils import My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier4, LogisticRegression_Torch
 from copy import deepcopy
 import llama
 import argparse
@@ -57,7 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear_3') # individual_non_linear_2, individual_non_linear_3 (<_supcon>, <_specialised>, <_hallu_pos>) 
+    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear, individual_non_linear_2, individual_non_linear_3 (<_supcon>, <_specialised>, <_hallu_pos>) 
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--spl_wgt',type=float, default=1)
     parser.add_argument('--spl_knn',type=int, default=5)
@@ -255,8 +255,8 @@ def main():
 
                 act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                 bias = False if 'specialised' in args.method else True
-                nlinear_model = My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device)
-                final_layer_name, projection_layer_name = 'classifier', 'projection'
+                nlinear_model = LogisticRegression_Torch(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device)
+                final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                 wgt_0 = np.sum(y_train)/len(y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                 criterion_supcon = NTXentLoss()
