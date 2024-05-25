@@ -219,6 +219,7 @@ def main():
     method_concat = method_concat + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
+    method_concat = method_concat + '_excl_ce' if args.excl_ce else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
