@@ -62,6 +62,7 @@ def main():
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--spl_wgt',type=float, default=1)
     parser.add_argument('--spl_knn',type=int, default=5)
+    parser.add_argument('--excl_ce',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--supcon_bs',type=int, default=128)
@@ -245,12 +246,13 @@ def main():
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 # if 'individual_non_linear' in args.method:
-                train_target = np.stack([labels[j] for j in train_set_idxs], axis = 0)
+                cur_probe_train_set_idxs = np.array([idx for idx in train_set_idxs if not any(idx in mc_idxs for mc_idxs in model_wise_mc_sample_idxs)]) if args.excl_ce else train_set_idxs
+                train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
                 class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
                 weight = 1. / class_sample_count
                 samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                 sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-                ds_train = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train}).with_format("torch")
+                ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": y_train}).with_format("torch")
                 ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
                 ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                 ds_val = DataLoader(ds_val, batch_size=args.bs)
