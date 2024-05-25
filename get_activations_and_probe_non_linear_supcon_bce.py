@@ -57,7 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_specialised>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <_hallu_pos>)
+    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_orthogonal>, <_specialised>, <_hallu_pos>), individual_non_linear_3 (<_orthogonal>, <_specialised>, <_hallu_pos>)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--spl_wgt',type=float, default=1)
@@ -217,6 +217,7 @@ def main():
     method_concat = args.method + '_no_bias' if args.no_bias else args.method
     method_concat = method_concat + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
+    method_concat = method_concat + '_' + str(args.spl_wgt) + if 'orthogonal' in args.method else method_concat
 
     for i in range(args.num_folds):
         print('Training FOLD',i)
@@ -238,7 +239,7 @@ def main():
         all_y_true_val[i], all_y_true_test[i] = [], []
         all_val_logits[i], all_test_logits[i] = [], []
         all_val_sim[i], all_test_sim[i] = [], []
-        model_wise_mc_sample_idxs = []
+        model_wise_mc_sample_idxs, probes_saved = [], []
         num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
         for layer in tqdm(range(num_layers)):
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
@@ -258,7 +259,7 @@ def main():
                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
                 act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
-                bias = False if 'specialised' in args.method or args.no_bias else True
+                bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device)
                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                 wgt_0 = np.sum(y_train)/len(y_train)
@@ -397,9 +398,19 @@ def main():
                             cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             spl_loss = torch.mean(
                                                 torch.maximum(torch.zeros(mean_vectors.shape[0]).to(device)
-                                                            ,torch.sum(mean_vectors * cur_norm_weights_0, dim=-1)
+                                                            ,torch.sum(mean_vectors.data * cur_norm_weights_0, dim=-1)
                                                             )
                                                 ) # compute sim and take only positive values
+                            loss = loss + args.spl_wgt*spl_loss
+                            epoch_spl_loss += spl_loss.item()
+                        if 'orthogonal' in args.method and len(probes_saved)>0:
+                            spl_loss = 0
+                            # Note: with bce, there is only one probe, i.e only one weight vector
+                            cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            for prev_probe_path in probes_saved:
+                                prev_probe = torch.load(prev_probe_path)
+                                prev_norm_weights_0 = prev_probe.classifier.weight / prev_probe.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                                spl_loss += torch.abs(torch.sum(prev_norm_weights_0.data * cur_norm_weights_0, dim=-1))
                             loss = loss + args.spl_wgt*spl_loss
                             epoch_spl_loss += spl_loss.item()
                         train_loss.append(loss.item())
@@ -508,7 +519,7 @@ def main():
                 if args.save_probes:
                     probe_save_path = f'{args.save_path}/probes/models/NLSC_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}_{layer}_{head}'
                     torch.save(nlinear_model, probe_save_path)
-                    # probes_saved.append(probe_save_path)
+                    probes_saved.append(probe_save_path)
                 
                 # Val and Test performance
                 pred_correct = 0
