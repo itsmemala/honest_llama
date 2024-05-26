@@ -436,15 +436,16 @@ def main():
                                     acts.append(act)
                             acts = torch.stack(acts,axis=0)
                             if 'non_linear_2' in args.method:
-                                acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
+                                acts = nlinear_model.relu1(nlinear_model.linear1(acts)) # pass through model up to classifier
                             elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                                 pass
                                 # acts = nlinear_model.relu1(nlinear_model.linear1(inputs))
                             elif 'individual_linear' in args.method:
-                                acts = nlinear_model(inputs)
+                                acts = nlinear_model(acts)
                             norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
-                            top_sim_acts = norm_acts[torch.topk(sim,args.spl_knn)[1]]
+                            knn_k = sim.shape[0] if sim.shape[0]<args.spl_knn else args.spl_knn
+                            top_sim_acts = norm_acts[torch.topk(sim,knn_k)[1]]
                             print(top_sim_acts.shape)
                         print(torch.mean(torch.sum(top_sim_acts * cur_norm_weights_0, dim=-1)))
 
@@ -504,16 +505,17 @@ def main():
                             acts.append(act)
                     acts = torch.stack(acts,axis=0)
                     if 'non_linear_2' in args.method:
-                        acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
+                        acts = nlinear_model.relu1(nlinear_model.linear1(acts)) # pass through model up to classifier
                     elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                         pass
                     elif 'individual_linear' in args.method:
-                        acts = nlinear_model(inputs)
+                        acts = nlinear_model(acts)
                     norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                     # Note: with bce, there is only one probe, i.e only one weight vector
                     cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
-                    top_k = torch.topk(sim,args.spl_knn)[1][torch.topk(sim,args.spl_knn)[0]>0].detach().cpu().numpy() # save indices of top k similar vectors (only pos)
+                    knn_k = sim.shape[0] if sim.shape[0]<args.spl_knn else args.spl_knn
+                    top_k = torch.topk(sim,knn_k)[1][torch.topk(sim,knn_k)[0]>0].detach().cpu().numpy() # save indices of top k similar vectors (only pos)
                     cur_knn_idxs = np.array(hallu_idxs)[top_k]
                     model_wise_mc_sample_idxs.append(cur_knn_idxs)
                     print('Similarity of knn samples at current layer:',sim[top_k])
