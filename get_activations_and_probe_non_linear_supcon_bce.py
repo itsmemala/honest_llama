@@ -428,7 +428,7 @@ def main():
                         cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                         if epoch==0:
                             acts = []
-                            for idx in train_set_idxs:
+                            for idx in cur_probe_train_set_idxs:
                                 if labels[idx]==hallu_cls:
                                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
@@ -495,7 +495,7 @@ def main():
                 # if 'specialised' in args.method:
                 if bias==False:
                     hallu_idxs, acts = [], []
-                    for idx in train_set_idxs:
+                    for idx in cur_probe_train_set_idxs:
                         if labels[idx]==hallu_cls:
                             hallu_idxs.append(idx)
                             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
