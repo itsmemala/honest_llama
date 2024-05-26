@@ -300,7 +300,7 @@ def main():
 
 
     if args.mitigated_responses_file_name!='':
-        print('\n\nOriginal perf:',sum(labels)/len(labels))
+        print('\n\nOriginal perf:',sum(labels)/len(labels) if hallu_cls==0 else 1-(sum(labels)/len(labels)))
 
         # Self-correct using last layer pred
         final_labels = []
@@ -312,7 +312,7 @@ def main():
                 final_labels.append(labels[i])
             else:
                 final_labels.append(m_labels[i])
-        print('\nDola after using last layer:',sum(final_labels)/len(final_labels))
+        print('\nDola after using last layer:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
         
         # Self-correct using most confident pred
         final_labels = []
@@ -326,7 +326,7 @@ def main():
                 final_labels.append(labels[i])
             else:
                 final_labels.append(m_labels[i])
-        print('\nDola after using most confident:',sum(final_labels)/len(final_labels))
+        print('\nDola after using most confident:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
         
         # Self-correct using majority voting pred
         final_labels = []
@@ -341,7 +341,7 @@ def main():
                 final_labels.append(labels[i])
             else:
                 final_labels.append(m_labels[i])
-        print('\nDola after using majority voting:',sum(final_labels)/len(final_labels))
+        print('\nDola after using majority voting:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
 
 if __name__ == '__main__':
     main()
