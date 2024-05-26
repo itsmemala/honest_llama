@@ -248,12 +248,13 @@ def main():
             for head in loop_heads:
                 # if 'individual_non_linear' in args.method:
                 cur_probe_train_set_idxs = np.array([idx for idx in train_set_idxs if not any(idx in mc_idxs for mc_idxs in model_wise_mc_sample_idxs)]) if args.excl_ce else train_set_idxs
+                cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
                 train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
                 class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
                 weight = 1. / class_sample_count
                 samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                 sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-                ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": y_train}).with_format("torch")
+                ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
                 ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
                 ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                 ds_val = DataLoader(ds_val, batch_size=args.bs)
@@ -265,7 +266,7 @@ def main():
                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device)
                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
-                wgt_0 = np.sum(y_train)/len(y_train)
+                wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                 criterion_supcon = NTXentLoss()
 
