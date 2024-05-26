@@ -61,7 +61,7 @@ def main():
                 if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
                 if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
                 labels.append(label)
-    if  args.mitigated_responses_file_name!='':
+    if args.mitigated_responses_file_name!='':
         m_responses, m_labels = [], []
         samples_neg_affected, samples_pos_affected = [], []
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
@@ -297,6 +297,49 @@ def main():
     # print(np.histogram(min_mc_layers_entropy, bins=[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]))
 
     # np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers.npy', mc_layers)
+
+    print('\n\nOriginal perf:',sum(labels)/len(labels))
+
+    # Self-correct using last layer pred
+    final_labels = []
+    for i,row in enumerate(labels):
+        # Get prediction on orig response
+        sample_pred = np.squeeze(all_preds[-1,i,:]) # Get predictions of each sample at last layer
+        orig_response_pred = 1 if sample_pred>layer_pred_thresholds[-1] else 0
+        if orig_response_pred!=hallu_cls:
+            final_labels.append(labels[i])
+        else:
+            final_labels.append(m_labels[i])
+    print('\nDola after using last layer:',sum(final_labels)/len(final_labels))
+    
+    # Self-correct using most confident pred
+    final_labels = []
+    for i,row in enumerate(labels):
+        # Get prediction on orig response
+        sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
+        probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+        orig_response_pred = np.argmax(sample_pred[np.argmin(probe_wise_entropy)])
+        if orig_response_pred!=hallu_cls:
+            final_labels.append(labels[i])
+        else:
+            final_labels.append(m_labels[i])
+    print('\nDola after using most confident:',sum(final_labels)/len(final_labels))
+    
+    # Self-correct using majority voting pred
+    final_labels = []
+    for i,row in enumerate(labels):
+        # Get prediction on orig response
+        sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
+        class_1_vote_cnt = sum(sample_pred_val)
+        maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+        orig_response_pred = maj_vote
+        if orig_response_pred!=hallu_cls:
+            final_labels.append(labels[i])
+        else:
+            final_labels.append(m_labels[i])
+    print('\nDola after using majority voting:',sum(final_labels)/len(final_labels))
 
 if __name__ == '__main__':
     main()
