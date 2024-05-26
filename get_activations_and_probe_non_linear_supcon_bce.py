@@ -391,11 +391,11 @@ def main():
                                         acts.append(act)
                                     acts = torch.stack(acts,axis=0)
                                     if 'non_linear_2' in args.method:
-                                        acts = nlinear_model.relu1(nlinear_model.linear1(inputs)) # pass through model up to classifier
+                                        acts = nlinear_model.relu1(nlinear_model.linear1(acts)) # pass through model up to classifier
                                     elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                                         pass
                                     elif 'individual_linear' in args.method:
-                                        acts = nlinear_model(inputs)
+                                        acts = nlinear_model(acts)
                                     mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
                             mean_vectors = torch.stack(mean_vectors,axis=0)
                             # Note: with bce, there is only one probe, i.e only one weight vector
