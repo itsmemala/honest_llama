@@ -93,6 +93,7 @@ def main():
         else:
             all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_pred.npy')[0]
             labels = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_true.npy')[0][0]
+            all_logits = np.load(f'{args.save_path}/probes/{args.probes_file_name}_test_logits.npy')[0]
             print(all_preds.shape)
     except:
         try:
@@ -248,17 +249,21 @@ def main():
             sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             best_probe_idxs = np.argpartition(probe_wise_entropy, 5)[:5] # Note: sort is asc, so take first x values for smallest x
-            top_5_lower_bound_val = np.max(probe_wise_entropy)
-            best_probe_idxs = probe_wise_entropy<=top_5_lower_bound_val
-            sample_pred_chosen = sample_pred_cls[best_probe_idxs]
-            cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
-            vote_distri = np.array([cls1_vote, 1 - cls1_vote])
-            mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
+            
+            # top_5_lower_bound_val = np.max(probe_wise_entropy)
+            # best_probe_idxs = probe_wise_entropy<=top_5_lower_bound_val
+            # sample_pred_chosen = sample_pred_cls[best_probe_idxs]
+            # cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
+            # vote_distri = np.array([cls1_vote, 1 - cls1_vote])
+            # mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
+            
             # sample_pred_chosen = sample_pred[best_probe_idxs][1]
-            # sample_pred_chosen = np.exp(sample_pred_chosen)/sum(np.exp(sample_pred_chosen))
-            # mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.emath.logn(5, sample_pred_chosen),neginf=0)).sum()
+            sample_pred_chosen = np.squeeze(all_logits[:,i,:])[best_probe_idxs]*100
+            sample_pred_chosen = np.exp(sample_pred_chosen)/sum(np.exp(sample_pred_chosen))
+            mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.emath.logn(5, sample_pred_chosen),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
+            
             # maj_vote = 1 if cls1_vote>0.5 else 0
             # if labels[i]==hallu_cls and maj_vote!=hallu_cls: mc5_entropy_hallu_mis += 1
             # if labels[i]!=hallu_cls and maj_vote==hallu_cls: mc5_entropy_nonhallu_mis += 1
