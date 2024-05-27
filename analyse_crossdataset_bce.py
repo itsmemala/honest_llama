@@ -247,12 +247,15 @@ def main():
             sample_pred_cls = np.array([1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)])
             # Note: With BCE, most confident would be the ones with highest probability
             best_probe_idxs = np.argpartition(sample_pred, -5)[-5:] # Note: sort is asc, so take last x values for largest x
-            top_5_lower_bound_val = np.min(sample_pred[best_probe_idxs])
-            best_probe_idxs = sample_pred>=top_5_lower_bound_val
-            sample_pred_chosen = sample_pred_cls[best_probe_idxs]
-            cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
-            vote_distri = np.array([cls1_vote, 1 - cls1_vote])
-            mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
+            # top_5_lower_bound_val = np.min(sample_pred[best_probe_idxs])
+            # best_probe_idxs = sample_pred>=top_5_lower_bound_val
+            # sample_pred_chosen = sample_pred_cls[best_probe_idxs]
+            # cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
+            # vote_distri = np.array([cls1_vote, 1 - cls1_vote])
+            # mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
+            sample_pred_chosen = sample_pred[best_probe_idxs]
+            sample_pred_chosen = np.exp(sample_pred_chosen)/sum(np.exp(sample_pred_chosen))
+            mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
             maj_vote = 1 if cls1_vote>0.5 else 0
