@@ -258,9 +258,9 @@ def main():
             mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.log2(sample_pred_chosen),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
-            maj_vote = 1 if cls1_vote>0.5 else 0
-            if labels[i]==hallu_cls and maj_vote!=hallu_cls: mc5_entropy_hallu_mis += 1
-            if labels[i]!=hallu_cls and maj_vote==hallu_cls: mc5_entropy_nonhallu_mis += 1
+            # maj_vote = 1 if cls1_vote>0.5 else 0
+            # if labels[i]==hallu_cls and maj_vote!=hallu_cls: mc5_entropy_hallu_mis += 1
+            # if labels[i]!=hallu_cls and maj_vote==hallu_cls: mc5_entropy_nonhallu_mis += 1
             # probe_wise_conf = []
             # hallu_vote = cls1_vote if 'hallu_pos' in args.probes_file_name else 1-cls1_vote
             # if hallu_vote>0:
@@ -271,9 +271,9 @@ def main():
             #     confident_sample_pred.append()
         # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('MC5 entropy for hallucinations:\n',np.histogram(mc5_entropy_hallu))
-        print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_hallu_mis)
+        # print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_hallu_mis)
         print('MC5 entropy for non-hallucinations:\n',np.histogram(mc5_entropy_nonhallu))
-        print('Low entropy and mis-classified as hallucination:',mc5_entropy_nonhallu_mis)
+        # print('Low entropy and mis-classified as hallucination:',mc5_entropy_nonhallu_mis)
     
     print('\n')
 
