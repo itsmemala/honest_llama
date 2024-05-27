@@ -488,7 +488,7 @@ def main():
                         best_val_loss = epoch_val_loss
                         best_model_state = deepcopy(nlinear_model.state_dict())
                     # Early stopping
-                    patience, min_val_loss_drop, is_not_decreasing = 5, 1, 0
+                    patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
                     if len(val_loss)>=patience:
                         for epoch_id in range(1,patience,1):
                             val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
