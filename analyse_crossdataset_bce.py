@@ -259,7 +259,7 @@ def main():
             
             # sample_pred_chosen = sample_pred[best_probe_idxs][1]
             sample_pred_chosen = np.squeeze(all_logits[:,i,:])[best_probe_idxs]*100
-            print(sample_pred_chosen)
+            sample_pred_chosen[sample_pred_chosen<0] = 0
             sample_pred_chosen = np.exp(sample_pred_chosen)/sum(np.exp(sample_pred_chosen))
             mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.emath.logn(5, sample_pred_chosen),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
