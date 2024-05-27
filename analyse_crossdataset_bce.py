@@ -279,8 +279,8 @@ def main():
         axs[0].stairs(counts_confident_nh, bins)
         axs[0].title.set_text('Non-Hallucinated')
         counts_confident_nh, bins = np.histogram(mc5_entropy_hallu)
-        axs[0].stairs(counts_confident_nh, bins)
-        axs[0].title.set_text('Hallucinated')
+        axs[1].stairs(counts_confident_nh, bins)
+        axs[1].title.set_text('Hallucinated')
         fig.savefig(f'{args.save_path}/plot1.png')
     
     print('\n')
