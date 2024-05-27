@@ -274,6 +274,14 @@ def main():
         # print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_hallu_mis)
         print('MC5 entropy for non-hallucinations:\n',np.histogram(mc5_entropy_nonhallu))
         # print('Low entropy and mis-classified as hallucination:',mc5_entropy_nonhallu_mis)
+        fig, axs = plt.subplots(1,2)
+        counts_confident_nh, bins = np.histogram(mc5_entropy_nonhallu)
+        axs[0].stairs(counts_confident_nh, bins)
+        axs[0].title.set_text('Non-Hallucinated')
+        counts_confident_nh, bins = np.histogram(mc5_entropy_hallu)
+        axs[0].stairs(counts_confident_nh, bins)
+        axs[0].title.set_text('Hallucinated')
+        fig.savefig(f'{args.save_path}/plot1.png')
     
     print('\n')
 
