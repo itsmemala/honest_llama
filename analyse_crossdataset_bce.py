@@ -255,7 +255,7 @@ def main():
             # mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
             sample_pred_chosen = sample_pred[best_probe_idxs]
             sample_pred_chosen = np.exp(sample_pred_chosen)/sum(np.exp(sample_pred_chosen))
-            mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.log5(sample_pred_chosen),neginf=0)).sum()
+            mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.emath.logn(5, sample_pred_chosen),neginf=0)).sum()
             if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
             if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
             # maj_vote = 1 if cls1_vote>0.5 else 0
