@@ -57,7 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_orthogonal>, <_specialised>, <_hallu_pos>), individual_non_linear_3 (<_orthogonal>, <_specialised>, <_hallu_pos>)
+    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <_hallu_pos>)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--spl_wgt',type=float, default=1)
@@ -219,6 +219,7 @@ def main():
     method_concat = method_concat + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
+    method_concat = method_concat + '_' + str(args.spl_knn) if 'orthogonal' in args.method and args.excl_ce else method_concat
     method_concat = method_concat + '_excl_ce' if args.excl_ce else method_concat
 
     for i in range(args.num_folds):
@@ -376,6 +377,7 @@ def main():
                         if args.token=='tagged_tokens':
                             # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                             targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+                        if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                         outputs = nlinear_model(inputs)
                         loss = criterion(outputs, targets.to(device).float())
                         epoch_train_loss += loss.item()
@@ -394,12 +396,11 @@ def main():
                                         acts = nlinear_model.relu1(nlinear_model.linear1(acts)) # pass through model up to classifier
                                     elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                                         pass
-                                    elif 'individual_linear' in args.method:
-                                        acts = nlinear_model(acts)
                                     mean_vectors.append(torch.mean(acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1), dim=0)) # unit normalise and get mean vector
                             mean_vectors = torch.stack(mean_vectors,axis=0)
                             # Note: with bce, there is only one probe, i.e only one weight vector
-                            cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            cur_wgts = nlinear_model.classifier.weight if 'non_linear' in args.method else nlinear_model.linear.weight
+                            cur_norm_weights_0 = cur_wgts / cur_wgts.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             spl_loss = torch.mean(
                                                 torch.maximum(torch.zeros(mean_vectors.shape[0]).to(device)
                                                             ,torch.sum(mean_vectors.data * cur_norm_weights_0, dim=-1)
@@ -410,11 +411,16 @@ def main():
                         if 'orthogonal' in args.method and len(probes_saved)>0:
                             spl_loss = 0
                             # Note: with bce, there is only one probe, i.e only one weight vector
-                            cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                            cur_wgts = nlinear_model.classifier.weight if 'non_linear' in args.method else nlinear_model.linear.weight
+                            cur_norm_weights_0 = cur_wgts / cur_wgts.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                             for prev_probe_path in probes_saved:
                                 prev_probe = torch.load(prev_probe_path)
-                                prev_norm_weights_0 = prev_probe.classifier.weight / prev_probe.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                                spl_loss += torch.abs(torch.sum(prev_norm_weights_0.data * cur_norm_weights_0, dim=-1))
+                                prev_wgts = prev_probe.classifier.weight if 'non_linear' in args.method else prev_probe.linear.weight
+                                prev_norm_weights_0 = prev_wgts / prev_wgts.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                                # spl_loss += torch.abs(torch.sum(prev_norm_weights_0.data * cur_norm_weights_0, dim=-1))
+                                spl_loss += torch.maximum(torch.zeros(prev_norm_weights_0.shape[0]).to(device)
+                                                        ,torch.sum(prev_norm_weights_0.data * cur_norm_weights_0, dim=-1)
+                                                        )
                             loss = loss + args.spl_wgt*spl_loss
                             epoch_spl_loss += spl_loss.item()
                         train_loss.append(loss.item())
@@ -425,7 +431,8 @@ def main():
                     # if 'specialised' in args.method:
                     if bias==False:
                         # Note: with bce, there is only one probe, i.e only one weight vector
-                        cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                        cur_wgts = nlinear_model.classifier.weight if 'non_linear' in args.method else nlinear_model.linear.weight
+                        cur_norm_weights_0 = cur_wgts / cur_wgts.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                         if epoch==0:
                             acts = []
                             for idx in cur_probe_train_set_idxs:
@@ -440,8 +447,6 @@ def main():
                             elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                                 pass
                                 # acts = nlinear_model.relu1(nlinear_model.linear1(inputs))
-                            elif 'individual_linear' in args.method:
-                                acts = nlinear_model(acts)
                             norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
                             knn_k = sim.shape[0] if sim.shape[0]<args.spl_knn else args.spl_knn
@@ -473,6 +478,7 @@ def main():
                         if args.token=='tagged_tokens':
                             # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                             targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+                        if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                         outputs = nlinear_model(inputs)
                         epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
                     val_loss.append(epoch_val_loss)
@@ -508,11 +514,10 @@ def main():
                         acts = nlinear_model.relu1(nlinear_model.linear1(acts)) # pass through model up to classifier
                     elif 'non_linear_4' in args.method: # TODO: to use similarity, add unit norm in forward() before classifier layer
                         pass
-                    elif 'individual_linear' in args.method:
-                        acts = nlinear_model(acts)
                     norm_acts = acts / acts.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                     # Note: with bce, there is only one probe, i.e only one weight vector
-                    cur_norm_weights_0 = nlinear_model.classifier.weight / nlinear_model.classifier.weight.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
+                    cur_wgts = nlinear_model.classifier.weight if 'non_linear' in args.method else nlinear_model.linear.weight
+                    cur_norm_weights_0 = cur_wgts / cur_wgts.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                     sim = torch.sum(norm_acts * cur_norm_weights_0, dim=-1)
                     knn_k = sim.shape[0] if sim.shape[0]<args.spl_knn else args.spl_knn
                     top_k = torch.topk(sim,knn_k)[1][torch.topk(sim,knn_k)[0]>0].detach().cpu().numpy() # save indices of top k similar vectors (only pos)
@@ -547,6 +552,7 @@ def main():
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             activations.append(act)
                         inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                        if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                         predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                         y_val_pred += predicted
                         y_val_true += batch['labels'].tolist()
@@ -581,6 +587,7 @@ def main():
                                     act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
                                 activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                            if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_test_pred += predicted
                             y_test_true += batch['labels'].tolist()
