@@ -309,7 +309,7 @@ def main():
         # bias = False if 'no_bias' in args.probes_file_name else True
         # head = 0
         # kld_probe = 0
-        # for i in tqdm(samples_neg_affected[:10] + samples_pos_affected[:10]):
+        for i in tqdm(samples_neg_affected[:10] + samples_pos_affected[:10]):
         #     # Load activations
         #     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
         #     file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
