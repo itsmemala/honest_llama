@@ -84,6 +84,7 @@ def main():
     parser.add_argument("--train_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
+    parser.add_argument('--fast_mode',type=bool, default=False) # use when GPU space is free, dataset is small and using only 1 token per sample
     args = parser.parse_args()
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
@@ -190,6 +191,7 @@ def main():
     else:
         args.acts_per_file = 100
 
+
     # Probe training
     np.random.seed(42)
     torch.manual_seed(42)
@@ -215,6 +217,22 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
+    if args.fast_mode:
+        print("Loading acts...")
+        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+        my_train_acts, my_test_acts = [], []
+        for idx in train_idxs:
+            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+            my_train_acts.append(act)
+        if args.test_file_name is not None:
+            for idx in test_idxs:
+                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                my_test_acts.append(act)
+
     method_concat = args.method + '_no_bias' if args.no_bias else args.method
     method_concat = method_concat + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
@@ -302,10 +320,13 @@ def main():
                             activations = []
                             for idx in batch['inputs_idxs']:
                                 if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
+                                    if args.fast_mode:
+                                        act = my_train_acts[idx][layer]
+                                    else:
+                                        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                                 else:
                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                                 activations.append(act)
@@ -362,10 +383,13 @@ def main():
                         activations = []
                         for idx in batch['inputs_idxs']:
                             if args.load_act==False:
-                                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
+                                if args.fast_mode:
+                                    act = my_train_acts[idx][layer]
+                                else:
+                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             activations.append(act)
@@ -388,9 +412,12 @@ def main():
                                 if len(idxs)>0:
                                     acts = []
                                     for idx in idxs: # compute mean vector of all chosen samples in current layer
-                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                                        if args.fast_mode:
+                                            act = my_train_acts[idx][layer]
+                                        else:
+                                            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
                                         acts.append(act)
                                     acts = torch.stack(acts,axis=0)
                                     if 'non_linear_2' in args.method:
@@ -438,9 +465,12 @@ def main():
                             acts = []
                             for idx in cur_probe_train_set_idxs:
                                 if labels[idx]==hallu_cls:
-                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                                    if args.fast_mode:
+                                        act = my_train_acts[idx][layer]
+                                    else:
+                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer][head*128:(head*128)+128]).to(device)
                                     acts.append(act)
                             acts = torch.stack(acts,axis=0)
                             if 'non_linear_2' in args.method:
@@ -463,10 +493,13 @@ def main():
                         activations = []
                         for idx in batch['inputs_idxs']:
                             if args.load_act==False:
-                                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
+                                if args.fast_mode:
+                                    act = my_train_acts[idx][layer]
+                                else:
+                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             activations.append(act)
@@ -545,10 +578,13 @@ def main():
                         activations = []
                         for idx in batch['inputs_idxs']:
                             if args.load_act==False:
-                                act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
+                                if args.fast_mode:
+                                    act = my_train_acts[idx][layer]
+                                else:
+                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             activations.append(act)
@@ -580,10 +616,13 @@ def main():
                             activations = []
                             for idx in batch['inputs_idxs']:
                                 if args.load_act==False:
-                                    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
+                                    if args.fast_mode:
+                                        act = my_test_acts[idx][layer]
+                                    else:
+                                        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                                 else:
                                     act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
                                 activations.append(act)

@@ -21,7 +21,7 @@ python get_activations_and_probe.py hl_llama_7B gsm8k --train_file_name gsm8k_ba
 
 python get_activations_and_probe.py hl_llama_7B strqa --train_file_name strqa_baseline_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 1832 --num_folds 1 --using_act layer --token answer_last --method individual_linear --use_linear_bias True --bs 128 --epochs 20 --lr 0.05 --optimizer Adam_w_lr_sch --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data
 
-strqa train - 1832
+python get_activations_and_probe_non_linear_supcon_bce.py hl_llama_7B trivia_qa --train_file_name trivia_qa_baseline_responses_train --test_file_name trivia_qa_baseline_responses_test --len_dataset 5000 --num_folds 1 --using_act layer --token answer_last --method individual_non_linear_2_hallu_pos --bs 128 --epochs 20 --lr 0.005 --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data --fast_mode True
 
 python analyse_crossdataset_bce.py hl_llama_7B trivia_qa --responses_file_name baseline_responses_test --probes_file_name NLSC_hl_llama_7B_trivia_qa_baseline_responses_train_5000_1_layer_answer_last_individual_non_linear_2_hallu_pos_bs128_epochs20_0.005_False --save_path ~/Desktop/honest_llama_data --mitigated_responses_file_name dola16to32_responses_test
 
