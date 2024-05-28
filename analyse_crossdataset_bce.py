@@ -130,7 +130,8 @@ def main():
             np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy',all_preds)
     # Get preds on all tokens
     try:
-        alltokens_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy')
+        # alltokens_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy')
+        raise FileNotFoundError
     except FileNotFoundError:
         alltokens_preds = []
         # Get predictions from probes trained on greedy/baseline responses
