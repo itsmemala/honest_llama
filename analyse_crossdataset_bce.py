@@ -329,7 +329,7 @@ def main():
     # Visualise probe prediction pattern
     for sample_preds in tqdm(alltokens_preds):
         sns_fig = sns.heatmap(sample_preds, linewidth=0.5)
-        sns_fig.fig.savefig(f'{args.save_path}/predplot{i}.png')
+        sns_fig.get_figure().savefig(f'{args.save_path}/predplot{i}.png')
 
 
     # Find most confident layers
