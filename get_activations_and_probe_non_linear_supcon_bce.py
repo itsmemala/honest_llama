@@ -244,8 +244,8 @@ def main():
         all_val_sim[i], all_test_sim[i] = [], []
         model_wise_mc_sample_idxs, probes_saved = [], []
         num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
-        # for layer in tqdm(range(num_layers)):
-        for layer in [29,30,31,32]:
+        for layer in tqdm(range(num_layers)):
+        # for layer in [29,30,31,32]:
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
                 # if 'individual_non_linear' in args.method:
