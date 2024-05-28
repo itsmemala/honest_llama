@@ -357,7 +357,8 @@ def tokenized_from_file_v2(file_path, tokenizer):
         data = json.load(read_file)
     for i in range(len(data['full_input_text'])):
         question = data['full_input_text'][i]
-        answer = data['model_completion'][i]
+        # answer = data['model_completion'][i]
+        answer = data['model_answer'][i]
         prompt = question + answer
         all_prompts.append(prompt)
         tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
