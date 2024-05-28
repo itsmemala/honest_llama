@@ -160,7 +160,7 @@ def main():
                     inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                 preds_by_layer.append(torch.sigmoid(linear_model(inputs).data).cpu().numpy())
             preds_by_layer = np.stack(preds_by_layer)
-            alltokens_preds.append(preds)
+            alltokens_preds.append(preds_by_layer)
         np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
 
 
