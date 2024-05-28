@@ -329,7 +329,7 @@ def main():
 
 
     # Visualise probe prediction pattern
-    for sample_preds in tqdm(alltokens_preds):
+    for i,sample_preds in tqdm(enumerate(alltokens_preds)):
         fig, axs = plt.subplots(1,1)
         sns_fig = sns.heatmap(np.squeeze(sample_preds), linewidth=0.5)
         sns_fig.get_figure().savefig(f'{args.save_path}/predplot{i}.png')
