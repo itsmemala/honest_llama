@@ -157,6 +157,7 @@ def main():
                     linear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}_model0_{layer}_{head}')
                 linear_model.eval()
                 inputs = acts_by_layer[layer][resp_start_idxs[i]:]
+                print(acts_by_layer[layer].shape,resp_start_idxs[i])
                 if 'unitnorm' in args.probes_file_name or 'individual_linear_orthogonal' in args.probes_file_name or 'individual_linear_specialised' in args.probes_file_name or ('individual_linear' in args.probes_file_name and 'no_bias' in args.probes_file_name):
                     inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                 preds_by_layer.append(torch.sigmoid(linear_model(inputs).data).cpu().numpy())
