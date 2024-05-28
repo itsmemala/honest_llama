@@ -147,6 +147,7 @@ def main():
             file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
             acts_by_layer = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
+            preds_by_layer = []
             for layer in range(num_layers):
                 # Load model
                 try:
@@ -157,8 +158,9 @@ def main():
                 inputs = acts_by_layer[layer]
                 if 'unitnorm' in args.probes_file_name or 'individual_linear_orthogonal' in args.probes_file_name or 'individual_linear_specialised' in args.probes_file_name or ('individual_linear' in args.probes_file_name and 'no_bias' in args.probes_file_name):
                     inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
-                preds = torch.sigmoid(linear_model(inputs).data)
-                alltokens_preds.append(preds.cpu().numpy())
+                preds_by_layer.append(torch.sigmoid(linear_model(inputs).data).cpu().numpy())
+            preds_by_layer = np.stack(preds_by_layer)
+            alltokens_preds.append(preds)
         np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
 
 
