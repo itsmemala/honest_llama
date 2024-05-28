@@ -100,7 +100,7 @@ def main():
         try:
             all_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy')
         except FileNotFoundError:
-            all_preds, = []
+            all_preds = []
             # Get predictions from probes trained on greedy responses
             args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
             for layer in range(num_layers):
