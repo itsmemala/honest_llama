@@ -217,7 +217,7 @@ def main():
                     all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
                 elif args.token=='all':
-                    # all_layer_wise_activations.append(layer_wise_activations[:,:,:])
+                    all_layer_wise_activations.append(layer_wise_activations[:,:,:])
                     all_head_wise_activations.append(head_wise_activations[:,:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
                 elif args.token=='prompt_last_onwards':
