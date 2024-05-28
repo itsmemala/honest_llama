@@ -136,7 +136,7 @@ def main():
         # Get predictions from probes trained on greedy/baseline responses
         args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
         args.token = 'all'
-        for layer in range(num_layers):
+        for layer in tqdm(range(num_layers)):
             # Load model
             act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
             bias = False if 'no_bias' in args.probes_file_name else True
