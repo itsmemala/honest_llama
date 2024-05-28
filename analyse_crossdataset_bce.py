@@ -161,7 +161,7 @@ def main():
                 preds_by_layer.append(torch.sigmoid(linear_model(inputs).data).cpu().numpy())
             preds_by_layer = np.stack(preds_by_layer)
             alltokens_preds.append(preds_by_layer)
-        np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
+        # np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
 
 
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
