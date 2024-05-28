@@ -150,7 +150,7 @@ def main():
             # Load activations
             acts = []
             # print(samples_neg_affected[:10] + samples_pos_affected[:10])
-            for i in samples_neg_affected[:10] + samples_pos_affected[:10]:
+            for i in samples_neg_affected[:2] + samples_pos_affected[:2]:
                 act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
                 file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
@@ -158,8 +158,9 @@ def main():
                 if 'unitnorm' in args.probes_file_name or 'individual_linear_orthogonal' in args.probes_file_name or 'individual_linear_specialised' in args.probes_file_name or ('individual_linear' in args.probes_file_name and 'no_bias' in args.probes_file_name):
                     inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                 preds = torch.sigmoid(linear_model(inputs).data)
+                print(preds.shape)
                 alltokens_preds.append(preds.cpu().numpy())
-        # np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
+        np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
 
 
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
@@ -327,7 +328,8 @@ def main():
 
 
     # Visualise probe prediction pattern
-    for i,sample_preds in enumerate(alltokens_preds):
+    for i in enumerate(alltokens_preds.shape[1]):
+        sample_preds = alltokens_preds[:,i,:,:]
         sns_fig = sns.heatmap(sample_preds, linewidth=0.5)
         sns_fig.fig.savefig(f'{args.save_path}/predplot{i}.png')
 
