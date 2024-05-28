@@ -62,6 +62,7 @@ def main():
                 if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
                 if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
                 labels.append(label)
+        resp_start_idxs = np.load(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_response_start_token_idx.npy')
     if args.mitigated_responses_file_name!='':
         m_responses, m_labels = [], []
         samples_neg_affected, samples_pos_affected = [], []
@@ -155,7 +156,7 @@ def main():
                 except FileNotFoundError:
                     linear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}_model0_{layer}_{head}')
                 linear_model.eval()
-                inputs = acts_by_layer[layer]
+                inputs = acts_by_layer[layer][resp_start_idxs[i]:]
                 if 'unitnorm' in args.probes_file_name or 'individual_linear_orthogonal' in args.probes_file_name or 'individual_linear_specialised' in args.probes_file_name or ('individual_linear' in args.probes_file_name and 'no_bias' in args.probes_file_name):
                     inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1) # unit normalise
                 preds_by_layer.append(torch.sigmoid(linear_model(inputs).data).cpu().numpy())
