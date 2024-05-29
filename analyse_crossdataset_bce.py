@@ -78,7 +78,8 @@ def main():
         print('Num of samples negatively affected:',len(samples_neg_affected))
         print('Num of samples positively affected:',len(samples_pos_affected))
     
-    num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
+    args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
+    num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
 
     if args.dataset_name=='strqa':
         acts_per_file = 50
@@ -103,7 +104,6 @@ def main():
         except FileNotFoundError:
             all_preds = []
             # Get predictions from probes trained on greedy responses
-            args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
             for layer in range(num_layers):
                 # Load model
                 act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128,'layer':4096}
