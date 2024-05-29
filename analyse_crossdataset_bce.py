@@ -345,14 +345,14 @@ def main():
                 preds = torch.sigmoid(linear_model(inputs).data).cpu().numpy()
                 preds_by_layer.append(np.array([pred-layer_pred_thresholds[layer] for pred in preds]))
             preds_by_layer = np.stack(preds_by_layer)
-            alltokens_preds.append(preds_by_layer)
+            alltokens_preds.append(np.squeeze(preds_by_layer))
             # print(i,responses[i])
         np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
 
     # # Visualise probe prediction pattern
     # for i,sample_preds in tqdm(enumerate(alltokens_preds)):
     #     fig, axs = plt.subplots(1,1)
-    #     sns_fig = sns.heatmap(np.squeeze(sample_preds), linewidth=0.5)
+    #     sns_fig = sns.heatmap(sample_preds, linewidth=0.5)
     #     sns_fig.get_figure().savefig(f'{args.save_path}/predplot{i}.png')
 
 
