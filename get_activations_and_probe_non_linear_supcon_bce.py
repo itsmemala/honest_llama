@@ -122,7 +122,7 @@ def main():
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         if args.load_act==True: # Only load model if we need activations on the fly
             model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-        num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
+        # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
         num_heads = 32
     device = "cuda"
 
@@ -261,7 +261,7 @@ def main():
         all_val_logits[i], all_test_logits[i] = [], []
         all_val_sim[i], all_test_sim[i] = [], []
         model_wise_mc_sample_idxs, probes_saved = [], []
-        num_layers = 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+        num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
         for layer in tqdm(range(num_layers)):
         # for layer in [29,30,31,32]:
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
