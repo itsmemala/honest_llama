@@ -325,7 +325,7 @@ def main():
         head = 0
         kld_probe = 0
         # for i in tqdm(samples_neg_affected[:10] + samples_pos_affected[:10]):
-        for i in tqdm(range(len(labels[:3]))):
+        for i in tqdm(range(len(labels))):
             # Load activations
             act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
             file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
@@ -347,7 +347,7 @@ def main():
             preds_by_layer = np.stack(preds_by_layer)
             alltokens_preds.append(np.squeeze(preds_by_layer))
             # print(i,responses[i])
-        alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                                  
+        alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                        
         alltokens_preds_arr[:] = alltokens_preds
         np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds_arr)
 
