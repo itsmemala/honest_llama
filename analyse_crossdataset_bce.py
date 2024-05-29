@@ -313,7 +313,7 @@ def main():
 
     # Get preds on all tokens
     try:
-        alltokens_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy')
+        # alltokens_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy')
         raise FileNotFoundError
     except FileNotFoundError:
         alltokens_preds = []
@@ -325,7 +325,7 @@ def main():
         head = 0
         kld_probe = 0
         # for i in tqdm(samples_neg_affected[:10] + samples_pos_affected[:10]):
-        for i in range(len(labels)):
+        for i in range(len(labels[:3])):
             # Load activations
             act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
             file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
