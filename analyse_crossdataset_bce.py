@@ -58,7 +58,7 @@ def main():
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
-                responses.append(data['model_completion'][i])
+                responses.append(data['model_answer'][i])
                 if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
                 if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
                 labels.append(label)
@@ -69,7 +69,7 @@ def main():
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
-                m_responses.append(data['model_completion'][i])
+                m_responses.append(data['model_answer'][i])
                 if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
                 if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
                 m_labels.append(label)
@@ -136,6 +136,7 @@ def main():
     fold = 0
     test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], []
     layer_pred_thresholds = []
+    excl_layers = []
     for model in range(all_val_pred[fold].shape[0]):
         if args.best_threshold:
             best_val_perf, best_t = 0, 0.5
@@ -166,7 +167,9 @@ def main():
         cls0_f1 = f1_score(labels,test_pred_model,pos_label=0)
         test_f1_cls0.append(cls0_f1)
         test_f1_cls1.append(cls1_f1)
+        if val_f1_cls0==0 or val_f1_cls1==0: excl_layers.append(model)
     # print('\nValidation performance:\n',val_f1_avg)
+    print('\nExcluded layers:',excl_layers)
     if 'hallu_pos' in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
     if 'hallu_pos' not in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
 
