@@ -160,6 +160,7 @@ def main():
         val_f1_cls0.append(cls0_f1)
         val_f1_cls1.append(cls1_f1)
         val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
+        if cls0_f1==0 or cls1_f1==0: excl_layers.append(model)
         test_pred_model = deepcopy(all_preds[model]) # Deep copy so as to not touch orig values
         test_pred_model[test_pred_model>best_t] = 1
         test_pred_model[test_pred_model<=best_t] = 0
@@ -167,7 +168,6 @@ def main():
         cls0_f1 = f1_score(labels,test_pred_model,pos_label=0)
         test_f1_cls0.append(cls0_f1)
         test_f1_cls1.append(cls1_f1)
-        if val_f1_cls0<0.05 or val_f1_cls1<0.05: excl_layers.append(model)
     # print('\nValidation performance:\n',val_f1_avg)
     print('\nExcluded layers:',excl_layers)
     if 'hallu_pos' in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
