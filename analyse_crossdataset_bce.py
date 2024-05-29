@@ -373,7 +373,6 @@ def main():
     confident_sample_pred = []
     for i,sample_preds in tqdm(enumerate(alltokens_preds)):
         agg_layer_preds = []
-        print(sample_preds.shape)
         for layer_preds in sample_preds:
             agg_layer_preds.append(np.max(layer_preds)) # Avg predictions across all tokens at a given layer
         agg_layer_preds = np.array(agg_layer_preds)
