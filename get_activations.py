@@ -128,8 +128,8 @@ def main():
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
-    else: 
-        prompts, labels = formatter(dataset, tokenizer)
+    # else: 
+    #     prompts, labels = formatter(dataset, tokenizer)
 
     if 'tqa' in args.dataset_name:
         # if args.token=='last' or args.token=='answer_first':
@@ -254,9 +254,9 @@ def main():
             with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-    if 'counselling' not in args.dataset_name and args.dataset_name!='nq_open' and args.dataset_name!='cnn_dailymail' and args.dataset_name!='trivia_qa' and args.dataset_name!='strqa' and args.dataset_name!='gsm8k' and args.mlp_l1=='No':
-        print("Saving labels")
-        np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.token}_labels_{end}.npy', labels)
+    # if 'counselling' not in args.dataset_name and args.dataset_name!='nq_open' and args.dataset_name!='cnn_dailymail' and args.dataset_name!='trivia_qa' and args.dataset_name!='strqa' and args.dataset_name!='gsm8k' and args.mlp_l1=='No':
+    #     print("Saving labels")
+    #     np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.dataset_name}_{args.token}_labels_{end}.npy', labels)
 
 if __name__ == '__main__':
     main()
