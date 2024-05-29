@@ -87,33 +87,36 @@ def main():
         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     device = "cuda"
 
-    if args.dataset_name == "tqa_mc2":
-        # all_hf_datasets = datasets.list_datasets()
-        # print([name for name in all_hf_datasets if 'truthful_qa' in name])
-        dataset = load_dataset("truthful_qa", "multiple_choice", streaming= True)['validation']
-        print('Here')
-        formatter = tokenized_tqa
-    elif args.dataset_name == "tqa_gen": 
-        dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
-        formatter = tokenized_tqa_gen
-    elif args.dataset_name == 'tqa_gen_end_q': 
-        dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
-        formatter = tokenized_tqa_gen_end_q
-    elif args.dataset_name == 'nq': 
-        dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
-        formatter = tokenized_nq
-    elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'strqa' or args.dataset_name == 'gsm8k':
-        pass
-    else: 
-        raise ValueError("Invalid dataset name")
+    # if args.dataset_name == "tqa_mc2":
+    #     # all_hf_datasets = datasets.list_datasets()
+    #     # print([name for name in all_hf_datasets if 'truthful_qa' in name])
+    #     dataset = load_dataset("truthful_qa", "multiple_choice", streaming= True)['validation']
+    #     print('Here')
+    #     formatter = tokenized_tqa
+    # elif args.dataset_name == "tqa_gen": 
+    #     dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
+    #     formatter = tokenized_tqa_gen
+    # elif args.dataset_name == 'tqa_gen_end_q': 
+    #     dataset = load_dataset("truthful_qa", 'generation', streaming= True)['validation']
+    #     formatter = tokenized_tqa_gen_end_q
+    # elif args.dataset_name == 'nq': 
+    #     dataset = load_dataset("OamPatel/iti_nq_open_val", streaming= True)['validation']
+    #     formatter = tokenized_nq
+    # elif args.dataset_name == 'counselling' or args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'strqa' or args.dataset_name == 'gsm8k':
+    #     pass
+    # else: 
+    #     raise ValueError("Invalid dataset name")
 
     print("Tokenizing prompts")
-    if args.dataset_name == "tqa_gen" or args.dataset_name == "tqa_gen_end_q": 
-        prompts, labels, categories, token_idxes = formatter(dataset.with_format('torch'), tokenizer, args.token)
-        if len(token_idxes)==0:
-            token_idxes = [-1 for i in prompts]
-        with open(f'features/{args.model_name}_{args.dataset_name}_categories.pkl', 'wb') as f:
-            pickle.dump(categories, f)
+    if args.dataset_name == "tqa_gen": # or args.dataset_name == "tqa_gen_end_q": 
+        # prompts, labels, categories, token_idxes = formatter(dataset.with_format('torch'), tokenizer, args.token)
+        # if len(token_idxes)==0:
+        #     token_idxes = [-1 for i in prompts]
+        # with open(f'features/{args.model_name}_{args.dataset_name}_categories.pkl', 'wb') as f:
+        #     pickle.dump(categories, f)
+        file_path = f'{args.save_path}/responses/{args.file_name}.json'
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
+        np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
     elif args.dataset_name == 'counselling':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
@@ -129,14 +132,18 @@ def main():
         prompts, labels = formatter(dataset, tokenizer)
 
     if 'tqa' in args.dataset_name:
-        if args.token=='last' or args.token=='answer_first':
-            # load_ranges = [(0,1000),(1000,2000),(2000,3000),(3000,3500),(3500,4000),
-            #                 (4000,4500),(4500,5000),(5000,5500),(5500,6000)] # llama-13B? first?
-            load_ranges = [(a*100,(a*100)+100) for a in range(int(6000/100))]
-        elif 'answer_all' in args.token:
-            load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1)]
+        # if args.token=='last' or args.token=='answer_first':
+        #     # load_ranges = [(0,1000),(1000,2000),(2000,3000),(3000,3500),(3500,4000),
+        #     #                 (4000,4500),(4500,5000),(5000,5500),(5500,6000)] # llama-13B? first?
+        #     load_ranges = [(a*100,(a*100)+100) for a in range(int(6000/100))]
+        # elif 'answer_all' in args.token:
+        #     load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1)]
+        # else:
+        #     load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
+        if 'train' in args.file_name:
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(4800/100))]
         else:
-            load_ranges = [(0,1000),(1000,3000),(3000,4000),(4000,5000),(5000,6000)]
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(1300/100))]
     elif 'counselling' in args.dataset_name:
         load_ranges = [(a*20,(a*20)+20) for a in range(int(500/20)+1)] # if ((a*20)+20)>180]
     elif args.dataset_name=='nq':
