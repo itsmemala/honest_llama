@@ -67,7 +67,7 @@ def main():
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses.json', 'r') as read_file:
         mitigated_response_data = json.load(read_file)
     mitigated_response_data_pd = pd.DataFrame.from_dict(mitigated_response_data)
-    mitigated_response_data_pd = mitigated_response_data_pd[mitigated_response_data_pd.index==test['index']]
+    mitigated_response_data_pd = mitigated_response_data_pd.iloc[test['index'],:]
     print(len(test),len(mitigated_response_data_pd))
     # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'w') as outfile:
     #     json.dump(mitigated_response_data_pd.to_dict(orient='list'), outfile)
