@@ -347,7 +347,9 @@ def main():
             preds_by_layer = np.stack(preds_by_layer)
             alltokens_preds.append(np.squeeze(preds_by_layer))
             # print(i,responses[i])
-        np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds)
+        alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                                  
+        alltokens_preds_arr[:] = alltokens_preds
+        np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy',alltokens_preds_arr)
 
     # # Visualise probe prediction pattern
     # for i,sample_preds in tqdm(enumerate(alltokens_preds)):
