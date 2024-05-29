@@ -185,7 +185,7 @@ def main():
         tagged_token_idxs,test_tagged_token_idxs = [[] for i in range(len(prompts))],[[] for i in range(len(test_prompts))]
     
     if args.dataset_name=='strqa':
-        args.acts_per_file = 50
+        args.acts_per_file = 100 # 50
     elif args.dataset_name=='gsm8k':
         args.acts_per_file = 20
     else:
