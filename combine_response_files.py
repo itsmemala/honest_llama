@@ -51,31 +51,38 @@ def main():
     #         json.dump(entry, outfile)
     #         outfile.write('\n')
 
-    response_data = []
-    for end in ['']:
-        with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses{end}.json', 'r') as read_file:
-            response_data = json.load(read_file)
-    response_data_pd = pd.DataFrame.from_dict(response_data)
-    print(response_data_pd.columns)
-    response_data_pd['index'] = response_data_pd.index
-    print(response_data_pd.columns)
-    train, test = train_test_split(response_data_pd, test_size=0.2, stratify=response_data_pd['is_correct'])
-    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'w') as outfile:
-        json.dump(train.to_dict(orient='list'), outfile)
-    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'w') as outfile:
-        json.dump(test.to_dict(orient='list'), outfile)
+    # response_data = []
+    # for end in ['']:
+    #     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses{end}.json', 'r') as read_file:
+    #         response_data = json.load(read_file)
+    # response_data_pd = pd.DataFrame.from_dict(response_data)
+    # print(response_data_pd.columns)
+    # response_data_pd['index'] = response_data_pd.index
+    # print(response_data_pd.columns)
+    # train, test = train_test_split(response_data_pd, test_size=0.2, stratify=response_data_pd['is_correct'])
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'w') as outfile:
+    #     json.dump(train.to_dict(orient='list'), outfile)
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'w') as outfile:
+    #     json.dump(test.to_dict(orient='list'), outfile)
     
-    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses.json', 'r') as read_file:
-        mitigated_response_data = json.load(read_file)
-    mitigated_response_data_pd = pd.DataFrame.from_dict(mitigated_response_data)
-    mitigated_response_data_pd = mitigated_response_data_pd.iloc[test['index'],:]
-    print(len(test),len(mitigated_response_data_pd))
-    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses_test.json', 'w') as outfile:
-        json.dump(mitigated_response_data_pd.to_dict(orient='list'), outfile)
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses.json', 'r') as read_file:
+    #     mitigated_response_data = json.load(read_file)
+    # mitigated_response_data_pd = pd.DataFrame.from_dict(mitigated_response_data)
+    # mitigated_response_data_pd = mitigated_response_data_pd.iloc[test['index'],:]
+    # print(len(test),len(mitigated_response_data_pd))
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses_test.json', 'w') as outfile:
+    #     json.dump(mitigated_response_data_pd.to_dict(orient='list'), outfile)
 
-    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'r') as read_file:
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'r') as read_file:
+    #     response_data = json.load(read_file)
+    # print(len(response_data['is_correct']))
+
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'r') as read_file:
         response_data = json.load(read_file)
-    print(len(response_data['is_correct']))
+    print(sum(response_data['is_correct'])/len(response_data['is_correct']))
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses_test.json', 'r') as read_file:
+        response_data = json.load(read_file)
+    print(sum(response_data['is_correct'])/len(response_data['is_correct']))
 
 if __name__ == '__main__':
     main()
