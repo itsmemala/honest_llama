@@ -167,7 +167,7 @@ def main():
         cls0_f1 = f1_score(labels,test_pred_model,pos_label=0)
         test_f1_cls0.append(cls0_f1)
         test_f1_cls1.append(cls1_f1)
-        if val_f1_cls0<0.05 or val_f1_cls1=<0.05: excl_layers.append(model)
+        if val_f1_cls0<0.05 or val_f1_cls1<0.05: excl_layers.append(model)
     # print('\nValidation performance:\n',val_f1_avg)
     print('\nExcluded layers:',excl_layers)
     if 'hallu_pos' in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
