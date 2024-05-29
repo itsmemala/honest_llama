@@ -358,7 +358,7 @@ def main():
     #     sns_fig.get_figure().savefig(f'{args.save_path}/predplot{i}.png')
 
     print('\nAnalyse probe prediction pattern across all answer tokens...')
-    agg_sample_pred = []
+    confident_sample_pred = []
     for i,sample_preds in tqdm(enumerate(alltokens_preds)):
         agg_layer_preds = []
         for layer_preds in sample_preds:
@@ -368,7 +368,7 @@ def main():
         probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
         layer = np.argmin(probe_wise_entropy)
         confident_sample_pred.append(1 if agg_layer_preds[layer][1]>layer_pred_thresholds[layer] else 0)
-    print('Averaging across tokensa dn using most confident probe:\n',classification_report(labels,agg_sample_pred))
+    print('Averaging across tokensa dn using most confident probe:\n',classification_report(labels,confident_sample_pred))
 
     # Find most confident layers
     # print('\nMost confident layers for hallu...')
