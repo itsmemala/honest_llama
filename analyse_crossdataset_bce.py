@@ -271,6 +271,18 @@ def main():
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
 
+         # Probe selection - d
+        confident_sample_pred = []
+        for i in range(all_preds.shape[1]):
+            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
+            sample_pred_val = np.array(sample_pred_val)
+            class_1_vote_cnt = sum(sample_pred_val[incl_layers])
+            maj_vote = 1 if class_1_vote_cnt>=(len(incl_layers)/2) else 0
+            confident_sample_pred.append(maj_vote)
+        # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+        print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
+
         # MC5 Statistics
         confident_sample_pred = []
         mc5_entropy_hallu, mc5_entropy_nonhallu = [], []
