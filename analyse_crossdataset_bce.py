@@ -254,6 +254,7 @@ def main():
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]
+            sample_pred_dist = np.array(sample_pred_dist)
             layer = incl_layers[np.argmax(sample_pred_dist[incl_layers])]
             confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
