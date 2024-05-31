@@ -198,14 +198,17 @@ def main():
 
         # Probe selection - a
         confident_sample_pred = []
+        mc_layer = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
             # print(sample_pred.shape,sample_pred[:5])
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
+            mc_layer.append(np.argmin(probe_wise_entropy))
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using most confident probe per sample (0.5 threshold):\n',classification_report(labels,confident_sample_pred))
+        print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
 
         # Probe selection - a
         confident_sample_pred = []
