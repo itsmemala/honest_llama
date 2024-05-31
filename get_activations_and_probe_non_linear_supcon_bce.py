@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <_hallu_pos>)
+    parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--spl_wgt',type=float, default=1)
@@ -235,7 +236,8 @@ def main():
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_test_acts.append(act)
 
-    method_concat = args.method + '_no_bias' if args.no_bias else args.method
+    method_concat = args.method + '_dropout' if args.use_dropout else args.method
+    method_concat = args.method + '_no_bias' if args.no_bias else method_concat
     method_concat = method_concat + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
@@ -286,7 +288,7 @@ def main():
 
                 act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
-                nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias).to(device)
+                nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                 wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
@@ -339,7 +341,7 @@ def main():
                                 targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                             if args.token=='tagged_tokens':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            emb = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            emb = nlinear_model.relu1(nlinear_model.linear1(nlinear_model.dropout(inputs))) if args.use_dropout else nlinear_model.relu1(nlinear_model.linear1(inputs))
                             norm_emb = F.normalize(emb, p=2, dim=-1)
                             emb_projection = nlinear_model.projection(norm_emb)
                             emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
