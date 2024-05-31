@@ -136,7 +136,7 @@ def main():
     fold = 0
     test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], []
     layer_pred_thresholds = []
-    excl_layers = []
+    excl_layers, incl_layers = [], []
     for model in range(all_val_pred[fold].shape[0]):
         if args.best_threshold:
             best_val_perf, best_t = 0, 0.5
@@ -160,7 +160,10 @@ def main():
         val_f1_cls0.append(cls0_f1)
         val_f1_cls1.append(cls1_f1)
         val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
-        if cls0_f1==0 or cls1_f1==0: excl_layers.append(model)
+        if cls0_f1==0 or cls1_f1==0:
+            excl_layers.append(model)
+        else:
+            incl_layers.append(model)
         test_pred_model = deepcopy(all_preds[model]) # Deep copy so as to not touch orig values
         test_pred_model[test_pred_model>best_t] = 1
         test_pred_model[test_pred_model<=best_t] = 0
@@ -169,6 +172,7 @@ def main():
         test_f1_cls0.append(cls0_f1)
         test_f1_cls1.append(cls1_f1)
     # print('\nValidation performance:\n',val_f1_avg)
+    incl_layers = np.array(incl_layers)
     print('\nExcluded layers:',excl_layers)
     if 'hallu_pos' in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
     if 'hallu_pos' not in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
@@ -222,7 +226,7 @@ def main():
             sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
             # print(sample_pred.shape,sample_pred[:5])
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-            layer = np.argmin(probe_wise_entropy)
+            layer = incl_layers[np.argmin(probe_wise_entropy[incl_layers])]
             confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
