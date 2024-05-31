@@ -477,5 +477,24 @@ def main():
                 final_labels.append(m_labels[i])
         print('\nDola after using majority voting:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
 
+        # Self-correct using token-wise aggregation and most confident
+        final_labels = []
+        for i,row in enumerate(labels):
+            # Get prediction on orig response
+            sample_preds = alltokens_preds[i]
+            agg_layer_preds = []
+            for layer_preds in sample_preds:
+                agg_layer_preds.append(np.mean(layer_preds)) # Avg predictions across all tokens at a given layer
+            agg_layer_preds = np.array(agg_layer_preds)
+            agg_layer_preds = np.concatenate((1-agg_layer_preds[:, None], agg_layer_preds[:, None]),axis=1)
+            probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
+            layer = np.argmin(probe_wise_entropy)
+            orig_response_pred = 1 if agg_layer_preds[layer][1]>0 else 0 # Note this is already the distance from threshold, therefore we check for >0
+            if orig_response_pred!=hallu_cls:
+                final_labels.append(labels[i])
+            else:
+                final_labels.append(m_labels[i])
+        print('\nDola after averaging across tokens and using most confident probe:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
+
 if __name__ == '__main__':
     main()
