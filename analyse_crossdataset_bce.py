@@ -410,7 +410,7 @@ def main():
         confident_sample_pred.append(1 if agg_layer_preds[layer][1]>0 else 0) # Note this is already the distance from threshold, therefore we check for >0
         mc_layer.append(layer)
     print('Maxpool across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
-    print('\nMc Layer:\n',np.histogram(mc_layer))
+    print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
 
     # Find most confident layers
     # print('\nMost confident layers for hallu...')
