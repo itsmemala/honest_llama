@@ -275,7 +275,7 @@ def main():
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer] else 0]
+            sample_pred_val = [1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)]
             sample_pred_val = np.array(sample_pred_val)
             class_1_vote_cnt = sum(sample_pred_val[incl_layers])
             maj_vote = 1 if class_1_vote_cnt>=(len(incl_layers)/2) else 0
