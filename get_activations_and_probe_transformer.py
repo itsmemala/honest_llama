@@ -253,7 +253,7 @@ def main():
         model_wise_mc_sample_idxs, probes_saved = [], []
         num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
         
-        cur_probe_train_set_idxs = np.array([idx for idx in train_set_idxs if not any(idx in mc_idxs for mc_idxs in model_wise_mc_sample_idxs)]) if args.excl_ce else train_set_idxs
+        cur_probe_train_set_idxs = train_set_idxs
         cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
         train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
         class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
