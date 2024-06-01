@@ -353,11 +353,11 @@ def main():
                 for idx in batch['inputs_idxs']:
                     act = my_train_acts[idx]
                     activations.append(act)
-                inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                inputs = torch.stack(activations,axis=0)
+                predicted = [1 if torch.sigmoid(nlinear_model([inp]).data)>0.5 else 0 for inp in inputs] # [inp] to add bs dimension
                 y_val_pred += predicted
                 y_val_true += batch['labels'].tolist()
-                val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                 val_preds.append(val_preds_batch)
                 val_logits.append(nlinear_model(inputs))
         all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
@@ -380,11 +380,11 @@ def main():
                     for idx in batch['inputs_idxs']:
                         act = my_test_acts[idx]
                         activations.append(act)
-                    inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
-                    predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                    inputs = torch.stack(activations,axis=0)
+                    predicted = [1 if torch.sigmoid(nlinear_model([inp]).data)>0.5 else 0 for inp in inputs] # [inp] to add bs dimension
                     y_test_pred += predicted
                     y_test_true += batch['labels'].tolist()
-                    test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                    test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                     test_preds.append(test_preds_batch)
                     test_logits.append(nlinear_model(inputs))
             all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
