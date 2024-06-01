@@ -113,8 +113,8 @@ def main():
             model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-        if args.load_act==True: # Only load model if we need activations on the fly
-            model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+        # if args.load_act==True: # Only load model if we need activations on the fly
+        #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
         num_heads = 32
     device = "cuda"
