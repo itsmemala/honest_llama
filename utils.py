@@ -47,6 +47,23 @@ from truthfulqa.presets import preset_map, COMPARE_PRIMER
 from truthfulqa.models import find_subsequence, set_columns, MC_calcs
 from truthfulqa.evaluate import format_frame, data_to_dict
 
+class My_Transformer_Layer(torch.nn.Module):    
+    # build the constructor
+    def __init__(self, n_inputs, n_layers, n_outputs, bias):
+        super().__init__()
+        self.linear = torch.nn.Linear(n_inputs, 256, bias)
+        self.transfomer = torch.nn.TransformerEncoderLayer(d_model=256, nhead=8, dim_feedforward=256, batch_first=True)
+        self.classifier = torch.nn.Linear(dim_feedforward, n_outputs, bias)
+    # make predictions
+    def forward(self, x): # x: (bs, n_layers, n_inputs)
+        layer_wise_x = []
+        for layer in range(x.shape[-2]):
+            layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+        x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
+        x = self.transfomer(x)
+        y_pred = self.classifier(x)
+        return y_pred
+
 class LogisticRegression_Torch(torch.nn.Module):    
     # build the constructor
     def __init__(self, n_inputs, n_outputs, bias):
