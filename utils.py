@@ -62,6 +62,7 @@ class My_Transformer_Layer(torch.nn.Module):
         for layer in range(x.shape[-2]):
             layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
         x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
+        if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
         x = x[:,-1,:] # Take last token activations
         y_pred = self.classifier(x)
