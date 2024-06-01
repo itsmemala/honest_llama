@@ -389,6 +389,8 @@ def main():
 
     print('\nAnalyse probe prediction pattern across all answer tokens...')
     confident_sample_pred = []
+    mc_layer = []
+    mc_layers = [] # Layers to be used for contrast in dola
     for i,sample_preds in tqdm(enumerate(alltokens_preds)):
         agg_layer_preds = []
         for layer_preds in sample_preds:
@@ -398,10 +400,18 @@ def main():
         probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
         layer = np.argmin(probe_wise_entropy)
         confident_sample_pred.append(1 if agg_layer_preds[layer][1]>0 else 0) # Note this is already the distance from threshold, therefore we check for >0
+        if confident_sample_pred[-1]==hallu_cls: 
+            mc_layer.append(layer)
+            mc_layers.append(layer)
+        else:
+            mc_layers.append(-1) # If not predicted as hallucination, don't contrast, just use normal decoding
     print('Averaging across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
+    print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
+    np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers_tokenavg.npy', mc_layers)
 
     confident_sample_pred = []
     mc_layer = []
+    mc_layers = [] # Layers to be used for contrast in dola
     for i,sample_preds in tqdm(enumerate(alltokens_preds)):
         agg_layer_preds = []
         for layer_preds in sample_preds:
@@ -411,9 +421,14 @@ def main():
         probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
         layer = np.argmin(probe_wise_entropy)
         confident_sample_pred.append(1 if agg_layer_preds[layer][1]>0 else 0) # Note this is already the distance from threshold, therefore we check for >0
-        if confident_sample_pred[-1]==hallu_cls: mc_layer.append(layer)
+        if confident_sample_pred[-1]==hallu_cls: 
+            mc_layer.append(layer)
+            mc_layers.append(layer)
+        else:
+            mc_layers.append(-1) # If not predicted as hallucination, don't contrast, just use normal decoding
     print('Maxpool across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
     print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
+    np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers_tokenmax.npy', mc_layers)
 
     # Find most confident layers
     # print('\nMost confident layers for hallu...')
