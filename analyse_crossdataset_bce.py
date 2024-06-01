@@ -205,7 +205,7 @@ def main():
             # print(sample_pred.shape,sample_pred[:5])
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-            mc_layer.append(np.argmin(probe_wise_entropy))
+            if confident_sample_pred[-1]==hallu_cls: mc_layer.append(np.argmin(probe_wise_entropy))
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using most confident probe per sample (0.5 threshold):\n',classification_report(labels,confident_sample_pred))
         print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
@@ -411,7 +411,7 @@ def main():
         probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
         layer = np.argmin(probe_wise_entropy)
         confident_sample_pred.append(1 if agg_layer_preds[layer][1]>0 else 0) # Note this is already the distance from threshold, therefore we check for >0
-        mc_layer.append(layer)
+        if confident_sample_pred[-1]==hallu_cls: mc_layer.append(layer)
     print('Maxpool across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
     print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
 
