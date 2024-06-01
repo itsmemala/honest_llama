@@ -354,7 +354,7 @@ def main():
                     act = my_train_acts[idx]
                     activations.append(act)
                 inputs = torch.stack(activations,axis=0)
-                predicted = [1 if torch.sigmoid(nlinear_model([inp]).data)>0.5 else 0 for inp in inputs] # [inp] to add bs dimension
+                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:] to add bs dimension
                 y_val_pred += predicted
                 y_val_true += batch['labels'].tolist()
                 val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
@@ -381,7 +381,7 @@ def main():
                         act = my_test_acts[idx]
                         activations.append(act)
                     inputs = torch.stack(activations,axis=0)
-                    predicted = [1 if torch.sigmoid(nlinear_model([inp]).data)>0.5 else 0 for inp in inputs] # [inp] to add bs dimension
+                    predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:] to add bs dimension
                     y_test_pred += predicted
                     y_test_true += batch['labels'].tolist()
                     test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
