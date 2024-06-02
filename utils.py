@@ -53,7 +53,7 @@ class My_Transformer_Layer(torch.nn.Module):
         super().__init__()
         d_model = 256
         dim_feedforward = 256
-        nhead = 12 # 8
+        nhead = 16 # 8
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         # self.classifier = torch.nn.Linear(dim_feedforward, n_outputs, bias)
