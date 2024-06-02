@@ -57,7 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='transfomer')
+    parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)

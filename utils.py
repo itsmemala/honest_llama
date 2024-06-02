@@ -55,7 +55,8 @@ class My_Transformer_Layer(torch.nn.Module):
         dim_feedforward = 256
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=8, dim_feedforward=dim_feedforward, batch_first=True)
-        self.classifier = torch.nn.Linear(dim_feedforward, n_outputs, bias)
+        # self.classifier = torch.nn.Linear(dim_feedforward, n_outputs, bias)
+        self.classifier = torch.nn.Linear(dim_feedforward*n_layers, n_outputs, bias)
     # make predictions
     def forward(self, x): # x: (bs, n_layers, n_inputs)
         layer_wise_x = []
@@ -64,7 +65,8 @@ class My_Transformer_Layer(torch.nn.Module):
         x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
         if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
-        x = x[:,-1,:] # Take last token activations
+        # x = x[:,-1,:] # Take last token activations
+        x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2]))
         y_pred = self.classifier(x)
         return y_pred
 
