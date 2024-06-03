@@ -422,6 +422,7 @@ def main():
             try:
                 agg_layer_preds.append(np.max(layer_preds)) # Maxpool predictions across all tokens at a given layer
             except ValueError:
+                agg_layer_preds.append(0)
                 if i not in error_idxs:
                     print(i)
                     error_idxs.append(i)
