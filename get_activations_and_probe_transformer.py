@@ -397,6 +397,7 @@ def main():
             # Get preds on all tokens
             alltokens_preds = []
             tokenmax_preds, tokenavg_preds = [], []
+            acts_per_file = args.acts_per_file
             for i in tqdm(range(len(test_labels))):
                 # Load activations
                 file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
