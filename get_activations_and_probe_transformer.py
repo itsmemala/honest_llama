@@ -407,7 +407,7 @@ def main():
                 preds_by_token = []
                 for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
                     token_idx = test_answer_token_idxes[i] + token_num
-                    inputs = torch.squeeze(acts_by_layer_token[:][token_idx]) # (layers, act_dims)
+                    inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # (layers, act_dims)
                     print(inputs.shape)
                     inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
                     preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
