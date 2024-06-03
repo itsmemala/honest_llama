@@ -342,7 +342,9 @@ def main():
 
 
     # Get preds on all tokens
-    if args.responses_file_name=='' and args.dataset_name=='tqa_gen': args.responses_file_name = 'greedy_responses_test'
+    if args.responses_file_name=='' and args.dataset_name=='tqa_gen':
+        args.responses_file_name = 'greedy_responses_test'
+        resp_start_idxs = np.load(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_response_start_token_idx.npy')
     try:
         alltokens_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy', allow_pickle=True)
         # raise FileNotFoundError
