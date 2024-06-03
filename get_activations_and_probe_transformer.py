@@ -409,7 +409,7 @@ def main():
                     token_idx = test_answer_token_idxes[i] + token_num
                     inputs = torch.squeeze(acts_by_layer_token[:][token_idx])
                     inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
-                    preds_by_token.append(torch.sigmoid(linear_model(inputs).data).cpu().numpy())
+                    preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
                 preds_by_token = np.array(preds_by_token)
                 alltokens_preds.append(preds_by_token)
                 tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
