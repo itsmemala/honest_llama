@@ -418,7 +418,10 @@ def main():
     for i,sample_preds in tqdm(enumerate(alltokens_preds)):
         agg_layer_preds = []
         for layer_preds in sample_preds:
-            agg_layer_preds.append(np.max(layer_preds)) # Maxpool predictions across all tokens at a given layer
+            try:
+                agg_layer_preds.append(np.max(layer_preds)) # Maxpool predictions across all tokens at a given layer
+            except ValueError:
+                print(i,layer_preds)
         agg_layer_preds = np.array(agg_layer_preds)
         agg_layer_preds = np.concatenate((1-agg_layer_preds[:, None], agg_layer_preds[:, None]),axis=1)
         probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
