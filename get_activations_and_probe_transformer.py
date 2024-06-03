@@ -407,20 +407,18 @@ def main():
                 preds_by_token = []
                 for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
                     token_idx = test_answer_token_idxes[i] + token_num
-                    inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # (layers, act_dims)
-                    print(inputs.shape)
+                    inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # inputs: (layers, act_dims)
                     inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
                     preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
                 preds_by_token = np.array(preds_by_token)
                 alltokens_preds.append(preds_by_token)
                 tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
                 tokenavg_preds.append(1 if np.mean(preds_by_token)>0.5 else 0)
-                break
             alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                 
             alltokens_preds_arr[:] = alltokens_preds
-            # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_alltokens_preds.npy',alltokens_preds_arr)
-            # print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
-            # print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
+            np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_alltokens_preds.npy',alltokens_preds_arr)
+            print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
+            print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
     
 
     # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
