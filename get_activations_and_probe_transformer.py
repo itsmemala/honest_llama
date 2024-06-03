@@ -404,13 +404,12 @@ def main():
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
                 acts_by_layer_token = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
                 # acts_by_layer = acts_by_layer[layer][test_answer_token_idxes[i]:]
-                inputs_by_token = []
+                preds_by_token = []
                 for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
                     token_idx = test_answer_token_idxes[i] + token_num
                     inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # inputs: (layers, act_dims)
-                    inputs_by_token.append(inputs_by_token)
-                inputs_by_token = torch.stack(inputs_by_token) # inputs_by_token: (tokens, layers, act_dims)
-                preds_by_token = torch.sigmoid(nlinear_model(inputs).data).cpu().numpy()
+                    inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
+                    preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
                 preds_by_token = np.array(preds_by_token)
                 alltokens_preds.append(preds_by_token)
                 tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
