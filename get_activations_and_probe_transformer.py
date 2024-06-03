@@ -363,6 +363,7 @@ def main():
         all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
         all_y_true_val[i].append(y_val_true)
         all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+        all_val_logits[i].append(torch.cat(val_logits))
         print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
         pred_correct = 0
         y_test_pred, y_test_true = [], []
@@ -392,7 +393,31 @@ def main():
             all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
             print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
             all_test_logits[i].append(torch.cat(test_logits))
-        all_val_logits[i].append(torch.cat(val_logits))
+
+            # Get preds on all tokens
+            alltokens_preds = []
+            tokenmax_preds, tokenavg_preds = [], []
+            for i in tqdm(range(len(test_labels))):
+                # Load activations
+                file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.dataset_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
+                acts_by_layer_token = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                # acts_by_layer = acts_by_layer[layer][test_answer_token_idxes[i]:]
+                preds_by_token = []
+                for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
+                    token_idx = test_answer_token_idxes[i] + token_num
+                    inputs = torch.squeeze(acts_by_layer_token[:][token_idx])
+                    inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
+                    preds_by_token.append(torch.sigmoid(linear_model(inputs).data).cpu().numpy())
+                preds_by_token = np.array(preds_by_token)
+                alltokens_preds.append(preds_by_token)
+                tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
+                tokenavg_preds.append(1 if np.mean(preds_by_token)>0.5 else 0)
+            alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                 
+            alltokens_preds_arr[:] = alltokens_preds
+            np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_alltokens_preds.npy',alltokens_preds_arr)
+            print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
+            print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
     
 
     # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
