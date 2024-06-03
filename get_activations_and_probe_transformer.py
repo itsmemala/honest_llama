@@ -401,7 +401,7 @@ def main():
             for i in tqdm(range(len(test_labels))):
                 # Load activations
                 file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
-                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.dataset_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
                 acts_by_layer_token = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
                 # acts_by_layer = acts_by_layer[layer][test_answer_token_idxes[i]:]
                 preds_by_token = []
