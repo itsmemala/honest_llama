@@ -416,6 +416,7 @@ def main():
     mc_layer = []
     mc_layers = [] # Layers to be used for contrast in dola
     error_idxs = []
+    no_hallu_preds = 0
     for i,sample_preds in tqdm(enumerate(alltokens_preds)):
         agg_layer_preds = []
         for layer_preds in sample_preds:
@@ -444,12 +445,14 @@ def main():
                     layers_predicting.append(layer)
             layers_predicting= np.array(layers_predicting)
             if len(layers_predicting)>0:
-                mc_val = np.min(probe_wise_entropy[layers_predicting])
-                mc_layers.append(np.argwhere(probe_wise_entropy==mc_val))
+                mc_val = np.min(probe_wise_entropy[layers_predicting]) # Most confident prediction
+                mc_layers.append(np.min(np.argwhere(probe_wise_entropy==mc_val))) # np.min to find first most confident layer
             else:
                 mc_layers.append(-1)
+                no_hallu_preds += 1
     print('Maxpool across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
     print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
+    print('\nSamples with no hallucination prediction:',no_hallu_preds)
     np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers_tokenmax.npy', mc_layers)
 
     # Find most confident layers
