@@ -564,8 +564,8 @@ def main():
                     print('Similarity of knn samples at current layer:',sim[top_k])
                     print('Indices of knn samples at current layer:',cur_knn_idxs)
                     top_k_val = torch.min(torch.topk(sim,knn_k)[0][torch.topk(sim,knn_k)[0]>0]).item() # get smallest top-k sim val (only pos)
-                    print(sim>top_k_val[:5])
-                    print(sim>top_k_val[:5].nonzero(as_tuple=True))
+                    print((sim>top_k_val)[:5])
+                    print((sim>top_k_val)[:5].nonzero(as_tuple=True))
                     top_k = (sim>top_k_val).nonzero(as_tuple=True)[0].detach().cpu().numpy() # save indices of top k similar vectors
                     cur_knn_idxs = np.array(hallu_idxs)[top_k]
                     model_wise_mc_sample_idxs.append(cur_knn_idxs)
