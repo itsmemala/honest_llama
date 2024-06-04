@@ -435,7 +435,16 @@ def main():
             mc_layer.append(layer)
             mc_layers.append(layer)
         else:
-            mc_layers.append(-1) # If not predicted as hallucination, don't contrast, just use normal decoding
+            # mc_layers.append(-1) # If not predicted as hallucination, don't contrast, just use normal decoding
+            layers_predicting = []
+             # Find all layers where prediction is hallu
+            for layer in range(agg_layer_preds.shape[0]):
+                pred = 1 if agg_layer_preds[layer][1]>0 else 0
+                if pred==hallu_cls:
+                    layers_predicting.append(layer)
+            layers_predicting= np.array(layers_predicting)
+            mc_val = np.min(probe_wise_entropy[layers_predicting])
+            mc_layers.append(np.argwhere(probe_wise_entropy==mc_val))
     print('Maxpool across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
     print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
     np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers_tokenmax.npy', mc_layers)
