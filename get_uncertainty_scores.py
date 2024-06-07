@@ -59,7 +59,7 @@ def main():
     print('Loading model responses..')
     prompts, responses = [], []
     if 'baseline' in args.file_name:
-        with open(file_path, 'r') as read_file:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             prompts.append(data['full_input_text'][i])
