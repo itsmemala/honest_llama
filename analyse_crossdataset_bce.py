@@ -7,7 +7,7 @@ import pickle
 import json
 from copy import deepcopy
 from itertools import combinations
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score, classification_report
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score, classification_report, precision_recall_curve, auc
 from sklearn.decomposition import PCA, KernelPCA
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -33,6 +33,7 @@ def list_of_ints(arg):
 #     except FileNotFoundError:
 #         linear_model = torch.load(f'{save_path}/probes/models/{sim_file_name}_model{fold}_{layer}_{head}')
 #     return linear_model.linear.weight[0], linear_model.linear.weight[1]
+
 
 def main():
 
@@ -187,6 +188,8 @@ def main():
             confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
         # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1,:,:]))
+        print('AUC:',auc(recall,precision))
 
         # Best probe from validation data
         confident_sample_pred = []
@@ -195,6 +198,8 @@ def main():
             confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[np.argmax(val_f1_avg)] else 0)
         # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[np.argmax(val_f1_avg),:,:]))
+        print('AUC:',auc(recall,precision))
 
         # Probe selection - a
         confident_sample_pred = []
