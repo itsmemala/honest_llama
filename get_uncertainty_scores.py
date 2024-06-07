@@ -63,7 +63,7 @@ def main():
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             prompts.append(data['full_input_text'][i])
-            response = data['model_completion'][i] if 'strqa' in args.file_path else data['model_answer'][i] # For strqa, we want full COT response
+            response = data['model_completion'][i] if 'strqa' in args.dataset_name else data['model_answer'][i] # For strqa, we want full COT response
             responses.append(response)
     else:
         # data = []
