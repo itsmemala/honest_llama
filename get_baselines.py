@@ -30,7 +30,7 @@ def main():
     args = parser.parse_args()
     
     train_labels, test_labels = [], []
-    if 'baseline' in args.file_name:
+    if 'baseline' in args.train_labels_file_name:
         with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
