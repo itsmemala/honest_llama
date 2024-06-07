@@ -60,7 +60,7 @@ def main():
     prompts, responses = [], []
     if 'baseline' in args.file_name:
         with open(file_path, 'r') as read_file:
-        data = json.load(read_file)
+            data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             prompts.append(data['full_input_text'][i])
             response = data['model_completion'][i] if 'strqa' in file_path else data['model_answer'][i] # For strqa, we want full COT response
