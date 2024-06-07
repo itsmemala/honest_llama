@@ -290,18 +290,21 @@ def main():
         print('AUC:',auc(recall,precision))
 
         # Probe selection - d
-        confident_sample_pred = []
+        confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
             class_1_vote_cnt = sum(sample_pred_val)
             maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
             confident_sample_pred.append(maj_vote)
+            confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+        print('AUC:',auc(recall,precision))
 
          # Probe selection - d
-        confident_sample_pred = []
+        confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_val = [1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)]
@@ -309,8 +312,11 @@ def main():
             class_1_vote_cnt = sum(sample_pred_val[incl_layers])
             maj_vote = 1 if class_1_vote_cnt>=(len(incl_layers)/2) else 0
             confident_sample_pred.append(maj_vote)
+            confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+        print('AUC:',auc(recall,precision))
 
         # MC5 Statistics
         confident_sample_pred = []
