@@ -138,6 +138,7 @@ def main():
     test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], []
     layer_pred_thresholds = []
     excl_layers, incl_layers = [], []
+    aupr_by_layer = []
     for model in range(all_val_pred[fold].shape[0]):
         if args.best_threshold:
             best_val_perf, best_t = 0, 0.5
@@ -172,11 +173,14 @@ def main():
         cls0_f1 = f1_score(labels,test_pred_model,pos_label=0)
         test_f1_cls0.append(cls0_f1)
         test_f1_cls1.append(cls1_f1)
+        precision, recall, _ = precision_recall_curve(labels, np.squeeze(all_preds[model,:,:]))
+        aupr_by_layer.append(auc(recall,precision))
     # print('\nValidation performance:\n',val_f1_avg)
     incl_layers = np.array(incl_layers)
     print('\nExcluded layers:',excl_layers)
     if 'hallu_pos' in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
     if 'hallu_pos' not in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
+    print('Avg AUC:',np.mean(aupr_by_layer))
 
     print('\n')
     if len(labels)>0:
