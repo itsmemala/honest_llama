@@ -31,20 +31,20 @@ def main():
     
     train_labels, test_labels = [], []
     if 'baseline' in args.train_labels_file_name:
-        with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             train_labels.append(1 if data['is_correct'][i]==True else 0)
-        with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.test_labels_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             test_labels.append(1 if data['is_correct'][i]==True else 0)
     else:
-        with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
                 train_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
-        with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.test_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
                 test_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
