@@ -57,17 +57,31 @@ def main():
     device = "cuda"
 
     print('Loading model responses..')
-    data = []
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
-        for line in read_file:
-            data.append(json.loads(line))
+    prompts, responses = [], []
+    if 'baseline' in args.file_name:
+        with open(file_path, 'r') as read_file:
+        data = json.load(read_file)
+        for i in range(len(data['full_input_text'])):
+            prompts.append(data['full_input_text'][i])
+            response = data['model_completion'][i] if 'strqa' in file_path else data['model_answer'][i] # For strqa, we want full COT response
+            responses.append(response)
+    else:
+        # data = []
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
+            for line in read_file:
+                # data.append(json.loads(line))
+                data = json.loads(line)
+                prompts.append(data['prompt'])
+                responses.append(data['response1'])
+
     
     print('Getting token probability scores..')
     # Get token probabilities
     scores = []
-    for i,sample in tqdm(enumerate(data)):
-        prompt = sample['prompt']
-        response = sample['response1']
+    # for i,sample in tqdm(enumerate(data)):
+        # prompt = sample['prompt']
+        # response = sample['response1']
+    for prompt,response in tqdm(zip(prompts,responses)):
         tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
         # tokenized_input = tokenized_input[tokenized_input != tokenizer.pad_token_id]
         tokenized_prompt = tokenizer([prompt], return_tensors = 'pt').input_ids
