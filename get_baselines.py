@@ -4,7 +4,7 @@ import numpy as np
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
 import argparse
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, auc
 from matplotlib import pyplot as plt
 
 def boolean_string(s):
@@ -29,17 +29,26 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
     
-    train_labels = []
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
-        for line in read_file:
-            data = json.loads(line)
-            train_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
+    train_labels, test_labels = [], []
+    if 'baseline' in args.file_name:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
+            data = json.load(read_file)
+        for i in range(len(data['full_input_text'])):
+            train_labels.append(1 if data['is_correct'][i]==True else 0)
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
+            data = json.load(read_file)
+        for i in range(len(data['full_input_text'])):
+            test_labels.append(1 if data['is_correct'][i]==True else 0)
+    else:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json', 'r') as read_file:
+            for line in read_file:
+                data = json.loads(line)
+                train_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
+            for line in read_file:
+                data = json.loads(line)
+                test_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
     train_labels = train_labels[:args.len_dataset]
-    test_labels = []
-    with open(f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json', 'r') as read_file:
-        for line in read_file:
-            data = json.loads(line)
-            test_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
     
     # Set seed
     np.random.seed(42)
@@ -98,6 +107,7 @@ def main():
                 print('Optimising for cls1:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
                 threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
                 print('Optimising for avg:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
+                print('AUPR:',auc(recall,pr))
     
 
 if __name__ == '__main__':
