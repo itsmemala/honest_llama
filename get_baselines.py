@@ -108,7 +108,8 @@ def main():
                 threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
                 print('Optimising for avg:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
                 # Note: we load the labels above with 0 being the hallu cls
-                print('AUPR for cls0 (=hallu class):',auc(recall[:,0],pr[:,0]))
+                recall, pr = [r0 for r0,r1 in recall] = [p0 for p0,p1 in pr]
+                print('AUPR for cls0 (=hallu class):',auc(recall,pr))
     
 
 if __name__ == '__main__':
