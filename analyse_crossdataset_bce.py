@@ -202,18 +202,22 @@ def main():
         print('AUC:',auc(recall,precision))
 
         # Probe selection - a
-        confident_sample_pred = []
+        confident_sample_pred,confident_sample_probs = [], []
         mc_layer = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
             # print(sample_pred.shape,sample_pred[:5])
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-            confident_sample_pred.append(np.argmax(sample_pred[np.argmin(probe_wise_entropy)]))
-            if confident_sample_pred[-1]==hallu_cls: mc_layer.append(np.argmin(probe_wise_entropy))
+            layer = np.argmin(probe_wise_entropy)
+            confident_sample_pred.append(np.argmax(sample_pred[layer]))
+            confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
+            if confident_sample_pred[-1]==hallu_cls: mc_layer.append(layer)
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using most confident probe per sample (0.5 threshold):\n',classification_report(labels,confident_sample_pred))
         print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
+        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+        print('AUC:',auc(recall,precision))
 
         # Probe selection - a
         confident_sample_pred = []
@@ -228,7 +232,7 @@ def main():
         print('Using most confident probe per sample (best val threshold):\n',classification_report(labels,confident_sample_pred))
 
         # Probe selection - a
-        confident_sample_pred = []
+        confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
@@ -236,37 +240,50 @@ def main():
             probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
             layer = incl_layers[np.argmin(probe_wise_entropy[incl_layers])]
             confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
+            confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+        print('AUC:',auc(recall,precision))
 
         # Probe selection - a
-        confident_sample_pred = []
+        confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
+            confident_sample_probs.append(np.max(sample_pred))
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using max prob probe per sample (actual prob):\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+        print('AUC:',auc(recall,precision))
+
 
         # Probe selection - a
-        confident_sample_pred = []
+        confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]
             layer = np.argmax(sample_pred_dist)
             confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
+            confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using max prob probe per sample (distance from best val threshold):\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+        print('AUC:',auc(recall,precision))
 
         # Probe selection - a
-        confident_sample_pred = []
+        confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
             sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]
             sample_pred_dist = np.array(sample_pred_dist)
             layer = incl_layers[np.argmax(sample_pred_dist[incl_layers])]
             confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
+            confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using max prob probe per sample (distance from best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
+        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+        print('AUC:',auc(recall,precision))
 
         # Probe selection - d
         confident_sample_pred = []
@@ -396,7 +413,7 @@ def main():
     #     sns_fig.get_figure().savefig(f'{args.save_path}/predplot{i}.png')
 
     print('\nAnalyse probe prediction pattern across all answer tokens...')
-    confident_sample_pred = []
+    confident_sample_pred,confident_sample_probs = [], []
     mc_layer = []
     mc_layers = [] # Layers to be used for contrast in dola
     for i,sample_preds in tqdm(enumerate(alltokens_preds)):
@@ -408,16 +425,19 @@ def main():
         probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
         layer = np.argmin(probe_wise_entropy)
         confident_sample_pred.append(1 if agg_layer_preds[layer][1]>0 else 0) # Note this is already the distance from threshold, therefore we check for >0
+        confident_sample_probs.append(agg_layer_preds[layer][1])
         if confident_sample_pred[-1]==hallu_cls: 
             mc_layer.append(layer)
             mc_layers.append(layer)
         else:
             mc_layers.append(-1) # If not predicted as hallucination, don't contrast, just use normal decoding
     print('Averaging across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
+    precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+    print('AUC:',auc(recall,precision))
     print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
     np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers_tokenavg.npy', mc_layers)
 
-    confident_sample_pred = []
+    confident_sample_pred,confident_sample_probs = [], []
     mc_layer = []
     mc_layers = [] # Layers to be used for contrast in dola
     error_idxs = []
@@ -437,6 +457,7 @@ def main():
         probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
         layer = np.argmin(probe_wise_entropy)
         confident_sample_pred.append(1 if agg_layer_preds[layer][1]>0 else 0) # Note this is already the distance from threshold, therefore we check for >0
+        confident_sample_probs.append(agg_layer_preds[layer][1])
         if confident_sample_pred[-1]==hallu_cls: 
             mc_layer.append(layer)
             mc_layers.append(layer)
@@ -456,6 +477,8 @@ def main():
                 mc_layers.append(-1)
                 no_hallu_preds += 1
     print('Maxpool across tokens and using most confident probe:\n',classification_report(labels,confident_sample_pred))
+    precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+    print('AUC:',auc(recall,precision))
     print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
     print('\nSamples with no hallucination prediction:',no_hallu_preds)
     np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers_tokenmax.npy', mc_layers)
