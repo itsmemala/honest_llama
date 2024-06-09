@@ -43,7 +43,6 @@ def main():
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
-                print(data)
                 train_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.test_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
