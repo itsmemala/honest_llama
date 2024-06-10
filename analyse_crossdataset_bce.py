@@ -157,8 +157,8 @@ def main():
         val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
         val_pred_model[val_pred_model>best_t] = 1
         val_pred_model[val_pred_model<=best_t] = 0
-        cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
-        cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
+        cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
+        cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
         val_f1_cls0.append(cls0_f1)
         val_f1_cls1.append(cls1_f1)
         val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
