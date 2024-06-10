@@ -457,10 +457,8 @@ def main():
                             epoch_spl_loss += spl_loss.item()
                         train_loss.append(loss.item())
                         loss.backward()
-                        max_grad = 0
                         for p in nlinear_model.parameters():
-                            if p.grad.data>max_grad: max_grad = p.grad.data
-                        if layer==3: print(max_grad)
+                            if layer==3: print(torch.max(p.grad.data)[0])
                         optimizer.step()
                     
                     # After each epoch, print mean similarity to top-k samples from first epoch
