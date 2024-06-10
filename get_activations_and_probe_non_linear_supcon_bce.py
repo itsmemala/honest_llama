@@ -366,7 +366,7 @@ def main():
                 # Final layer classifier training
                 print('Final layer classifier training...')
                 train_loss, val_loss = [], []
-                best_val_loss = torch.inf
+                best_val_loss, best_spl_loss = torch.inf, torch.inf
                 best_model_state = deepcopy(nlinear_model.state_dict())
                 no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
                 named_params = [] # list(nlinear_model.named_parameters())
@@ -534,9 +534,14 @@ def main():
                     val_loss.append(epoch_val_loss)
                     print(epoch_spl_loss, epoch_train_loss, epoch_val_loss)
                     # Choose best model
-                    if epoch_val_loss < best_val_loss:
-                        best_val_loss = epoch_val_loss
-                        best_model_state = deepcopy(nlinear_model.state_dict())
+                    if 'specialised' in args.method:
+                        if epoch_spl_loss < best_spl_loss:
+                            best_spl_loss = epoch_spl_loss
+                            best_model_state = deepcopy(nlinear_model.state_dict())
+                    else:
+                        if epoch_val_loss < best_val_loss:
+                            best_val_loss = epoch_val_loss
+                            best_model_state = deepcopy(nlinear_model.state_dict())
                     # Early stopping
                     patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
                     if len(val_loss)>=patience:
