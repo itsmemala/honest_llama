@@ -458,7 +458,7 @@ def main():
                         train_loss.append(loss.item())
                         loss.backward()
                         max_grad = 0
-                        for p in model.parameters():
+                        for p in nlinear_model.parameters():
                             if p.grad.data>max_grad: max_grad = p.grad.data
                         if layer==3: print(max_grad)
                         optimizer.step()
