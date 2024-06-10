@@ -57,7 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
-    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <_hallu_pos>)
+    parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <reverse>, <_hallu_pos>)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
@@ -267,7 +267,8 @@ def main():
         all_val_sim[i], all_test_sim[i] = [], []
         model_wise_mc_sample_idxs, probes_saved = [], []
         num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
-        for layer in tqdm(range(num_layers)):
+        loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
+        for layer in tqdm(loop_layers):
         # for layer in [29,30,31,32]:
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
