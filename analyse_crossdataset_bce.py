@@ -139,7 +139,7 @@ def main():
     layer_pred_thresholds = []
     excl_layers, incl_layers = [], []
     aupr_by_layer = []
-    for model in range(all_val_pred[fold].shape[0]):
+    for model in range(len(all_val_pred[fold])):
         if args.best_threshold:
             best_val_perf, best_t = 0, 0.5
             for t in [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]:
