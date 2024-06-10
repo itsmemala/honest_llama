@@ -248,6 +248,7 @@ def main():
         print('Training FOLD',i)
         train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
         test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
+        cur_probe_train_idxs = train_idxs
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
@@ -270,9 +271,15 @@ def main():
         # for layer in [29,30,31,32]:
             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
             for head in loop_heads:
-                # if 'individual_non_linear' in args.method:
-                cur_probe_train_set_idxs = np.array([idx for idx in train_set_idxs if not any(idx in mc_idxs for mc_idxs in model_wise_mc_sample_idxs)]) if args.excl_ce else train_set_idxs
+                if args.excl_ce:
+                    cur_probe_train_idxs = np.array([idx for idx in cur_probe_train_idxs if not any(idx in mc_idxs for mc_idxs in model_wise_mc_sample_idxs)]) # Exclude top-k samples of previous probe from current train pool
+                    cur_probe_train_set_idxs = np.random.choice(cur_probe_train_idxs, size=int(len(cur_probe_train_idxs)*(1-0.2)), replace=False) # Split current train pool to train-set and val-set
+                    val_set_idxs = np.array([x for x in cur_probe_train_idxs if x not in cur_probe_train_set_idxs])
+                else:
+                    cur_probe_train_set_idxs = train_set_idxs
+                    val_set_idxs = val_set_idxs
                 cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
+                y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
                 train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
                 class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
                 weight = 1. / class_sample_count
@@ -544,7 +551,7 @@ def main():
                 # if 'specialised' in args.method:
                 if bias==False:
                     hallu_idxs, acts = [], []
-                    for idx in cur_probe_train_set_idxs:
+                    for idx in cur_probe_train_idxs: # Identify top-k samples of current train pool
                         if labels[idx]==hallu_cls:
                             hallu_idxs.append(idx)
                             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
