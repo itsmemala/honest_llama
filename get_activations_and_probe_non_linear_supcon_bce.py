@@ -366,7 +366,7 @@ def main():
                     if final_layer_name in n: # Always train final layer params
                         named_params.append((n,param))
                         param.requires_grad = True
-                        if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -100, 100)) # Clip grads
+                        if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -1, 1)) # Clip grads
                     else:
                         if 'supcon' in args.method: # Do not train non-final layer params when using supcon
                             param.requires_grad = False
@@ -375,7 +375,7 @@ def main():
                         else: # Train all params when not using supcon (Note: projection layer is detached from loss so does not matter)
                             named_params.append((n,param))
                             param.requires_grad = True
-                            if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -100, 100)) # Clip grads
+                            if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -1, 1)) # Clip grads
                 optimizer_grouped_parameters = [
                     {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                     {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
