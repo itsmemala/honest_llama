@@ -55,7 +55,7 @@ def main():
     hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
 
     responses, labels = [], []
-    if args.responses_file_name!='':
+    if args.responses_file_name!='' and 'baseline' in args.responses_file_name:
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
             for i in range(len(data['full_input_text'])):
