@@ -133,13 +133,12 @@ def main():
 
 
 
-    all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True)
+    all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
     fold = 0
     test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], []
     layer_pred_thresholds = []
     excl_layers, incl_layers = [], []
     aupr_by_layer = []
-    print(all_val_pred['0'])
     for model in range(len(all_val_pred[fold])):
         if args.best_threshold:
             best_val_perf, best_t = 0, 0.5
