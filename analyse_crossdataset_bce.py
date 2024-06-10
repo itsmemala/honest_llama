@@ -381,6 +381,7 @@ def main():
         alltokens_preds = np.load(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}_alltokens_preds.npy', allow_pickle=True)
         # raise FileNotFoundError
     except FileNotFoundError:
+        resp_start_idxs = np.load(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_response_start_token_idx.npy')
         alltokens_preds = []
         # Get predictions from probes trained on greedy/baseline responses
         args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
