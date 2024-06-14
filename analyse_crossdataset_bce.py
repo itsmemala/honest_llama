@@ -7,7 +7,7 @@ import pickle
 import json
 from copy import deepcopy
 from itertools import combinations
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score, classification_report, precision_recall_curve, auc
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, precision_score, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from sklearn.decomposition import PCA, KernelPCA
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -135,10 +135,10 @@ def main():
 
     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
     fold = 0
-    test_f1_cls0, test_f1_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], []
+    test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
     layer_pred_thresholds = []
     excl_layers, incl_layers = [], []
-    aupr_by_layer = []
+    aupr_by_layer, auroc_by_layer = [], []
     for model in range(len(all_val_pred[fold])):
         if args.best_threshold:
             best_val_perf, best_t = 0, 0.5
@@ -169,18 +169,25 @@ def main():
         test_pred_model = deepcopy(all_preds[model]) # Deep copy so as to not touch orig values
         test_pred_model[test_pred_model>best_t] = 1
         test_pred_model[test_pred_model<=best_t] = 0
-        cls1_f1 = f1_score(labels,test_pred_model)
-        cls0_f1 = f1_score(labels,test_pred_model,pos_label=0)
+        cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
+        cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
         test_f1_cls0.append(cls0_f1)
         test_f1_cls1.append(cls1_f1)
+        test_recall_cls0.append(cls0_re)
+        test_recall_cls1.append(cls1_re)
         precision, recall, _ = precision_recall_curve(labels, np.squeeze(all_preds[model,:,:]))
         aupr_by_layer.append(auc(recall,precision))
+        auroc_by_layer.append(roc_auc_score(recall,precision))
     # print('\nValidation performance:\n',val_f1_avg)
     incl_layers = np.array(incl_layers)
     print('\nExcluded layers:',excl_layers)
-    if 'hallu_pos' in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
-    if 'hallu_pos' not in args.probes_file_name: print('\nAverage:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
-    print('Avg AUC:',np.mean(aupr_by_layer))
+    if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
+    if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
+    if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
+    if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
+    print('Avg AUPR:',np.mean(aupr_by_layer))
+    print('Avg AUROC:',np.mean(auroc_by_layer))
+
 
     print('\n')
     if len(labels)>0:
@@ -193,7 +200,8 @@ def main():
         # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1,:,:]))
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
 
         # Best probe from validation data
         confident_sample_pred = []
@@ -203,8 +211,10 @@ def main():
         # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[np.argmax(val_f1_avg),:,:]))
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,np.squeeze(all_preds[np.argmax(val_f1_avg),:,:])))
 
+        #####################################################################################################################################
         # Probe selection - a
         confident_sample_pred,confident_sample_probs = [], []
         mc_layer = []
@@ -221,7 +231,8 @@ def main():
         print('Using most confident probe per sample (0.5 threshold):\n',classification_report(labels,confident_sample_pred))
         print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
         # Probe selection - a
         confident_sample_pred = []
@@ -248,8 +259,10 @@ def main():
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
+        #####################################################################################################################################
         # Probe selection - a
         confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
@@ -259,8 +272,8 @@ def main():
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using max prob probe per sample (actual prob):\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUC:',auc(recall,precision))
-
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
         # Probe selection - a
         confident_sample_pred,confident_sample_probs = [], []
@@ -273,7 +286,8 @@ def main():
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using max prob probe per sample (distance from best val threshold):\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
         # Probe selection - a
         confident_sample_pred,confident_sample_probs = [], []
@@ -287,7 +301,9 @@ def main():
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using max prob probe per sample (distance from best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+        #####################################################################################################################################
 
         # Probe selection - d
         confident_sample_pred,confident_sample_probs = [], []
@@ -301,7 +317,8 @@ def main():
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
          # Probe selection - d
         confident_sample_pred,confident_sample_probs = [], []
@@ -316,7 +333,8 @@ def main():
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUC:',auc(recall,precision))
+        print('AUPR:',auc(recall,precision))
+        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
         # MC5 Statistics
         confident_sample_pred = []
