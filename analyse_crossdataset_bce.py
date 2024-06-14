@@ -177,7 +177,7 @@ def main():
         test_recall_cls1.append(cls1_re)
         precision, recall, _ = precision_recall_curve(labels, np.squeeze(all_preds[model,:,:]))
         aupr_by_layer.append(auc(recall,precision))
-        auroc_by_layer.append(roc_auc_score(recall,precision))
+        auroc_by_layer.append(roc_auc_score(labels, np.squeeze(all_preds[model,:,:])))
     # print('\nValidation performance:\n',val_f1_avg)
     incl_layers = np.array(incl_layers)
     print('\nExcluded layers:',excl_layers)
