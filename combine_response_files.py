@@ -21,13 +21,13 @@ def main():
     args = parser.parse_args()
     
     labels_data = []
-    for end in [5000,10000]:
+    for end in [10000,20000]:
         with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train{end}.json', 'r') as read_file:
             for line in read_file:
                 labels_data.append(json.loads(line))
-    train_len = 10000
+    train_len = 20000
     print(train_len)
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train10000.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train20000.json', 'w') as outfile:
         for entry in labels_data[:train_len]:
             json.dump(entry, outfile)
             outfile.write('\n')
@@ -37,13 +37,13 @@ def main():
     #         outfile.write('\n')
     
     response_data = []
-    for end in [5000,10000]:
+    for end in [10000,20000]:
         with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_train{end}.json', 'r') as read_file:
             for line in read_file:
                 response_data.append(json.loads(line))
-    train_len = 10000
+    train_len = 20000
     num_correct = 0
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_train10000.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_train20000.json', 'w') as outfile:
         for entry in response_data[:train_len]:
             json.dump(entry, outfile)
             outfile.write('\n')
