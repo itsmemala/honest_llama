@@ -129,9 +129,9 @@ def main():
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
         with open(file_path, 'r') as read_file:
-        data = []
-        for line in read_file:
-            data.append(json.loads(line))
+            data = []
+            for line in read_file:
+                data.append(json.loads(line))
     # else: 
     #     prompts, labels = formatter(dataset, tokenizer)
 
