@@ -209,7 +209,6 @@ def main():
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
                     attr_method = LayerIntegratedGradients(model, 'model.layers.33')
                     attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
-                    print(prompt.shape)
                     attr = attr_method_llm.attribute(row['prompt'],row['response1'])
                     print(attr.shape)
                 if args.token=='answer_last': #last
