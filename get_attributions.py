@@ -9,6 +9,7 @@ import pickle
 from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file, tokenized_from_file_v2
 import llama
 import argparse
+import torch.nn.functional as F
 from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
@@ -218,7 +219,7 @@ def main():
                         attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
                         # print(attr.seq_attr.shape, attr.token_attr.shape, len(tokenized_prompt[0])) # seq_attr: (num_prompt_tokens), token_attr: (num_response_tokens, num_prompt_tokens)
                         raw_layer_wise_attributions.append(torch.max(attr.token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
-                        norm_token_attr = F.normalize(attr.token_attr, p=2) # Normalise all attributions at given layer
+                        norm_token_attr = F.normalize(attr.token_attr, p=2) # Normalise all attributions at current layer
                         norm_layer_wise_attributions.append(torch.max(norm_token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
                     raw_layer_wise_attributions, norm_layer_wise_attributions = torch.stack(raw_layer_wise_attributions), torch.stack(norm_layer_wise_attributions)
                     fig, axs = plt.subplots(1,1)
@@ -258,9 +259,9 @@ def main():
         #     break
         # break
 
-        print("Saving layer wise attributions")
-        with open(f'{args.save_path}/attributions/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
-            pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        # print("Saving layer wise attributions")
+        # with open(f'{args.save_path}/attributions/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+        #     pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
     main()
