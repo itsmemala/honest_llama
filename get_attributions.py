@@ -207,8 +207,8 @@ def main():
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
                 else:
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-                    for n,m in model.named_modules():
-                        # print(n)
+                    for n,m in model.named_parameters():
+                        print(n)
                         if n=='model.layers.31': layer = m
                     attr_method = LayerIntegratedGradients(model, layer)
                     attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
