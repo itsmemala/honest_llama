@@ -13,6 +13,8 @@ from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from captum.attr import LLMGradientAttribution, LayerIntegratedGradients, TextTokenInput
+from matplotlib import pyplot as plt
+import seaborn as sns
 
 HF_NAMES = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
@@ -182,9 +184,7 @@ def main():
 
     
     for start, end in load_ranges:
-        all_layer_wise_activations = []
-        all_head_wise_activations = []
-        all_mlp_wise_activations = []
+        all_layer_wise_attributions = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
         for row,tokenized_prompt,answer_token_idx in tqdm(zip(data[start:end],tokenized_prompts[start:end],answer_token_idxes[start:end])):
@@ -207,13 +207,21 @@ def main():
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
                 else:
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-                    for n,m in model.named_modules():
-                        # print(n)
-                        if n=='model.layers.31.layer_out': layer = m
-                    attr_method = LayerIntegratedGradients(model, layer)
-                    attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
-                    attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
-                    print(attr.seq_attr.shape, attr.token_attr.shape, len(tokenized_prompt[0]))
+                    layer_wise_attributions = []
+                    for layer_name in [f'model.layers.{i}.layer_out' for i in range(model.config.num_hidden_layers)]
+                        for n,m in model.named_modules():
+                            # print(n)
+                            if n==layer_name: layer = m
+                        attr_method = LayerIntegratedGradients(model, layer)
+                        attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
+                        attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
+                        # print(attr.seq_attr.shape, attr.token_attr.shape, len(tokenized_prompt[0])) # seq_attr: (num_prompt_tokens), token_attr: (num_response_tokens, num_prompt_tokens)
+                        layer_wise_attributions.append(torch.max(attr.token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
+                    layer_wise_attributions = torch.stack(layer_wise_attributions)
+                    fig, axs = plt.subplots(1,1)
+                    sns_fig = sns.heatmap(layer_wise_attributions, linewidth=0.5)
+                    sns_fig.get_figure().savefig(f'{args.save_path}/attrplot{i}.png')
+                    all_layer_wise_attributions.append(layer_wise_attributions)
                 # if args.token=='answer_last': #last
                 #     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
                 #     all_head_wise_activations.append(head_wise_activations[:,-1,:])
@@ -245,25 +253,9 @@ def main():
             break
         break
 
-        # if args.mlp_l1=='Yes':
-        #     print("Saving mlp l1 activations")
-        #     with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_l1_{end}.pkl', 'wb') as outfile:
-        #         pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
-        # else:
-        #     print("Saving layer wise activations")
-        #     # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
-        #     with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
-        #         pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
-            
-        #     print("Saving head wise activations")
-        #     # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
-        #     with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
-        #         pickle.dump(all_head_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
-
-        #     print("Saving mlp wise activations")
-        #     # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
-        #     with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
-        #         pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        print("Saving layer wise attributions")
+        with open(f'{args.save_path}/attributions/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+            pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
     main()
