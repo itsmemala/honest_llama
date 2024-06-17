@@ -209,7 +209,7 @@ def main():
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
                 else:
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-                    print(i,row['response1'],tokens)
+                    print(i,row['response1'],tokens[answer_token_idx:])
                     # raw_layer_wise_attributions, norm_layer_wise_attributions = [], []
                     # for layer_name in [f'model.layers.{j}.layer_out' for j in range(model.config.num_hidden_layers)]:
                     #     for n,m in model.named_modules():
