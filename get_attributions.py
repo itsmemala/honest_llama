@@ -189,7 +189,7 @@ def main():
         end=10
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for i,(row,tokenized_prompt,answer_token_idx) in tqdm(enumerate(zip(data[start:end],tokenized_prompts[start:end],answer_token_idxes[start:end]))):
+        for i,(row,tokenized_prompt,resp_tokens,answer_token_idx) in tqdm(enumerate(zip(data[start:end],tokenized_prompts[start:end],resp_tokenized[start:end],answer_token_idxes[start:end]))):
             if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
                 # if args.token=='answer_last': #last
@@ -209,7 +209,7 @@ def main():
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
                 else:
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-                    print(i,row['response1'])
+                    print(i,row['response1'],resp_tokens)
                     # raw_layer_wise_attributions, norm_layer_wise_attributions = [], []
                     # for layer_name in [f'model.layers.{j}.layer_out' for j in range(model.config.num_hidden_layers)]:
                     #     for n,m in model.named_modules():
