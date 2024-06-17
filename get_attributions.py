@@ -213,7 +213,7 @@ def main():
                     attr_method = LayerIntegratedGradients(model, layer)
                     attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
                     attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
-                    print(attr.shape)
+                    print(attr.seq_attr.shape, attr.token_attr.shape)
                 if args.token=='answer_last': #last
                     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,-1,:])
