@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import datasets
 from datasets import load_dataset
@@ -7,7 +8,6 @@ import numpy as np
 import pickle
 from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file, tokenized_from_file_v2
 import llama
-import pickle
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
