@@ -209,24 +209,26 @@ def main():
                     layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
                 else:
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-                    raw_layer_wise_attributions, norm_layer_wise_attributions = [], []
-                    for layer_name in [f'model.layers.{j}.layer_out' for j in range(model.config.num_hidden_layers)]:
-                        for n,m in model.named_modules():
-                            # print(n)
-                            if n==layer_name: layer = m
-                        attr_method = LayerIntegratedGradients(model, layer)
-                        attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
-                        attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
-                        # print(attr.seq_attr.shape, attr.token_attr.shape, len(tokenized_prompt[0])) # seq_attr: (num_prompt_tokens), token_attr: (num_response_tokens, num_prompt_tokens)
-                        raw_layer_wise_attributions.append(torch.max(attr.token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
-                        norm_token_attr = F.normalize(attr.token_attr, p=2) # Normalise all attributions at current layer
-                        norm_layer_wise_attributions.append(torch.max(norm_token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
-                    raw_layer_wise_attributions, norm_layer_wise_attributions = torch.stack(raw_layer_wise_attributions), torch.stack(norm_layer_wise_attributions)
-                    fig, axs = plt.subplots(1,1)
-                    sns_fig = sns.heatmap(raw_layer_wise_attributions.cpu(), linewidth=0.5)
-                    sns_fig.get_figure().savefig(f'{args.save_path}/raw_attrplot{i}.png')
-                    sns_fig = sns.heatmap(norm_layer_wise_attributions.cpu(), linewidth=0.5)
-                    sns_fig.get_figure().savefig(f'{args.save_path}/norm_attrplot{i}.png')
+                    print(row['response1'])
+                    # raw_layer_wise_attributions, norm_layer_wise_attributions = [], []
+                    # for layer_name in [f'model.layers.{j}.layer_out' for j in range(model.config.num_hidden_layers)]:
+                    #     for n,m in model.named_modules():
+                    #         # print(n)
+                    #         if n==layer_name: layer = m
+                    #     attr_method = LayerIntegratedGradients(model, layer)
+                    #     attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
+                    #     attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
+                    #     # print(attr.seq_attr.shape, attr.token_attr.shape, len(tokenized_prompt[0])) # seq_attr: (num_prompt_tokens), token_attr: (num_response_tokens, num_prompt_tokens)
+                    #     raw_layer_wise_attributions.append(torch.max(attr.token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
+                    #     norm_token_attr = F.normalize(attr.token_attr, p=2) # Normalise all attributions at current layer
+                    #     norm_layer_wise_attributions.append(torch.max(norm_token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
+                    # raw_layer_wise_attributions, norm_layer_wise_attributions = torch.stack(raw_layer_wise_attributions), torch.stack(norm_layer_wise_attributions)
+                    # fig, axs = plt.subplots(1,1)
+                    # sns_fig = sns.heatmap(raw_layer_wise_attributions.cpu(), linewidth=0.5)
+                    # sns_fig.get_figure().savefig(f'{args.save_path}/raw_attrplot{i}.png')
+                    # fig, axs = plt.subplots(1,1)
+                    # sns_fig = sns.heatmap(norm_layer_wise_attributions.cpu(), linewidth=0.5)
+                    # sns_fig.get_figure().savefig(f'{args.save_path}/norm_attrplot{i}.png')
                     # all_layer_wise_attributions.append(layer_wise_attributions)
                 # if args.token=='answer_last': #last
                 #     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
