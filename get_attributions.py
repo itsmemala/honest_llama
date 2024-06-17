@@ -127,8 +127,11 @@ def main():
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
-        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
-        np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
+        # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
+        with open(file_path, 'r') as read_file:
+        data = []
+        for line in read_file:
+            data.append(json.loads(line))
     # else: 
     #     prompts, labels = formatter(dataset, tokenizer)
 
@@ -184,7 +187,7 @@ def main():
         all_mlp_wise_activations = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for prompt,token_idx in tqdm(zip(tokenized_prompts[start:end],answer_token_idxes[start:end])):
+        for row,token_idx in tqdm(zip(data[start:end],answer_token_idxes[start:end])):
             if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
                 # if args.token=='answer_last': #last
@@ -207,7 +210,7 @@ def main():
                     attr_method = LayerIntegratedGradients(model, 'model.layers.33')
                     attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
                     print(prompt.shape)
-                    attr = attr_method_llm.attribute(prompt[:token_idx],prompt[token_idx:])
+                    attr = attr_method_llm.attribute(row['prompt'],row['response1'])
                     print(attr.shape)
                 if args.token=='answer_last': #last
                     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
