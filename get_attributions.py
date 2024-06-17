@@ -208,8 +208,8 @@ def main():
                 else:
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
                     for n,m in model.named_parameters():
-                        print(n)
-                        if n=='model.layers.31': layer = m
+                        # print(n)
+                        if n=='model.layers.31.mlp.down_proj.weight': layer = m
                     attr_method = LayerIntegratedGradients(model, layer)
                     attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
                     attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
