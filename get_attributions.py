@@ -187,7 +187,7 @@ def main():
         all_mlp_wise_activations = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for row,answer_token_idx in tqdm(zip(data[start:end],answer_token_idxes[start:end])):
+        for row,tokenized_prompt,answer_token_idx in tqdm(zip(data[start:end],tokenized_prompts[start:end],answer_token_idxes[start:end])):
             if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
                 # if args.token=='answer_last': #last
@@ -213,7 +213,7 @@ def main():
                     attr_method = LayerIntegratedGradients(model, layer)
                     attr_method_llm = LLMGradientAttribution(attr_method, tokenizer)
                     attr = attr_method_llm.attribute(TextTokenInput(row['prompt'], tokenizer),row['response1'])
-                    print(attr.seq_attr.shape, attr.token_attr.shape)
+                    print(attr.seq_attr.shape, attr.token_attr.shape, len(tokenized_prompt))
                 if args.token=='answer_last': #last
                     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,-1,:])
