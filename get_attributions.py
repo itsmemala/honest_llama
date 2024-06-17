@@ -220,7 +220,7 @@ def main():
                     layer_wise_attributions = torch.stack(layer_wise_attributions)
                     fig, axs = plt.subplots(1,1)
                     sns_fig = sns.heatmap(layer_wise_attributions.cpu(), linewidth=0.5)
-                    sns_fig.get_figure().savefig(f'{args.save_path}/attrplot{i}.png')
+                    sns_fig.get_figure().savefig(f'{args.save_path}/attrplot.png')
                     all_layer_wise_attributions.append(layer_wise_attributions)
                 # if args.token=='answer_last': #last
                 #     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
