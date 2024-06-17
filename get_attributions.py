@@ -208,7 +208,7 @@ def main():
                 else:
                     # layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
                     layer_wise_attributions = []
-                    for layer_name in [f'model.layers.{i}.layer_out' for i in range(model.config.num_hidden_layers)]
+                    for layer_name in [f'model.layers.{i}.layer_out' for i in range(model.config.num_hidden_layers)]:
                         for n,m in model.named_modules():
                             # print(n)
                             if n==layer_name: layer = m
