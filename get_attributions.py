@@ -219,7 +219,7 @@ def main():
                         layer_wise_attributions.append(torch.max(attr.token_attr, dim=1)[0]) # take maximum attribution (across prompt tokens) for each response token at the current layer
                     layer_wise_attributions = torch.stack(layer_wise_attributions)
                     fig, axs = plt.subplots(1,1)
-                    sns_fig = sns.heatmap(layer_wise_attributions.cpu().numpy(), linewidth=0.5)
+                    sns_fig = sns.heatmap(layer_wise_attributions.cpu(), linewidth=0.5)
                     sns_fig.get_figure().savefig(f'{args.save_path}/attrplot{i}.png')
                     all_layer_wise_attributions.append(layer_wise_attributions)
                 # if args.token=='answer_last': #last
