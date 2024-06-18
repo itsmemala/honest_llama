@@ -419,7 +419,7 @@ def get_token_tags(responses,resp_tokenized):
     # Tag tokens
     issues = []
     tagged_token_idxs = []
-    for i,response in enumerate(responses):
+    for i,response in tqdm(enumerate(responses)):
         doc = nlp(response)
         text_tokens = [token.text for token in doc if token.pos_ in ['PROPN','NOUN','NUM'] and token.text not in ['bot','questions','Q','*',"'"]] # what about 'A'?
         cur_idxs = []

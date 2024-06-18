@@ -5,7 +5,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
 import pickle
-from utils import get_llama_activations_bau, get_llama_activations_bau_custom
+from utils import get_llama_activations_bau, get_llama_activations_bau_custom, get_token_tags
 from utils import tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file, tokenized_from_file_v2
 import llama
 import pickle
