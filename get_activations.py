@@ -134,7 +134,7 @@ def main():
     #     prompts, labels = formatter(dataset, tokenizer)
 
     if args.token=='tagged_tokens':
-        tagged_token_idxs = get_token_tags(prompts[:1],prompt_tokens[:1])
+        tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
 
 
     if 'tqa' in args.dataset_name:
@@ -174,7 +174,7 @@ def main():
     elif args.dataset_name == 'trivia_qa':
         # load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100)) if (a*100)+100>1800] # dola generation file
         if '5000' in args.file_name or 'train' in args.file_name:
-            load_ranges = [(a*100,(a*100)+100) for a in range(int(20000/100))] # train file
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
         else:
             load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
     elif args.dataset_name == 'strqa':
@@ -242,11 +242,11 @@ def main():
                     for layer in range(num_layers):
                         act = get_llama_activations_bau_custom(model, prompt, device, 'layer', layer, args.token, token_idx, tagged_idxs)
                         acts.append(act)
-                    print(len(acts),acts[0].shape)
+                    # print(len(acts),acts[0].shape)
                     acts = torch.stack(acts)
                     all_layer_wise_activations.append(acts)
-            break
-        break
+        #     break
+        # break
 
         if args.mlp_l1=='Yes':
             print("Saving mlp l1 activations")
