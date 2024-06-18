@@ -4,7 +4,7 @@ import numpy as np
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, get_token_tags
 import argparse
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, auc
+from sklearn.metrics import accuracy_score, recall_score, f1_score, precision_recall_fscore_support, auc, roc_auc_score
 from matplotlib import pyplot as plt
 
 def boolean_string(s):
@@ -108,8 +108,10 @@ def main():
                 threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
                 print('Optimising for avg:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
                 # Note: we load the labels above with 0 being the hallu cls
+                print('Recall for cls0 (=hallu class):',recall_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
                 recall, pr = [r0 for r0,r1 in recall], [p0 for p0,p1 in pr]
                 print('AUPR for cls0 (=hallu class):',auc(recall,pr))
+                # print('AuROC for cls0 (=hallu class):',) # Can't calculate as there's no prob score
     
 
 if __name__ == '__main__':
