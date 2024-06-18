@@ -134,7 +134,7 @@ def main():
     #     prompts, labels = formatter(dataset, tokenizer)
 
     if args.token=='tagged_tokens':
-        tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
+        tagged_token_idxs = get_token_tags(prompts[:1],prompt_tokens[:1])
 
 
     if 'tqa' in args.dataset_name:
