@@ -5,7 +5,8 @@ from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
 import pickle
-from utils import get_llama_activations_bau, tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file, tokenized_from_file_v2
+from utils import get_llama_activations_bau, get_llama_activations_bau_custom
+from utils import tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tokenized_nq, tokenized_mi, tokenized_from_file, tokenized_from_file_v2
 import llama
 import pickle
 import argparse
@@ -86,6 +87,7 @@ def main():
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     device = "cuda"
+    num_layers = 33 if '7B' in args.model_name and args.token=='tagged_tokens' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else raise ValueError("Unknown model size.")
 
     # if args.dataset_name == "tqa_mc2":
     #     # all_hf_datasets = datasets.list_datasets()
@@ -130,6 +132,10 @@ def main():
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
     # else: 
     #     prompts, labels = formatter(dataset, tokenizer)
+
+    if args.token=='tagged_tokens':
+        tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
+
 
     if 'tqa' in args.dataset_name:
         # if args.token=='last' or args.token=='answer_first':
@@ -183,7 +189,7 @@ def main():
         all_mlp_wise_activations = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
-        for prompt,token_idx in tqdm(zip(tokenized_prompts[start:end],answer_token_idxes[start:end])):
+        for prompt,token_idx,tagged_idxs in tqdm(zip(tokenized_prompts[start:end],answer_token_idxes[start:end],tagged_token_idxs[start:end])):
             if args.mlp_l1=='Yes':
                 mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
                 if args.token=='answer_last': #last
@@ -231,8 +237,16 @@ def main():
                     # all_layer_wise_activations.append(layer_wise_activations[:,:,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
-        #     break
-        # break
+                elif args.token=='tagged_tokens':
+                    acts = []
+                    for layer in range(num_layers):
+                        act = get_llama_activations_bau_custom(model, prompt, device, 'layer', layer, args.token, token_idx, tagged_idxs)
+                        acts.append(act)
+                    print(len(acts),acts[0].shape)
+                    acts = torch.stack(acts)
+                    all_layer_wise_activations.append(acts)
+            break
+        break
 
         if args.mlp_l1=='Yes':
             print("Saving mlp l1 activations")
