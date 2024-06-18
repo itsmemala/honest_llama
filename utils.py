@@ -482,13 +482,14 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
         ANALYSE = [f"model.layers.{layer}.self_attn.head_out"]
     elif using_act=='mlp_l1':
         ANALYSE = [f"model.layers.{layer}.mlp.up_proj_out"]
+    else:
+        ANALYSE = []
 
     with torch.no_grad():
         prompt = prompt.to(device)
-        if using_act != 'layer':
-            with TraceDict(model, ANALYSE) as ret:
-                output = model(prompt, output_hidden_states = True)
-            activation = ret[ANALYSE[0]].output.squeeze().detach().to(torch.float32)
+        with TraceDict(model, ANALYSE) as ret:
+            output = model(prompt, output_hidden_states = True)
+        if using_act in ['mlp','mlp_l1','ah']: activation = ret[ANALYSE[0]].output.squeeze().detach().to(torch.float32)
         layer_activation = output.hidden_states[layer].squeeze().detach().cpu().to(torch.float32)
 
         del output
