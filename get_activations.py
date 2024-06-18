@@ -87,7 +87,7 @@ def main():
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     device = "cuda"
-    num_layers = 33 if '7B' in args.model_name and args.token=='tagged_tokens' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else raise ValueError("Unknown model size.")
+    num_layers = 33 if '7B' in args.model_name and args.token=='tagged_tokens' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
 
     # if args.dataset_name == "tqa_mc2":
     #     # all_hf_datasets = datasets.list_datasets()
