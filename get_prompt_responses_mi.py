@@ -35,6 +35,8 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
+    parser.add_argument('--do_sample', type=bool, default=False)
+    parser.add_argument('--num_ret_seq', type=bool, default=1)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -91,12 +93,12 @@ def main():
     # Prepare prompts
     train_prompts = []
     end=500
-    for i in train_reflection_indexes[:end]:
-        prompt = "Below is a counselling conversation between a therapist and a client.\n" # Generate the last therapist response.\n"
-        prompt += train_data[i]['prompt']
-        prompt += "\n An appropriate response from the therapist to the above context would be:"
+    for idx,i in enumerate(train_reflection_indexes[:end]):
+        prompt = "Below is a counselling conversation between a therapist and a client.\n" # Generate the last therapist response.\n" # prompt-A
+        prompt += train_data[i]['prompt'].replace('<therapist>~<reflection>','')
+        prompt += "\n An appropriate response from the therapist to the above context would be:" #prompt-B
         train_prompts.append(prompt)
-        # print('Prompt:',prompt)
+        if idx==0: print('Prompt:',prompt)
         # break
     
     # Tokenize prompts
@@ -113,18 +115,32 @@ def main():
             response = model.generate(input_ids=prompt,
                                     generation_config=GenerationConfig(
                                         max_new_tokens=512
-                                        ,num_beams=1
-                                        ,do_sample=False
-                                        ,num_return_sequences=1
+                                        # ,num_beams=1
+                                        ,do_sample=args.do_sample
+                                        ,num_return_sequences=args.num_ret_seq
                                     )
                                 )[:, prompt.shape[-1]:]
         else:
-            response = model.generate(prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1)[:, prompt.shape[-1]:]
+            response = model.generate(prompt, max_new_tokens=512, 
+                                        # num_beams=1, 
+                                        do_sample=args.do_sample, num_return_sequences=args.num_ret_seq)[:, prompt.shape[-1]:]
         # print(prompt.shape, response)
-        response = tokenizer.decode(response[0], skip_special_tokens=True)
-        responses.append({  'prompt':train_prompts[i]
-                            ,'response1':response})
-        # print('Response:',response)
+        if args.num_ret_seq==1:
+            response = tokenizer.decode(response[0], skip_special_tokens=True)
+            responses.append({  'prompt':train_prompts[i]
+                                ,'response1':response})
+            print(i,'Response:',response,'\n')
+        else:
+            response1 = tokenizer.decode(response[0], skip_special_tokens=True)
+            response2 = tokenizer.decode(response[1], skip_special_tokens=True)
+            response3 = tokenizer.decode(response[2], skip_special_tokens=True)
+            responses.append({  'prompt':train_prompts[i]
+                                ,'response1':response1
+                                ,'response2':response2
+                                ,'response3':response3})
+            print(i,'Response1:',response1,'\n')
+            print(i,'Response2:',response2,'\n')
+            print(i,'Response3:',response3,'\n')
     
     with open(f'{args.save_path}/responses/{args.model_name}_annomi_greedy_responses_{end}.json', 'w') as outfile:
         for entry in responses:
