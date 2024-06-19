@@ -36,7 +36,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('--do_sample', type=bool, default=False)
-    parser.add_argument('--num_ret_seq', type=bool, default=1)
+    parser.add_argument('--num_ret_seq', type=int, default=1)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -142,7 +142,8 @@ def main():
             print(i,'Response2:',response2,'\n')
             print(i,'Response3:',response3,'\n')
     
-    with open(f'{args.save_path}/responses/{args.model_name}_annomi_greedy_responses_{end}.json', 'w') as outfile:
+    file_name = f'{args.save_path}/responses/{args.model_name}_annomi_greedy_responses_{end}.json' if args.do_sample==False else f'{args.save_path}/responses/{args.model_name}_annomi_sampled_responses_{end}.json'
+    with open(file_name, 'w') as outfile:
         for entry in responses:
             json.dump(entry, outfile)
             outfile.write('\n')
