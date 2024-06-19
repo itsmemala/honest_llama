@@ -141,7 +141,7 @@ def main():
         else:
             response = model.generate(prompt, max_new_tokens=512, 
                                         # num_beams=1,
-                                        ,top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq)[:, prompt.shape[-1]:]
+                                        top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq)[:, prompt.shape[-1]:]
         # print(prompt.shape, response)
         if args.num_ret_seq==1:
             response = tokenizer.decode(response[0], skip_special_tokens=True)
