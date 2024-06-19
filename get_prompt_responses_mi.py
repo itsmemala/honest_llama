@@ -26,6 +26,9 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b'
 }
 
+def clean_response(response):
+    response.split('|')[0] # Ignore any subsequent clinet/therapist utterances generated
+
 def main(): 
     """
     Specify dataset name as the first command line argument. Current options are 
@@ -35,6 +38,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
+    parser.add_argument('--prompt_type', type=str, default='A')
     parser.add_argument('--do_sample', type=bool, default=False)
     parser.add_argument('--num_ret_seq', type=int, default=1)
     parser.add_argument('--device', type=int, default=0)
@@ -94,11 +98,22 @@ def main():
     train_prompts = []
     end=500
     for idx,i in enumerate(train_reflection_indexes[:end]):
-        prompt = "Below is a counselling conversation between a therapist and a client.\n" # Generate the last therapist response.\n" # prompt-A
-        prompt += train_data[i]['prompt'].replace('<therapist>~<reflection>','')
-        prompt += "\n An appropriate response from the therapist to the above context would be:" #prompt-B
+        if args.prompt_type=='A':
+            prompt = "Below is a counselling conversation between a therapist and a client. Generate the last therapist response.\n" # prompt-A (llama7B greedy)
+            prompt += train_data[i]['prompt']
+        elif args.prompt_type=='B':
+            prompt = "Below is a counselling conversation between a therapist and a client.\n"
+            prompt += train_data[i]['prompt']
+            prompt += "\n An appropriate response from the therapist to the above context would be:" #prompt-B (flan33B greedy)
+        if args.prompt_type=='C':
+            prompt = "Below is a counselling conversation between a therapist and a client. Generate the last therapist response.\n"
+            prompt += train_data[i]['prompt'].replace('~<reflection>','')
+        elif args.prompt_type=='D':
+            prompt = "Below is a counselling conversation between a therapist and a client.\n"
+            prompt += train_data[i]['prompt'].replace('<therapist>~<reflection>','')
+            prompt += "\n An appropriate response from the therapist to the above context would be:\n<therapist>"
         train_prompts.append(prompt)
-        if idx==0: print('Prompt:',prompt)
+        # if idx==0: print('Prompt:',prompt)
         # break
     
     # Tokenize prompts
@@ -127,22 +142,20 @@ def main():
         # print(prompt.shape, response)
         if args.num_ret_seq==1:
             response = tokenizer.decode(response[0], skip_special_tokens=True)
+            response = clean_response(response)
             responses.append({  'prompt':train_prompts[i]
                                 ,'response1':response})
             print(i,'Response:',response,'\n')
         else:
-            response1 = tokenizer.decode(response[0], skip_special_tokens=True)
-            response2 = tokenizer.decode(response[1], skip_special_tokens=True)
-            response3 = tokenizer.decode(response[2], skip_special_tokens=True)
-            responses.append({  'prompt':train_prompts[i]
-                                ,'response1':response1
-                                ,'response2':response2
-                                ,'response3':response3})
-            print(i,'Response1:',response1,'\n')
-            print(i,'Response2:',response2,'\n')
-            print(i,'Response3:',response3,'\n')
+            resp_dict = {'prompt':train_prompts[i]}
+            for j in range(args.num_ret_seq):
+                response = tokenizer.decode(response[j], skip_special_tokens=True)
+                response = clean_response(response)
+                resp_dict{'response'+str(j+1): response}
+                print(i,j,'Response:',response,'\n')
+            responses.append(resp_dict)
     
-    file_name = f'{args.save_path}/responses/{args.model_name}_annomi_greedy_responses_{end}.json' if args.do_sample==False else f'{args.save_path}/responses/{args.model_name}_annomi_sampled_responses_{end}.json'
+    file_name = f'{args.save_path}/responses/{args.model_name}_annomi_{args.prompt_type}_greedy_responses_{end}.json' if args.do_sample==False else f'{args.save_path}/responses/{args.model_name}_annomi_{args.prompt_type}_sampled_responses_{end}.json'
     with open(file_name, 'w') as outfile:
         for entry in responses:
             json.dump(entry, outfile)
