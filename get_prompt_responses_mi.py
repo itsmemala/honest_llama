@@ -27,7 +27,8 @@ HF_NAMES = {
 }
 
 def clean_response(response):
-    response.split('|')[0] # Ignore any subsequent clinet/therapist utterances generated
+    response = response.split('|')[0] # Ignore any subsequent client/therapist utterances generated
+    return response
 
 def main(): 
     """
