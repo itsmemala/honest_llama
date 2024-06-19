@@ -274,7 +274,7 @@ def main():
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
         print('AUPR:',auc(recall,precision))
         print('AUROC:',roc_auc_score(labels,confident_sample_probs))
-        print('AUROC (cls0):',roc_auc_score([not bool(label) for label in labels],1-confident_sample_probs))
+        print('AUROC (cls0):',roc_auc_score([not bool(label) for label in labels],[1-prob for prob in confident_sample_probs]))
 
         # Probe selection - a
         confident_sample_pred,confident_sample_probs = [], []
