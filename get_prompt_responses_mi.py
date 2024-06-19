@@ -151,11 +151,11 @@ def main():
             print(i,'Response:',response,'\n')
         else:
             resp_dict = {'prompt':train_prompts[i]}
-            print(i,'Response:',response,'\n')
             for j in range(args.num_ret_seq):
                 cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
                 cur_response = clean_response(cur_response)
                 resp_dict['response'+str(j+1)] = cur_response
+                print(i,j,'Response:',cur_response,'\n')
             responses.append(resp_dict)
     
     file_name = f'{args.save_path}/responses/{args.model_name}_annomi_{args.prompt_type}_greedy_responses_{end}.json' if args.do_sample==False else f'{args.save_path}/responses/{args.model_name}_annomi_{args.prompt_type}_sampled_responses_{end}.json'
