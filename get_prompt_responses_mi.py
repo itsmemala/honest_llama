@@ -40,6 +40,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('--prompt_type', type=str, default='A')
+    parser.add_argument("--top_p", type=float, default=0.95)
     parser.add_argument('--do_sample', type=bool, default=False)
     parser.add_argument('--num_ret_seq', type=int, default=1)
     parser.add_argument('--device', type=int, default=0)
@@ -132,14 +133,15 @@ def main():
                                     generation_config=GenerationConfig(
                                         max_new_tokens=512
                                         # ,num_beams=1
+                                        ,top_p=args.top_p
                                         ,do_sample=args.do_sample
                                         ,num_return_sequences=args.num_ret_seq
                                     )
                                 )[:, prompt.shape[-1]:]
         else:
             response = model.generate(prompt, max_new_tokens=512, 
-                                        # num_beams=1, 
-                                        do_sample=args.do_sample, num_return_sequences=args.num_ret_seq)[:, prompt.shape[-1]:]
+                                        # num_beams=1,
+                                        ,top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq)[:, prompt.shape[-1]:]
         # print(prompt.shape, response)
         if args.num_ret_seq==1:
             response = tokenizer.decode(response[0], skip_special_tokens=True)
