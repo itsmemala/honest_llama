@@ -277,6 +277,18 @@ def main():
         print('AUROC (cls0):',roc_auc_score([not bool(label) for label in labels],[1-prob for prob in confident_sample_probs]))
 
         
+        best_f1, best_single_threshold, best_report = 0, 0, None
+        for t in thresholds:
+            confident_sample_pred = []
+            for i in range(all_preds.shape[1]):
+                sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+                confident_sample_pred.append(1 if np.max(sample_pred)>t else 0) # Using layer with max prob
+            if f1_score(labels,confident_sample_pred)>best_f1:
+                best_f1, best_single_threshold = f1_score(labels,confident_sample_pred,average='macro'), t
+                best_report = classification_report(labels,confident_sample_pred)
+        print('Results at threshold with best macro-F1:\n',best_report)
+
+
         # Probe selection - a
         confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
@@ -292,16 +304,16 @@ def main():
         print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
 
-        best_f1, best_single_threshold, best_report = 0, 0, None
-        for t in thresholds:
-            confident_sample_pred = []
-            for i in range(all_preds.shape[1]):
-                sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-                confident_sample_pred.append(1 if np.max(sample_pred)>t else 0) # Using layer with max prob
-            if f1_score(labels,confident_sample_pred)>best_f1:
-                best_f1, best_single_threshold = f1_score(labels,confident_sample_pred,average='macro'), t
-                best_report = classification_report(labels,confident_sample_pred)
-        print('Results at threshold with best macro-F1:\n',best_report)
+        # best_f1, best_single_threshold, best_report = 0, 0, None
+        # for t in thresholds:
+        #     confident_sample_pred = []
+        #     for i in range(all_preds.shape[1]):
+        #         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+        #         confident_sample_pred.append(1 if np.max(sample_pred)>t else 0) # Using layer with max prob
+        #     if f1_score(labels,confident_sample_pred)>best_f1:
+        #         best_f1, best_single_threshold = f1_score(labels,confident_sample_pred,average='macro'), t
+        #         best_report = classification_report(labels,confident_sample_pred)
+        # print('Results at threshold with best macro-F1:\n',best_report)
 
 
         # Probe selection - a
