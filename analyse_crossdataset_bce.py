@@ -267,19 +267,20 @@ def main():
         confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0)
+            confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0) # Using layer with max prob
             confident_sample_probs.append(np.max(sample_pred))
         # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
         print('Using max prob probe per sample (actual prob):\n',classification_report(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
         print('AUPR:',auc(recall,precision))
         print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+        print('AUROC (cls0):',roc_auc_score(labels,confident_sample_probs,pos_label=0))
 
         # Probe selection - a
         confident_sample_pred,confident_sample_probs = [], []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]
+            sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]  # Using layer with max dist from threshold
             layer = np.argmax(sample_pred_dist)
             confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
             confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
