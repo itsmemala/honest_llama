@@ -151,7 +151,7 @@ def main():
             for j in range(args.num_ret_seq):
                 response = tokenizer.decode(response[j], skip_special_tokens=True)
                 response = clean_response(response)
-                resp_dict{'response'+str(j+1): response}
+                resp_dict{'response'+str(j+1)} = response
                 print(i,j,'Response:',response,'\n')
             responses.append(resp_dict)
     
