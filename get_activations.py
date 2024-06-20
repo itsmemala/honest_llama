@@ -254,9 +254,13 @@ def main():
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
         else:
             print("Saving layer wise activations")
-            # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
-                pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+            if args.token=='tagged_tokens':
+                with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+                    torch.save(all_layer_wise_activations, outfile, pickle_protocol=pickle.HIGHEST_PROTOCOL)
+            else:
+                # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
+                with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+                    pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
             
             print("Saving head wise activations")
             # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
