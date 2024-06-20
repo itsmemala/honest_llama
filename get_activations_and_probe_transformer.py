@@ -219,25 +219,25 @@ def main():
         for idx in train_idxs:
             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-            if args.token=='tagged_tokens':
-                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-            else:
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+            # if args.token=='tagged_tokens':
+            #     act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+            #     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+            # else:
+            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             my_train_acts.append(act)
-        if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
+        # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
         if args.test_file_name is not None:
             for idx in test_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                if args.token=='tagged_tokens':
-                    act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                    act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-                else:
-                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                # if args.token=='tagged_tokens':
+                #     act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                #     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                # else:
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_test_acts.append(act)
-            if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
+            # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
 
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
     method_concat = args.method + '_no_bias' if args.no_bias else method_concat
@@ -304,9 +304,18 @@ def main():
                 optimizer.zero_grad()
                 activations = []
                 for idx in batch['inputs_idxs']:
-                    act = my_train_acts[idx]
+                    if args.token=='tagged_tokens': 
+                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                        act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                    else:
+                        act = my_train_acts[idx]
                     activations.append(act)
-                inputs = torch.stack(activations,axis=0)
+                if args.token=='tagged_tokens':
+                    inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                else:
+                    inputs = torch.stack(activations,axis=0)
                 targets = batch['labels']
                 outputs = nlinear_model(inputs)
                 loss = criterion(outputs, targets.to(device).float())
@@ -322,9 +331,18 @@ def main():
                 optimizer.zero_grad()
                 activations = []
                 for idx in batch['inputs_idxs']:
-                    act = my_train_acts[idx]
+                    if args.token=='tagged_tokens': 
+                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                        act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                    else:
+                        act = my_train_acts[idx]
                     activations.append(act)
-                inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
+                if args.token=='tagged_tokens':
+                    inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                else:
+                    inputs = torch.stack(activations,axis=0)
                 targets = batch['labels']
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -362,9 +380,18 @@ def main():
             for step,batch in enumerate(ds_val):
                 activations = []
                 for idx in batch['inputs_idxs']:
-                    act = my_train_acts[idx]
+                    if args.token=='tagged_tokens': 
+                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                        act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                    else:
+                        act = my_train_acts[idx]
                     activations.append(act)
-                inputs = torch.stack(activations,axis=0)
+                if args.token=='tagged_tokens':
+                    inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                else:
+                    inputs = torch.stack(activations,axis=0)
                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                 y_val_pred += predicted
                 y_val_true += batch['labels'].tolist()
@@ -390,9 +417,18 @@ def main():
                 for step,batch in enumerate(ds_test):
                     activations = []
                     for idx in batch['inputs_idxs']:
-                        act = my_test_acts[idx]
+                        if args.token=='tagged_tokens': 
+                            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                            act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                            act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                        else:
+                            act = my_train_acts[idx]
                         activations.append(act)
-                    inputs = torch.stack(activations,axis=0)
+                    if args.token=='tagged_tokens':
+                        inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                    else:
+                        inputs = torch.stack(activations,axis=0)
                     predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                     y_test_pred += predicted
                     y_test_true += batch['labels'].tolist()
