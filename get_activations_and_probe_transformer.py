@@ -173,11 +173,11 @@ def main():
     
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
 
-    if args.token=='tagged_tokens':
-        tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
-        test_tagged_token_idxs = get_token_tags(test_prompts,test_prompt_tokens)
-    else:
-        tagged_token_idxs,test_tagged_token_idxs = [[] for i in range(len(prompts))],[[] for i in range(len(test_prompts))]
+    # if args.token=='tagged_tokens':
+    #     tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
+    #     test_tagged_token_idxs = get_token_tags(test_prompts,test_prompt_tokens)
+    # else:
+    #     tagged_token_idxs,test_tagged_token_idxs = [[] for i in range(len(prompts))],[[] for i in range(len(test_prompts))]
     
     if args.dataset_name=='strqa':
         args.acts_per_file = 50
@@ -219,8 +219,11 @@ def main():
         for idx in train_idxs:
             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-            if args.token=='tagged_tokens': act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+            if args.token=='tagged_tokens':
+                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+            else:
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             my_train_acts.append(act)
         if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
@@ -228,8 +231,11 @@ def main():
             for idx in test_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                if args.token=='tagged_tokens': act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                if args.token=='tagged_tokens':
+                    act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                    act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                else:
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_test_acts.append(act)
             if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
 
