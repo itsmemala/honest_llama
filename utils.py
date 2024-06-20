@@ -52,7 +52,7 @@ class My_Transformer_Layer(torch.nn.Module):
     def __init__(self, n_inputs, n_layers, n_outputs, bias):
         super().__init__()
         d_model = 512 # 256
-        dim_feedforward = 4096 # 256
+        dim_feedforward = 2048 # 256
         nhead = 32 # 16 # 8
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
         self.class_token = torch.nn.Parameter(torch.randn(1,1,d_model))
