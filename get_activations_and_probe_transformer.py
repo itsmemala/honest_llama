@@ -401,7 +401,7 @@ def main():
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         sep_token = torch.zeros(act.shape[0],act.shape[2])
                         print(act.shape)
-                        act = torch.cat((act,sep_token), dim=0)
+                        act = torch.cat((act,sep_token), dim=1)
                         print(act.shape)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
