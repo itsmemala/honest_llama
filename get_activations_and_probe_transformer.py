@@ -311,7 +311,7 @@ def main():
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                        sep_token = torch.zeros(act.shape[0],act.shape[2])
+                        sep_token = torch.zeros(act.shape[0],act.shape[2]).cuda()
                         print(act.shape)
                         act = torch.cat((act,sep_token), dim=1)
                         print(act.shape)
