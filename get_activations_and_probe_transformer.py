@@ -313,6 +313,7 @@ def main():
                     else:
                         act = my_train_acts[idx]
                     activations.append(act)
+                if args.batch_size==1 and activations[0].shape[0] > 330: continue # 33 x 10 (Skip inputs with large number of tokens)
                 if args.token=='tagged_tokens':
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
@@ -322,7 +323,10 @@ def main():
                 loss = criterion(outputs, targets.to(device).float())
                 epoch_train_loss += loss.item()
                 train_loss.append(loss.item())
-                loss.backward()
+                try:
+                    loss.backward()
+                except torch.cuda.OutOfMemoryError:
+                    print('Num of tokens in input:',activations[0].shape[0]/layers)
                 optimizer.step()
 
             # Get val loss
