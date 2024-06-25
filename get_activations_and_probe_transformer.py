@@ -312,9 +312,7 @@ def main():
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                        print(act.shape)
                         act = torch.cat((act,sep_token), dim=1)
-                        print(act.shape)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -349,6 +347,8 @@ def main():
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                        sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                        act = torch.cat((act,sep_token), dim=1)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -403,7 +403,7 @@ def main():
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                        sep_token = torch.zeros(act.shape[0],act.shape[2])
+                        sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                         act = torch.cat((act,sep_token), dim=1)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
@@ -444,6 +444,8 @@ def main():
                             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                             act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                             if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                            sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                            act = torch.cat((act,sep_token), dim=1)
                             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                             batch_target_idxs.append(k)
                         else:
@@ -513,6 +515,7 @@ def main():
     # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
     # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
     # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_samples_used.npy', samples_used_idxs)
 
     if args.test_file_name is not None:
         all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
