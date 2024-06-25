@@ -291,7 +291,6 @@ def main():
         train_loss, val_loss = [], []
         best_val_loss = torch.inf
         best_model_state = deepcopy(nlinear_model.state_dict())
-        num_samples_used = 0
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         named_params = list(nlinear_model.named_parameters())
         optimizer_grouped_parameters = [
@@ -300,7 +299,7 @@ def main():
         ]
         optimizer = torch.optim.Adam(optimizer_grouped_parameters)
         for epoch in range(args.epochs):
-            epoch_train_loss, epoch_spl_loss = 0, 0
+            num_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0
             nlinear_model.train()
             for step,batch in enumerate(ds_train):
                 optimizer.zero_grad()
