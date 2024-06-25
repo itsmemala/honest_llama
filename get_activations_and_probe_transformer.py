@@ -299,7 +299,7 @@ def main():
             {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
         ]
         optimizer = torch.optim.Adam(optimizer_grouped_parameters)
-        for epoch in range(args.epochs):
+        for epoch in tqdm(range(args.epochs)):
             num_samples_used, num_val_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0, 0
             nlinear_model.train()
             for step,batch in enumerate(ds_train):
@@ -311,6 +311,10 @@ def main():
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                        sep_token = torch.zeros(act.shape[0],act.shape[2])
+                        print(act.shape)
+                        act = torch.cat((act,sep_token), dim=1)
+                        print(act.shape)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -400,9 +404,7 @@ def main():
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         sep_token = torch.zeros(act.shape[0],act.shape[2])
-                        print(act.shape)
                         act = torch.cat((act,sep_token), dim=1)
-                        print(act.shape)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -429,6 +431,7 @@ def main():
         test_preds = []
         test_logits = []
         test_sim = []
+        samples_used_idxs = []
         if args.test_file_name is not None: 
             with torch.no_grad():
                 num_test_samples_used = 0
@@ -448,6 +451,7 @@ def main():
                         activations.append(act)
                     if len(activations)==0: continue
                     num_test_samples_used += len(batch_target_idxs)
+                    samples_used_idxs += batch['inputs_idxs'][np.array(batch_target_idxs)]
                     if args.token=='tagged_tokens':
                         inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                     else:
