@@ -298,7 +298,7 @@ def main():
             {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
         ]
         optimizer = torch.optim.Adam(optimizer_grouped_parameters)
-        for epoch in tqdm(range(args.epochs)):
+        for epoch in range(args.epochs):
             epoch_train_loss, epoch_spl_loss = 0, 0
             nlinear_model.train()
             for step,batch in enumerate(ds_train):
@@ -309,11 +309,11 @@ def main():
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        if act.shape[1] > 10: continue # Skip inputs with large number of tokens to avoid OOM
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                     else:
                         act = my_train_acts[idx]
                     activations.append(act)
-                if args.bs==1 and activations[0].shape[0] > 330: continue # 33 x 10 (Skip inputs with large number of tokens to avoid OOM)
                 if args.token=='tagged_tokens':
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
