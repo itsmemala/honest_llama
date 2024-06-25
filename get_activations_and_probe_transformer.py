@@ -298,7 +298,7 @@ def main():
             {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
         ]
         optimizer = torch.optim.Adam(optimizer_grouped_parameters)
-        for epoch in range(args.epochs):
+        for epoch in tqdm(range(args.epochs)):
             epoch_train_loss, epoch_spl_loss = 0, 0
             nlinear_model.train()
             for step,batch in enumerate(ds_train):
