@@ -57,6 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
+    parser.add_argument('--max_tokens',type=int, default=25)
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
@@ -299,7 +300,7 @@ def main():
         ]
         optimizer = torch.optim.Adam(optimizer_grouped_parameters)
         for epoch in range(args.epochs):
-            num_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0
+            num_samples_used, num_val_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0, 0
             nlinear_model.train()
             for step,batch in enumerate(ds_train):
                 optimizer.zero_grad()
@@ -309,7 +310,7 @@ def main():
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                        if act.shape[1] > 40: continue # Skip inputs with large number of tokens to avoid OOM
+                        if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -337,25 +338,30 @@ def main():
             epoch_val_loss = 0
             for step,batch in enumerate(ds_val):
                 optimizer.zero_grad()
-                activations = []
-                for idx in batch['inputs_idxs']:
+                activations, batch_target_idxs = [], []
+                for k,idx in enumerate(batch['inputs_idxs']):
                     if args.token=='tagged_tokens': 
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                        batch_target_idxs.append(k)
                     else:
                         act = my_train_acts[idx]
                     activations.append(act)
+                if len(activations)==0: continue
+                num_val_samples_used += len(batch_target_idxs)
                 if args.token=='tagged_tokens':
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
-                targets = batch['labels']
+                targets = batch['labels'][np.array(batch_target_idxs)]
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
             val_loss.append(epoch_val_loss)
-            print(epoch_spl_loss, epoch_train_loss, epoch_val_loss, num_samples_used)
+            print('Loss:',epoch_spl_loss, epoch_train_loss, epoch_val_loss)
+            print('Samples:',num_samples_used, num_val_samples_used)
             # Choose best model
             if epoch_val_loss < best_val_loss:
                 best_val_loss = epoch_val_loss
@@ -386,23 +392,26 @@ def main():
         with torch.no_grad():
             nlinear_model.eval()
             for step,batch in enumerate(ds_val):
-                activations = []
-                for idx in batch['inputs_idxs']:
+                activations, batch_target_idxs = [], []
+                for k,idx in enumerate(batch['inputs_idxs']):
                     if args.token=='tagged_tokens': 
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                        batch_target_idxs.append(k)
                     else:
                         act = my_train_acts[idx]
                     activations.append(act)
+                if len(activations)==0: continue
                 if args.token=='tagged_tokens':
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                 y_val_pred += predicted
-                y_val_true += batch['labels'].tolist()
+                y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist()
                 val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                 val_preds.append(val_preds_batch)
                 val_logits.append(nlinear_model(inputs))
@@ -418,25 +427,30 @@ def main():
         test_sim = []
         if args.test_file_name is not None: 
             with torch.no_grad():
+                num_test_samples_used = 0
                 nlinear_model.eval()
                 for step,batch in enumerate(ds_test):
-                    activations = []
-                    for idx in batch['inputs_idxs']:
+                    activations, batch_target_idxs = [], []
+                    for k,idx in enumerate(batch['inputs_idxs']):
                         if args.token=='tagged_tokens': 
                             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                             act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                            if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                            batch_target_idxs.append(k)
                         else:
                             act = my_train_acts[idx]
                         activations.append(act)
+                    if len(activations)==0: continue
+                    num_test_samples_used += len(batch_target_idxs)
                     if args.token=='tagged_tokens':
                         inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                     else:
                         inputs = torch.stack(activations,axis=0)
                     predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                     y_test_pred += predicted
-                    y_test_true += batch['labels'].tolist()
+                    y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist()
                     test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                     test_preds.append(test_preds_batch)
                     test_logits.append(nlinear_model(inputs))
