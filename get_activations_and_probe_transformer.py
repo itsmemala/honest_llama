@@ -313,7 +313,7 @@ def main():
                     else:
                         act = my_train_acts[idx]
                     activations.append(act)
-                if args.bs==1 and activations[0].shape[0] > 330: continue # 33 x 10 (Skip inputs with large number of tokens)
+                if args.bs==1 and activations[0].shape[0] > 330: continue # 33 x 10 (Skip inputs with large number of tokens to avoid OOM)
                 if args.token=='tagged_tokens':
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
@@ -416,9 +416,6 @@ def main():
         if args.test_file_name is not None: 
             with torch.no_grad():
                 nlinear_model.eval()
-                use_prompts = tokenized_prompts if args.num_folds>1 else test_tokenized_prompts
-                use_answer_token_idxes = answer_token_idxes if args.num_folds>1 else test_answer_token_idxes
-                use_tagged_token_idxs = tagged_token_idxs if args.num_folds>1 else test_tagged_token_idxs
                 for step,batch in enumerate(ds_test):
                     activations = []
                     for idx in batch['inputs_idxs']:
