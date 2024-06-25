@@ -458,6 +458,7 @@ def main():
             all_y_true_test[i].append(y_test_true)
             all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
             print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+            print('Samples:',num_test_samples_used)
             all_test_logits[i].append(torch.cat(test_logits))
 
             # Get preds on all tokens
