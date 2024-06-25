@@ -314,6 +314,7 @@ def main():
                     else:
                         act = my_train_acts[idx]
                     activations.append(act)
+                if len(activations)==0: continue
                 if args.token=='tagged_tokens':
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
