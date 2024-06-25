@@ -313,7 +313,7 @@ def main():
                     else:
                         act = my_train_acts[idx]
                     activations.append(act)
-                if args.batch_size==1 and activations[0].shape[0] > 330: continue # 33 x 10 (Skip inputs with large number of tokens)
+                if args.bs==1 and activations[0].shape[0] > 330: continue # 33 x 10 (Skip inputs with large number of tokens)
                 if args.token=='tagged_tokens':
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
