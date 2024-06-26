@@ -115,7 +115,7 @@ def main():
             prompt += train_data[i]['prompt'].replace('<therapist>~<reflection>','')
             prompt += "\n An appropriate response from the therapist to the above context would be:\n<therapist>"
         elif args.prompt_type=='E':
-            prompt = "Below is a counselling conversation between a therapist and a client. Generate the last therapist response, consisting of at least 5 words.\n"
+            prompt = "Below is a counselling conversation between a therapist and a client. Generate the last therapist response, summarising the client's statements back to them.\n"
             prompt += train_data[i]['prompt'].replace('~<reflection>','')
         train_prompts.append(prompt)
         # if idx==0: print('Prompt:',prompt)
