@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--max_tokens',type=int, default=25)
+    parser.add_argument('--tokens_first',type=bool, default=False) # Specifies order of tokens and layers when using_act='tagged_tokens'
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
@@ -310,6 +311,7 @@ def main():
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                         act = torch.cat((act,sep_token), dim=1)
@@ -346,6 +348,7 @@ def main():
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                         act = torch.cat((act,sep_token), dim=1)
@@ -402,6 +405,7 @@ def main():
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                         if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                         act = torch.cat((act,sep_token), dim=1)
@@ -443,6 +447,7 @@ def main():
                             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                             act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                            if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                             if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                             sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                             act = torch.cat((act,sep_token), dim=1)
