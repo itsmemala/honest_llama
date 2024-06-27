@@ -20,7 +20,7 @@ import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from matplotlib import pyplot as plt
 
 HF_NAMES = {
@@ -469,10 +469,15 @@ def main():
                     test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                     test_preds.append(test_preds_batch)
                     test_logits.append(nlinear_model(inputs))
-            all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
+            test_preds = torch.cat(test_preds).cpu().numpy()
+            all_test_preds[i].append(test_preds)
             all_y_true_test[i].append(y_test_true)
             all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+            precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
+            print('AuPR for cls1:',auc(recall,precision))
             print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+            print('Recall for cls1:',recall_score(y_test_true, y_test_pred))
+            print('AuROC for cls1:',roc_auc_score(y_test_true, test_preds))
             print('Samples:',num_test_samples_used)
             all_test_logits[i].append(torch.cat(test_logits))
 
