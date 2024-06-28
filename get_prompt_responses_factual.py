@@ -42,6 +42,10 @@ def main():
     parser.add_argument('--start_at', type=int, default=0)
     parser.add_argument('--use_split', type=str, default='validation')
     parser.add_argument('--hallu_check_prompt', type=int, default=None)
+    parser.add_argument("--temperature", type=float, default=1)
+    parser.add_argument("--top_p", type=float, default=0.95)
+    parser.add_argument('--do_sample', type=bool, default=False)
+    parser.add_argument('--num_ret_seq', type=int, default=1)
     parser.add_argument('--device', type=int, default=0)    
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -131,7 +135,9 @@ def main():
     # print('Bad word ids:',question_framing_ids)
     for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
         tokenized_prompt = tokenized_prompt.to(device)
-        response = model.generate(tokenized_prompt, max_new_tokens=512, num_beams=1, do_sample=False, num_return_sequences=1,
+        response = model.generate(tokenized_prompt, max_new_tokens=512,
+                                    # num_beams=1,
+                                    temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
                                     eos_token_id=period_token_id,
                                     bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
                                     )[:, tokenized_prompt.shape[-1]:]
@@ -160,7 +166,8 @@ def main():
     
     print('Saving model responses..')
     if args.hallu_check_prompt is None:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
+        gen_type = 'sampled' if args.do_sample else 'greedy'
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
     else:
         save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
     with open(save_fname, 'w') as outfile:
@@ -208,7 +215,7 @@ def main():
 
     print('Saving labels..')
     if args.hallu_check_prompt is None:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_labels_{args.use_split}{args.len_dataset}.json'
+        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_labels_{args.use_split}{args.len_dataset}.json'
     else:
         save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{args.len_dataset}.json'
     with open(save_fname, 'w') as outfile:
