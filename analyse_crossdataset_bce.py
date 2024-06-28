@@ -187,6 +187,7 @@ def main():
     if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
     print('Avg AUPR:',np.mean(aupr_by_layer))
     print('Avg AUROC:',np.mean(auroc_by_layer))
+    print(auroc_by_layer)
 
 
     print('\n')
