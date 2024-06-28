@@ -307,7 +307,7 @@ def main():
                 optimizer.zero_grad()
                 activations, batch_target_idxs = [], []
                 for k,idx in enumerate(batch['inputs_idxs']):
-                    if args.token=='tagged_tokens': 
+                    if 'tagged_tokens' in args.token: 
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
@@ -322,7 +322,7 @@ def main():
                     activations.append(act)
                 if len(activations)==0: continue
                 num_samples_used += len(batch_target_idxs)
-                if args.token=='tagged_tokens':
+                if 'tagged_tokens' in args.token:
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
@@ -344,7 +344,7 @@ def main():
                 optimizer.zero_grad()
                 activations, batch_target_idxs = [], []
                 for k,idx in enumerate(batch['inputs_idxs']):
-                    if args.token=='tagged_tokens': 
+                    if 'tagged_tokens' in args.token: 
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
@@ -359,7 +359,7 @@ def main():
                     activations.append(act)
                 if len(activations)==0: continue
                 num_val_samples_used += len(batch_target_idxs)
-                if args.token=='tagged_tokens':
+                if 'tagged_tokens' in args.token:
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
@@ -401,7 +401,7 @@ def main():
             for step,batch in enumerate(ds_val):
                 activations, batch_target_idxs = [], []
                 for k,idx in enumerate(batch['inputs_idxs']):
-                    if args.token=='tagged_tokens': 
+                    if 'tagged_tokens' in args.token: 
                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
@@ -415,7 +415,7 @@ def main():
                         act = my_train_acts[idx]
                     activations.append(act)
                 if len(activations)==0: continue
-                if args.token=='tagged_tokens':
+                if 'tagged_tokens' in args.token:
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
@@ -443,7 +443,7 @@ def main():
                 for step,batch in enumerate(ds_test):
                     activations, batch_target_idxs = [], []
                     for k,idx in enumerate(batch['inputs_idxs']):
-                        if args.token=='tagged_tokens': 
+                        if 'tagged_tokens' in args.token: 
                             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                             act = torch.load(file_path)[idx%args.acts_per_file].to(device)
@@ -459,7 +459,7 @@ def main():
                     if len(activations)==0: continue
                     num_test_samples_used += len(batch_target_idxs)
                     samples_used_idxs += batch['inputs_idxs'][np.array(batch_target_idxs)]
-                    if args.token=='tagged_tokens':
+                    if 'tagged_tokens' in args.token:
                         inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                     else:
                         inputs = torch.stack(activations,axis=0)
