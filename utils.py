@@ -505,6 +505,9 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
     elif using_act=='layer' and token=='tagged_tokens':
         tagged_token_idxs = tagged_token_idxs if len(tagged_token_idxs)>0 else [(1,layer_activation.shape[0])] # Skip the first token
         return torch.cat([layer_activation[a:b,:] for a,b in tagged_token_idxs],dim=0)
+    elif using_act=='layer' and token=='tagged_tokens_and_last':
+        tagged_acts = [layer_activation[a:b,:] for a,b in tagged_token_idxs] + [layer_activation[-1:,:]] if len(tagged_token_idxs)>0 else [layer_activation[1:,:]]
+        return torch.cat(tagged_acts,dim=0)
     elif token=='tagged_tokens':
         tagged_token_idxs = tagged_token_idxs if len(tagged_token_idxs)>0 else [(1,activation.shape[0])] # Skip the first token
         return torch.cat([activation[a:b,:] for a,b in tagged_token_idxs],dim=0)

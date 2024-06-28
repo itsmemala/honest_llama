@@ -237,7 +237,7 @@ def main():
                     # all_layer_wise_activations.append(layer_wise_activations[:,:,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1:,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
-                elif args.token=='tagged_tokens':
+                elif args.token=='tagged_tokens' or args.token=='tagged_tokens_and_last':
                     acts = []
                     for layer in range(num_layers):
                         act = get_llama_activations_bau_custom(model, prompt, device, 'layer', layer, args.token, token_idx, tagged_idxs)
