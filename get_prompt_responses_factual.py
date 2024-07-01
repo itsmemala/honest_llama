@@ -222,7 +222,7 @@ def main():
                 for rouge_type in ['rouge1','rouge2','rougeL']:
                     labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
                                                                     labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
-                squad_results = squad_metrics.compute(predictions=predictions, references=references)
+                squad_results = squad_metrics.compute(predictions=predictions_dict, references=references_dict)
                 labels_dict['squad_f1' + resp_wise_label_name] = max(squad_results['f1'], labels_dict['squad_f1' + resp_wise_label_name])
 
         labels.append(labels_dict)
