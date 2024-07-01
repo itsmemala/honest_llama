@@ -141,14 +141,24 @@ def main():
                                     eos_token_id=period_token_id,
                                     bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
                                     )[:, tokenized_prompt.shape[-1]:]
-        response = tokenizer.decode(response[0], skip_special_tokens=True)
-        for check_gen in checkgens: # Fix generation stopping errors
-            # before_trunc = response
-            response = response.split(check_gen)[0]
-            # if before_trunc=="":
-            #     print(i)
-        responses.append({'prompt':prompts[i],
-                            'response1':response})
+        if args.num_ret_seq==1:
+            response = tokenizer.decode(response[0], skip_special_tokens=True)
+            for check_gen in checkgens: # Fix generation stopping errors
+                # before_trunc = response
+                response = response.split(check_gen)[0]
+                # if before_trunc=="":
+                #     print(i)
+            responses.append({'prompt':prompts[i],
+                                'response1':response})
+        else:
+            resp_dict = {'prompt':prompts[i]}
+            for j in range(args.num_ret_seq):
+                cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
+                for check_gen in checkgens: # Fix generation stopping errors
+                    cur_response = cur_response.split(check_gen)[0]
+                resp_dict['response'+str(j+1)] = cur_response
+                # print(i,j,'Response:',cur_response,'\n')
+            responses.append(resp_dict)
     # batches = [(0,10)]
     # for batch_start,batch_end in batches:
     #     tokenized_prompt = tokenizer(prompts[batch_start:batch_end], return_tensors = 'pt').input_ids
@@ -185,6 +195,7 @@ def main():
     labels = []
     rouge = evaluate.load('rouge')
     exact_match_metric = evaluate.load("exact_match")
+    squad_metrics = evaluate.load('squad')
     for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
         labels_dict = {'exact_match': 0.0,
                         'rouge1_to_target':0.0,
@@ -198,17 +209,21 @@ def main():
         elif args.dataset_name=='cnn_dailymail':
             reference_answers = [batch['highlights']]
         for answer in reference_answers:
-            predictions = [responses[i]['response1'].lstrip()]
-            references = [answer]
-            results = exact_match_metric.compute(predictions=predictions,
-                                                    references=references,
-                                                    ignore_case=True,
-                                                    ignore_punctuation=True)
-            labels_dict['exact_match'] = max(results['exact_match'], labels_dict['exact_match'])
-            rouge_results = rouge.compute(predictions=predictions, references=references)
-            for rouge_type in ['rouge1','rouge2','rougeL']:
-                labels_dict[rouge_type + '_to_target'] = max(rouge_results[rouge_type],
-                                                                labels_dict[rouge_type + '_to_target'])
+            for j in range(args.num_ret_seq):
+                resp_wise_label_name = '_response'+str(j) if args.num_ret_seq>1 else ''
+                predictions = [responses[j]['response1'].lstrip()]
+                references = [answer]
+                results = exact_match_metric.compute(predictions=predictions,
+                                                        references=references,
+                                                        ignore_case=True,
+                                                        ignore_punctuation=True)
+                labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
+                rouge_results = rouge.compute(predictions=predictions, references=references)
+                for rouge_type in ['rouge1','rouge2','rougeL']:
+                    labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
+                                                                    labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
+                squad_results = squad_metrics.compute(predictions=predictions, references=references)
+                labels_dict['squad_f1' + resp_wise_label_name] = max(squad_results['f1'], labels_dict['squad_f1' + resp_wise_label_name])
 
         labels.append(labels_dict)
 
