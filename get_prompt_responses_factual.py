@@ -5,6 +5,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
 import pickle
+import re
 import json
 import jsonlines
 import random
@@ -14,6 +15,37 @@ import argparse
 # from peft import PeftModel
 # from peft.tuners.lora import LoraLayer
 import evaluate
+
+# Squad F1 calculation from: https://github.com/tangbinh/question-answering/blob/master/evaluate.py
+
+def normalize_answer(s):
+    """Lower text and remove punctuation, articles and extra whitespace."""
+    def remove_articles(text):
+        return re.sub(r'\b(a|an|the)\b', ' ', text)
+
+    def white_space_fix(text):
+        return ' '.join(text.split())
+
+    def remove_punc(text):
+        exclude = set(string.punctuation)
+        return ''.join(ch for ch in text if ch not in exclude)
+
+    def lower(text):
+        return text.lower()
+
+    return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+def my_squad_f1_score(prediction, ground_truth):
+    prediction_tokens = normalize_answer(prediction).split()
+    ground_truth_tokens = normalize_answer(ground_truth).split()
+    common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
+    num_same = sum(common.values())
+    if num_same == 0:
+        return 0
+    precision = 1.0 * num_same / len(prediction_tokens)
+    recall = 1.0 * num_same / len(ground_truth_tokens)
+    f1 = (2 * precision * recall) / (precision + recall)
+    return f1
 
 HF_NAMES = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
@@ -221,8 +253,10 @@ def main():
         for answer in reference_answers:
             for j in range(args.num_ret_seq):
                 resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
-                predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
-                references, references_dict = [answer], [{'answers':{'text':[answer]}}]
+                # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
+                # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
+                predictions = [responses[j]['response1'].lstrip()]
+                references = [answer]
                 results = exact_match_metric.compute(predictions=predictions,
                                                         references=references,
                                                         ignore_case=True,
@@ -232,8 +266,8 @@ def main():
                 for rouge_type in ['rouge1','rouge2','rougeL']:
                     labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
                                                                     labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
-                squad_results = squad_metrics.compute(predictions=predictions_dict, references=references_dict)
-                labels_dict['squad_f1' + resp_wise_label_name] = max(squad_results['f1'], labels_dict['squad_f1' + resp_wise_label_name])
+                squad_f1 = my_squad_f1_score(predictions[0],references[0])
+                labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
 
         labels.append(labels_dict)
 
