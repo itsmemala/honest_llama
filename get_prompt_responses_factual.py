@@ -197,10 +197,20 @@ def main():
     exact_match_metric = evaluate.load("exact_match")
     squad_metrics = evaluate.load('squad')
     for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
-        labels_dict = {'exact_match': 0.0,
-                        'rouge1_to_target':0.0,
-                        'rouge2_to_target':0.0,
-                        'rougeL_to_target':0.0}
+        if args.num_ret_seq==1:
+            labels_dict = {'exact_match': 0.0,
+                            'rouge1_to_target':0.0,
+                            'rouge2_to_target':0.0,
+                            'rougeL_to_target':0.0,
+                            'squad_f1':0.0}
+        else:
+            labels_dict = {}
+            for j in range(args.num_ret_seq):
+                labels_dict['exact_match_response'+str(j+1)]=0.0
+                labels_dict['rouge1_to_target_response'+str(j+1)]=0.0
+                labels_dict['rouge2_to_target_response'+str(j+1)]=0.0
+                labels_dict['rougeL_to_target_response'+str(j+1)]=0.0
+                labels_dict['squad_f1_response'+str(j+1)]=0.0
         if args.dataset_name=='nq_open':
             reference_answers = batch['answer'] 
         elif args.dataset_name=='trivia_qa':
