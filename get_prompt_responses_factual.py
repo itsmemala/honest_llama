@@ -257,7 +257,7 @@ def main():
                 resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
                 # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
                 # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
-                predictions = [responses[j]['response1'].lstrip()]
+                predictions = [responses[i]['response'+str(j+1)].lstrip()]
                 references = [answer]
                 results = exact_match_metric.compute(predictions=predictions,
                                                         references=references,
