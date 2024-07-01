@@ -211,8 +211,8 @@ def main():
         for answer in reference_answers:
             for j in range(args.num_ret_seq):
                 resp_wise_label_name = '_response'+str(j) if args.num_ret_seq>1 else ''
-                predictions = [responses[j]['response1'].lstrip()]
-                references = [answer]
+                predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
+                references, references_dict = [answer], [{'answers':{'text':[answer]}}]
                 results = exact_match_metric.compute(predictions=predictions,
                                                         references=references,
                                                         ignore_case=True,
