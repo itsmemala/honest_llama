@@ -223,7 +223,7 @@ def main():
             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
             if args.token=='prompt_last_and_answer_last':
-                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                 sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                 act = torch.cat((act,sep_token), dim=1)
@@ -238,7 +238,7 @@ def main():
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 if args.token=='prompt_last_and_answer_last':
-                    act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                     sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                     act = torch.cat((act,sep_token), dim=1)
