@@ -421,7 +421,7 @@ def main():
                     inputs = torch.stack(activations,axis=0)
                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                 y_val_pred += predicted
-                y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist()
+                y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
                 val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                 val_preds.append(val_preds_batch)
                 val_logits.append(nlinear_model(inputs))
