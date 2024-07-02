@@ -326,7 +326,7 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
-                targets = batch['labels'][np.array(batch_target_idxs)]
+                targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 outputs = nlinear_model(inputs)
                 loss = criterion(outputs, targets.to(device).float())
                 epoch_train_loss += loss.item()
@@ -363,7 +363,7 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
-                targets = batch['labels'][np.array(batch_target_idxs)]
+                targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
             val_loss.append(epoch_val_loss)
