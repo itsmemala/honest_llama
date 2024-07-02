@@ -223,12 +223,9 @@ def main():
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='prompt_last_and_answer_last':
-                    print(layer_wise_activations[:,token_idx-1,:].shape)
-                    print(np.concatenate((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1).shape)
-                    print(np.stack((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1).shape)
-                    all_layer_wise_activations.append(np.concatenate((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1))
-                    all_head_wise_activations.append(np.concatenate((head_wise_activations[:,token_idx-1,:],head_wise_activations[:,-1,:]),axis=1))
-                    all_mlp_wise_activations.append(np.concatenate((mlp_wise_activations[:,token_idx-1,:],mlp_wise_activations[:,-1,:]),axis=1))
+                    all_layer_wise_activations.append(np.stack((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1))
+                    all_head_wise_activations.append(np.stack((head_wise_activations[:,token_idx-1,:],head_wise_activations[:,-1,:]),axis=1))
+                    all_mlp_wise_activations.append(np.stack((mlp_wise_activations[:,token_idx-1,:],mlp_wise_activations[:,-1,:]),axis=1))
                 elif args.token=='maxpool_all':
                     all_layer_wise_activations.append(np.max(layer_wise_activations,axis=1))
                     all_head_wise_activations.append(np.max(head_wise_activations,axis=1))
