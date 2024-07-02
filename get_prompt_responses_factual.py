@@ -152,48 +152,49 @@ def main():
     
     print('Getting model responses..')
     # Get model responses
-    responses = []
-    if args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
-        # period_token_id = tokenizer('. ')['input_ids'][1]
-        period_token_id = tokenizer('.')['input_ids']
-        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
-                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
-        # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
-        # eos_tokens = ['Question', '\n', 'Answer', ':']
-        checkgens = ['QA2:','Q.', 'B:']
-    elif args.dataset_name=='cnn_dailymail':
-        period_token_id = tokenizer('\n')['input_ids']
-        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
-                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\", 'Summary:', ' Summary:']
-        checkgens = ['Summary:']
-    question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
-    # print('Bad word ids:',question_framing_ids)
-    for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
-        tokenized_prompt = tokenized_prompt.to(device)
-        response = model.generate(tokenized_prompt, max_new_tokens=512,
-                                    # num_beams=1,
-                                    temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
-                                    eos_token_id=period_token_id,
-                                    bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-                                    )[:, tokenized_prompt.shape[-1]:]
-        if args.num_ret_seq==1:
-            response = tokenizer.decode(response[0], skip_special_tokens=True)
-            for check_gen in checkgens: # Fix generation stopping errors
-                # before_trunc = response
-                response = response.split(check_gen)[0]
-                # if before_trunc=="":
-                #     print(i)
-            responses.append({'prompt':prompts[i],
-                                'response1':response})
-        else:
-            resp_dict = {'prompt':prompts[i]}
-            for j in range(args.num_ret_seq):
-                cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
-                for check_gen in checkgens: # Fix generation stopping errors
-                    cur_response = cur_response.split(check_gen)[0]
-                resp_dict['response'+str(j+1)] = cur_response
-                # print(i,j,'Response:',cur_response,'\n')
-            responses.append(resp_dict)
+    # responses = []
+    # if args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
+    #     # period_token_id = tokenizer('. ')['input_ids'][1]
+    #     period_token_id = tokenizer('.')['input_ids']
+    #     eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+    #                     'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
+    #     # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
+    #     # eos_tokens = ['Question', '\n', 'Answer', ':']
+    #     checkgens = ['QA2:','Q.', 'B:']
+    # elif args.dataset_name=='cnn_dailymail':
+    #     period_token_id = tokenizer('\n')['input_ids']
+    #     eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+    #                     'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\", 'Summary:', ' Summary:']
+    #     checkgens = ['Summary:']
+    # question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
+    # # print('Bad word ids:',question_framing_ids)
+    # for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
+    #     tokenized_prompt = tokenized_prompt.to(device)
+    #     response = model.generate(tokenized_prompt, max_new_tokens=512,
+    #                                 # num_beams=1,
+    #                                 temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
+    #                                 eos_token_id=period_token_id,
+    #                                 bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+    #                                 )[:, tokenized_prompt.shape[-1]:]
+    #     if args.num_ret_seq==1:
+    #         response = tokenizer.decode(response[0], skip_special_tokens=True)
+    #         for check_gen in checkgens: # Fix generation stopping errors
+    #             # before_trunc = response
+    #             response = response.split(check_gen)[0]
+    #             # if before_trunc=="":
+    #             #     print(i)
+    #         responses.append({'prompt':prompts[i],
+    #                             'response1':response})
+    #     else:
+    #         resp_dict = {'prompt':prompts[i]}
+    #         for j in range(args.num_ret_seq):
+    #             cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
+    #             for check_gen in checkgens: # Fix generation stopping errors
+    #                 cur_response = cur_response.split(check_gen)[0]
+    #             resp_dict['response'+str(j+1)] = cur_response
+    #             # print(i,j,'Response:',cur_response,'\n')
+    #         responses.append(resp_dict)
+    
     # batches = [(0,10)]
     # for batch_start,batch_end in batches:
     #     tokenized_prompt = tokenizer(prompts[batch_start:batch_end], return_tensors = 'pt').input_ids
@@ -209,22 +210,24 @@ def main():
     #         responses.append({'prompt':prompts[batch_start+i],
     #                         'response1':resp})
     
-    print('Saving model responses..')
-    if args.hallu_check_prompt is None:
-        gen_type = 'sampled' if args.do_sample else 'greedy'
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
-    else:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
-    with open(save_fname, 'w') as outfile:
-        for entry in responses:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print('Saving model responses..')
+    # if args.hallu_check_prompt is None:
+    #     gen_type = 'sampled' if args.do_sample else 'greedy'
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
+    # else:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
+    # with open(save_fname, 'w') as outfile:
+    #     for entry in responses:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
+    gen_type = 'sampled' if args.do_sample else 'greedy'
+    resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
     # resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
-    # with open(resp_fname, 'r') as read_file:
-    #     responses = []
-    #     for line in read_file:
-    #         responses.append(json.loads(line))
+    with open(resp_fname, 'r') as read_file:
+        responses = []
+        for line in read_file:
+            responses.append(json.loads(line))
     
     print('Getting labels for model responses..')
     labels = []
