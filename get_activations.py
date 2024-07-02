@@ -174,8 +174,12 @@ def main():
             load_ranges = [(0,1000)]
     elif args.dataset_name == 'trivia_qa':
         # load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100)) if (a*100)+100>1800] # dola generation file
-        if '5000' in args.file_name or 'train' in args.file_name:
+        if '5000' in args.file_name: # or 'train' in args.file_name:
             load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
+        elif '20000' in args.file_name:
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(20000/100))] # train file
+        elif '2000' in args.file_name:
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(2000/100))] # test file
         else:
             load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
     elif args.dataset_name == 'strqa':
