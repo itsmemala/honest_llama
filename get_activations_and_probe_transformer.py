@@ -374,15 +374,15 @@ def main():
                 best_val_loss = epoch_val_loss
                 best_model_state = deepcopy(nlinear_model.state_dict())
             # Early stopping
-            patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
-            if len(val_loss)>=patience:
-                for epoch_id in range(1,patience,1):
-                    val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
-                    if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
-                if is_not_decreasing==patience-1: break
+            # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
+            # if len(val_loss)>=patience:
+            #     for epoch_id in range(1,patience,1):
+            #         val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
+            #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+            #     if is_not_decreasing==patience-1: break
         all_train_loss[i].append(np.array(train_loss))
         all_val_loss[i].append(np.array(val_loss))
-        nlinear_model.load_state_dict(best_model_state)
+        # nlinear_model.load_state_dict(best_model_state)
         
         # print(np.array(val_loss))
         if args.save_probes:
