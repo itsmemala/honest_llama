@@ -230,7 +230,7 @@ def main():
     with open(resp_fname, 'r') as read_file:
         responses = []
         for line in read_file:
-            responses.append(json.loads(line))
+            responses.append(json.loads(line)['response1'])
     
     cleaned_responses = []
     for i,resp in enumerate(responses):
