@@ -230,11 +230,11 @@ def main():
     with open(resp_fname, 'r') as read_file:
         responses = []
         for line in read_file:
-            responses.append(json.loads(line)['response1'])
+            responses.append(json.loads(line))
     
-    cleaned_responses = []
-    for i,resp in enumerate(responses):
-        cleaned_responses.append(resp.split("\n")[0])
+    for i,row in enumerate(responses):
+        resp = row['response1']
+        responses[i]['response1'] = resp.split("\n")[0]
         if resp.split("\n")[0]!=resp:
             print(i,"\n",resp,"\n\n",resp.split("\n")[0])
     # print('Saving model responses..')
