@@ -114,10 +114,10 @@ def main():
                 # print('AuROC for cls0 (=hallu class):',) # Can't calculate as there's no prob score
             
         # Semantic Entropy
-        train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
-        test_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.test_uncertainty_values_file_name}_semantic_entropy_scores.npy')
-        compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
-        for sample_set,use_samples in compute_entropy_with:
+        # train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
+        # test_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.test_uncertainty_values_file_name}_semantic_entropy_scores.npy')
+        # compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
+        # for sample_set,use_samples in compute_entropy_with:
             
 
 if __name__ == '__main__':
