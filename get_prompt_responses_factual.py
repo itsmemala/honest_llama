@@ -95,7 +95,7 @@ def main():
 
     print('Loading model..')
     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-    if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
+    # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
     device = "cuda"
@@ -177,6 +177,7 @@ def main():
                                     # num_beams=1,
                                     temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
                                     eos_token_id=period_token_id,
+                                    pad_token_id=eos_token_id,
                                     bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
                                     )[:, tokenized_prompt.shape[-1]:]
         if args.num_ret_seq==1:
