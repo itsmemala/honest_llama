@@ -37,6 +37,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='nq_open', help='dataset for querying the model')
+    parser.add_argument('--num_samples', type=int, default=10)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -72,7 +73,13 @@ def main():
                 # data.append(json.loads(line))
                 data = json.loads(line)
                 prompts.append(data['prompt'])
-                responses.append(data['response1'])
+                if 'greedy' in args.file_name:
+                    responses.append(data['response1'])
+                else:
+                    samples = []
+                    for i in range(1,args.num_samples+1,1):
+                        samples.append(data['response'+str(i)])
+                    responses.append(samples)
 
     
     print('Getting token probability scores..')
@@ -82,18 +89,31 @@ def main():
         # prompt = sample['prompt']
         # response = sample['response1']
     for prompt,response in tqdm(zip(prompts,responses)):
-        tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
-        # tokenized_input = tokenized_input[tokenized_input != tokenizer.pad_token_id]
-        tokenized_prompt = tokenizer([prompt], return_tensors = 'pt').input_ids
-        # tokenized_prompt = tokenized_prompt[tokenized_prompt != tokenizer.pad_token_id]
-        # This computation of the negative log likelihoods follows this tutorial: https://huggingface.co/docs/transformers/perplexity
-        target_ids = tokenized_input.clone().to(device)
-        target_ids[0][:len(tokenized_prompt[0])] = -100
-        # model_output = model(torch.reshape(tokenized_input, (1, -1)), labels=target_ids, output_hidden_states=True)
-        model_output = model(tokenized_input, labels=target_ids, output_hidden_states=True)
-        average_neg_log_likelihood = model_output['loss'] # len normalised predictive entropy
-        neg_log_likelihood = average_neg_log_likelihood * (len(tokenized_input[0]) - len(tokenized_prompt[0])) # sequence predictive entropy
-        scores.append(np.array([average_neg_log_likelihood.detach().cpu().numpy(),neg_log_likelihood.detach().cpu().numpy()]))
+        if 'greedy' in args.file_name:
+            tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
+            # tokenized_input = tokenized_input[tokenized_input != tokenizer.pad_token_id]
+            tokenized_prompt = tokenizer([prompt], return_tensors = 'pt').input_ids
+            # tokenized_prompt = tokenized_prompt[tokenized_prompt != tokenizer.pad_token_id]
+            # This computation of the negative log likelihoods follows this tutorial: https://huggingface.co/docs/transformers/perplexity
+            target_ids = tokenized_input.clone().to(device)
+            target_ids[0][:len(tokenized_prompt[0])] = -100
+            # model_output = model(torch.reshape(tokenized_input, (1, -1)), labels=target_ids, output_hidden_states=True)
+            model_output = model(tokenized_input, labels=target_ids, output_hidden_states=True)
+            average_neg_log_likelihood = model_output['loss'] # len normalised predictive entropy
+            neg_log_likelihood = average_neg_log_likelihood * (len(tokenized_input[0]) - len(tokenized_prompt[0])) # sequence predictive entropy
+            scores.append(np.array([average_neg_log_likelihood.detach().cpu().numpy(),neg_log_likelihood.detach().cpu().numpy()]))
+        else:
+            sample_wise_score = []
+            for sample in response:
+                tokenized_input = tokenizer([prompt+sample], return_tensors = 'pt').input_ids.to(device)
+                tokenized_prompt = tokenizer([prompt], return_tensors = 'pt').input_ids
+                target_ids = tokenized_input.clone().to(device)
+                target_ids[0][:len(tokenized_prompt[0])] = -100
+                model_output = model(tokenized_input, labels=target_ids, output_hidden_states=True)
+                average_neg_log_likelihood = model_output['loss'] # len normalised predictive entropy
+                neg_log_likelihood = average_neg_log_likelihood * (len(tokenized_input[0]) - len(tokenized_prompt[0])) # sequence predictive entropy
+                sample_wise_score.append(np.array([average_neg_log_likelihood.detach().cpu().numpy(),neg_log_likelihood.detach().cpu().numpy()]))
+            scores.append(np.stack(sample_wise_score))
 
     print('Saving token probability scores..')
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy', scores)
