@@ -263,7 +263,7 @@ def main():
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
         else:
             print("Saving layer wise activations")
-            if args.token=='tagged_tokens':
+            if 'tagged_tokens' in args.token:
                 with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
                     torch.save(all_layer_wise_activations, outfile, pickle_protocol=pickle.HIGHEST_PROTOCOL)
             else:
