@@ -96,7 +96,7 @@ def main():
     print('Loading model..')
     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-    if args.num_ret_seq>1: model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
+    if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
     device = "cuda"
 
     print('Loading data..')
