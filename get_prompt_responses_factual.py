@@ -177,7 +177,7 @@ def main():
                                     # num_beams=1,
                                     temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
                                     eos_token_id=period_token_id,
-                                    pad_token_id=eos_token_id,
+                                    pad_token_id=period_token_id,
                                     bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
                                     )[:, tokenized_prompt.shape[-1]:]
         if args.num_ret_seq==1:
