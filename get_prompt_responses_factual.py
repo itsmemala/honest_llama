@@ -93,14 +93,14 @@ def main():
     np.random.seed(42)
     torch.cuda.manual_seed_all(42)
 
-    print('Loading model..')
-    tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-    # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
-    model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-    if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
-    device = "cuda"
-    # device = 'cpu' # for debugging
-    # model = model.cpu()
+    # print('Loading model..')
+    # tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+    # # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
+    # model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    # if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
+    # device = "cuda"
+    # # device = 'cpu' # for debugging
+    # # model = model.cpu()
 
     print('Loading data..')
     print(args.len_dataset,args.start_at,args.use_split)
@@ -153,50 +153,50 @@ def main():
             tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
     
-    print('Getting model responses..')
-    # Get model responses
-    responses = []
-    if args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
-        # period_token_id = tokenizer('. ')['input_ids'][1]
-        period_token_id = tokenizer('.')['input_ids']
-        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
-                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
-        # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
-        # eos_tokens = ['Question', '\n', 'Answer', ':']
-        checkgens = ['QA2:','Q.', 'B:']
-    elif args.dataset_name=='cnn_dailymail':
-        period_token_id = tokenizer('\n')['input_ids']
-        eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
-                        'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\", 'Summary:', ' Summary:']
-        checkgens = ['Summary:']
-    question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
-    # print('Bad word ids:',question_framing_ids)
-    for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
-        tokenized_prompt = tokenized_prompt.to(device)
-        response = model.generate(tokenized_prompt, max_new_tokens=512,
-                                    # num_beams=1,
-                                    temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
-                                    eos_token_id=period_token_id,
-                                    bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-                                    )[:, tokenized_prompt.shape[-1]:]
-        if args.num_ret_seq==1:
-            response = tokenizer.decode(response[0], skip_special_tokens=True)
-            for check_gen in checkgens: # Fix generation stopping errors
-                # before_trunc = response
-                response = response.split(check_gen)[0]
-                # if before_trunc=="":
-                #     print(i)
-            responses.append({'prompt':prompts[i],
-                                'response1':response})
-        else:
-            resp_dict = {'prompt':prompts[i]}
-            for j in range(args.num_ret_seq):
-                cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
-                for check_gen in checkgens: # Fix generation stopping errors
-                    cur_response = cur_response.split(check_gen)[0]
-                resp_dict['response'+str(j+1)] = cur_response
-                # print(i,j,'Response:',cur_response,'\n')
-            responses.append(resp_dict)
+    # print('Getting model responses..')
+    # # Get model responses
+    # responses = []
+    # if args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
+    #     # period_token_id = tokenizer('. ')['input_ids'][1]
+    #     period_token_id = tokenizer('.')['input_ids']
+    #     eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+    #                     'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\"]
+    #     # question_framing_ids = [[tokenizer(eos_token)['input_ids'][1]] for eos_token in eos_tokens]
+    #     # eos_tokens = ['Question', '\n', 'Answer', ':']
+    #     checkgens = ['QA2:','Q.', 'B:']
+    # elif args.dataset_name=='cnn_dailymail':
+    #     period_token_id = tokenizer('\n')['input_ids']
+    #     eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
+    #                     'QA:', ' QA:', 'QA1', ' QA1', '.\n', ' \n', ':', "\\", 'Summary:', ' Summary:']
+    #     checkgens = ['Summary:']
+    # question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
+    # # print('Bad word ids:',question_framing_ids)
+    # for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
+    #     tokenized_prompt = tokenized_prompt.to(device)
+    #     response = model.generate(tokenized_prompt, max_new_tokens=512,
+    #                                 # num_beams=1,
+    #                                 temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
+    #                                 eos_token_id=period_token_id,
+    #                                 bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+    #                                 )[:, tokenized_prompt.shape[-1]:]
+    #     if args.num_ret_seq==1:
+    #         response = tokenizer.decode(response[0], skip_special_tokens=True)
+    #         for check_gen in checkgens: # Fix generation stopping errors
+    #             # before_trunc = response
+    #             response = response.split(check_gen)[0]
+    #             # if before_trunc=="":
+    #             #     print(i)
+    #         responses.append({'prompt':prompts[i],
+    #                             'response1':response})
+    #     else:
+    #         resp_dict = {'prompt':prompts[i]}
+    #         for j in range(args.num_ret_seq):
+    #             cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
+    #             for check_gen in checkgens: # Fix generation stopping errors
+    #                 cur_response = cur_response.split(check_gen)[0]
+    #             resp_dict['response'+str(j+1)] = cur_response
+    #             # print(i,j,'Response:',cur_response,'\n')
+    #         responses.append(resp_dict)
     
     # batches = [(0,10)]
     # for batch_start,batch_end in batches:
@@ -213,83 +213,96 @@ def main():
     #         responses.append({'prompt':prompts[batch_start+i],
     #                         'response1':resp})
     
-    print('Saving model responses..')
-    if args.hallu_check_prompt is None:
-        gen_type = 'sampled' if args.do_sample else 'greedy'
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
-    else:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
-    with open(save_fname, 'w') as outfile:
-        for entry in responses:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print('Saving model responses..')
+    # if args.hallu_check_prompt is None:
+    #     gen_type = 'sampled' if args.do_sample else 'greedy'
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
+    # else:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
+    # with open(save_fname, 'w') as outfile:
+    #     for entry in responses:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
-    # gen_type = 'sampled' if args.do_sample else 'greedy'
-    # resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
-    # # resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
-    # with open(resp_fname, 'r') as read_file:
-    #     responses = []
-    #     for line in read_file:
-    #         responses.append(json.loads(line))
+    gen_type = 'sampled' if args.do_sample else 'greedy'
+    resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
+    # resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
+    with open(resp_fname, 'r') as read_file:
+        responses = []
+        for line in read_file:
+            responses.append(json.loads(line))
     
-    print('Getting labels for model responses..')
-    labels = []
-    rouge = evaluate.load('rouge')
-    exact_match_metric = evaluate.load("exact_match")
-    squad_metrics = evaluate.load('squad')
-    for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
-        if args.num_ret_seq==1:
-            labels_dict = {'exact_match': 0.0,
-                            'rouge1_to_target':0.0,
-                            'rouge2_to_target':0.0,
-                            'rougeL_to_target':0.0,
-                            'squad_f1':0.0}
-        else:
-            labels_dict = {}
-            for j in range(args.num_ret_seq):
-                labels_dict['exact_match_response'+str(j+1)]=0.0
-                labels_dict['rouge1_to_target_response'+str(j+1)]=0.0
-                labels_dict['rouge2_to_target_response'+str(j+1)]=0.0
-                labels_dict['rougeL_to_target_response'+str(j+1)]=0.0
-                labels_dict['squad_f1_response'+str(j+1)]=0.0
-        if args.dataset_name=='nq_open':
-            reference_answers = batch['answer'] 
-        elif args.dataset_name=='trivia_qa':
-            reference_answers_unformatted = batch['answer']
-            reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases']
-        elif args.dataset_name=='cnn_dailymail':
-            reference_answers = [batch['highlights']]
-        for answer in reference_answers:
-            for j in range(args.num_ret_seq):
-                resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
-                # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
-                # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
-                predictions = [responses[i]['response'+str(j+1)].lstrip()]
-                references = [answer]
-                results = exact_match_metric.compute(predictions=predictions,
-                                                        references=references,
-                                                        ignore_case=True,
-                                                        ignore_punctuation=True)
-                labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
-                rouge_results = rouge.compute(predictions=predictions, references=references)
-                for rouge_type in ['rouge1','rouge2','rougeL']:
-                    labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
-                                                                    labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
-                squad_f1 = my_squad_f1_score(predictions[0],references[0])
-                labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
+    cleaned_responses = []
+    for i,resp in enumerate(responses):
+        cleaned_responses.append(resp.split("\n")[0])
+        if resp.split("\n")[0]!=resp:
+            print(i,"\n",resp,"\n\n",resp.split("\n")[0])
+    # print('Saving model responses..')
+    # save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
+    # with open(save_fname, 'w') as outfile:
+    #     for entry in responses:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
-        labels.append(labels_dict)
+    
+    # print('Getting labels for model responses..')
+    # labels = []
+    # rouge = evaluate.load('rouge')
+    # exact_match_metric = evaluate.load("exact_match")
+    # squad_metrics = evaluate.load('squad')
+    # for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
+    #     if args.num_ret_seq==1:
+    #         labels_dict = {'exact_match': 0.0,
+    #                         'rouge1_to_target':0.0,
+    #                         'rouge2_to_target':0.0,
+    #                         'rougeL_to_target':0.0,
+    #                         'squad_f1':0.0}
+    #     else:
+    #         labels_dict = {}
+    #         for j in range(args.num_ret_seq):
+    #             labels_dict['exact_match_response'+str(j+1)]=0.0
+    #             labels_dict['rouge1_to_target_response'+str(j+1)]=0.0
+    #             labels_dict['rouge2_to_target_response'+str(j+1)]=0.0
+    #             labels_dict['rougeL_to_target_response'+str(j+1)]=0.0
+    #             labels_dict['squad_f1_response'+str(j+1)]=0.0
+    #     if args.dataset_name=='nq_open':
+    #         reference_answers = batch['answer'] 
+    #     elif args.dataset_name=='trivia_qa':
+    #         reference_answers_unformatted = batch['answer']
+    #         reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases']
+    #     elif args.dataset_name=='cnn_dailymail':
+    #         reference_answers = [batch['highlights']]
+    #     for answer in reference_answers:
+    #         for j in range(args.num_ret_seq):
+    #             resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
+    #             # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
+    #             # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
+    #             predictions = [responses[i]['response'+str(j+1)].lstrip()]
+    #             references = [answer]
+    #             results = exact_match_metric.compute(predictions=predictions,
+    #                                                     references=references,
+    #                                                     ignore_case=True,
+    #                                                     ignore_punctuation=True)
+    #             labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
+    #             rouge_results = rouge.compute(predictions=predictions, references=references)
+    #             for rouge_type in ['rouge1','rouge2','rougeL']:
+    #                 labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
+    #                                                                 labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
+    #             squad_f1 = my_squad_f1_score(predictions[0],references[0])
+    #             labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
+
+    #     labels.append(labels_dict)
 
 
-    print('Saving labels..')
-    if args.hallu_check_prompt is None:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_labels_{args.use_split}{args.len_dataset}.json'
-    else:
-        save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{args.len_dataset}.json'
-    with open(save_fname, 'w') as outfile:
-        for entry in labels:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print('Saving labels..')
+    # if args.hallu_check_prompt is None:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_labels_{args.use_split}{args.len_dataset}.json'
+    # else:
+    #     save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_labels_{args.use_split}{args.len_dataset}.json'
+    # with open(save_fname, 'w') as outfile:
+    #     for entry in labels:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
     
 
 if __name__ == '__main__':
