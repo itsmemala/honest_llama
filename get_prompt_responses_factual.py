@@ -250,7 +250,7 @@ def main():
     rouge = evaluate.load('rouge')
     exact_match_metric = evaluate.load("exact_match")
     squad_metrics = evaluate.load('squad')
-    for i,batch in enumerate(list(dataset.take(args.len_dataset))[start_at:]): # one row at a time
+    for i,batch in tqdm(enumerate(list(dataset.take(args.len_dataset))[start_at:])): # one row at a time
         if args.num_ret_seq==1:
             labels_dict = {'exact_match': 0.0,
                             'rouge1_to_target':0.0,
