@@ -234,7 +234,7 @@ def main():
                     for next_token_idx in range(len(prompt[0][token_idx:])):
                         predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
                         predicted_token_id = prompt[0][token_idx+next_token_idx]
-                        part_prompt = prompt[0][:predicting_token_idx]
+                        part_prompt = prompt[:,:predicting_token_idx]
                         # print(tokenizer.decode(part_prompt, skip_special_tokens=True))
                         nll = get_token_nll(model, part_prompt, device, predicted_token_id)
                         if nll > least_likely_nll:
