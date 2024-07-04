@@ -195,6 +195,8 @@ def main():
     else:
         args.acts_per_file = 100
 
+    single_token_types = ['answer_last','prompt_last','maxpool_all','slt']
+
 
     # Probe training
     np.random.seed(42)
@@ -343,8 +345,8 @@ def main():
                                 else:
                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                                 activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']:
+                            inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
+                            if args.token in single_token_types:
                                 targets = batch['labels']
                             elif args.token=='all':
                                 targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
@@ -408,8 +410,8 @@ def main():
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             activations.append(act)
-                        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                        if args.token in ['answer_last','prompt_last','maxpool_all']:
+                        inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
+                        if args.token in single_token_types:
                             targets = batch['labels']
                         elif args.token=='all':
                             # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
@@ -520,8 +522,8 @@ def main():
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             activations.append(act)
-                        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.cat(activations,dim=0)
-                        if args.token in ['answer_last','prompt_last','maxpool_all']:
+                        inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
+                        if args.token in single_token_types:
                             targets = batch['labels']
                         elif args.token=='all':
                             # print(step,prompt_tokens[idx],len(prompt_tokens[idx]))
@@ -616,14 +618,14 @@ def main():
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             activations.append(act)
-                        inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                        inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                         if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias): inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                        predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                        predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                         y_val_pred += predicted
                         y_val_true += batch['labels'].tolist()
-                        val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                        val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                         val_preds.append(val_preds_batch)
-                        if args.token in ['answer_last','prompt_last','maxpool_all']: val_logits.append(nlinear_model(inputs))
+                        if args.token in single_token_types: val_logits.append(nlinear_model(inputs))
                         if args.token in ['all','tagged_tokens']: val_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
                 all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
                 all_y_true_val[i].append(y_val_true)
@@ -654,14 +656,14 @@ def main():
                                 else:
                                     act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
                                 activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in ['answer_last','prompt_last','maxpool_all'] else activations
+                            inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                             if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias): inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                            predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                            predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                             y_test_pred += predicted
                             y_test_true += batch['labels'].tolist()
-                            test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in ['answer_last','prompt_last','maxpool_all'] else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                            test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
                             test_preds.append(test_preds_batch)
-                            if args.token in ['answer_last','prompt_last','maxpool_all']: test_logits.append(nlinear_model(inputs))
+                            if args.token in single_token_types: test_logits.append(nlinear_model(inputs))
                             if args.token in ['all','tagged_tokens']: test_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
                     all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
                     all_y_true_test[i].append(y_test_true)
