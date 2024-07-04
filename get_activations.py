@@ -229,6 +229,8 @@ def main():
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='least_likely':
                     print('We are here')
+                    print(prompt)
+                    print(len(prompt),len(prompt[token_idx:]))
                     least_likely_nll, least_likely_token_idx = 0, token_idx
                     for next_token_idx in range(len(prompt[token_idx:])):
                         predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
