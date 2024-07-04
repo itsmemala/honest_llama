@@ -187,6 +187,7 @@ def main():
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
+    load_ranges = [(0,5)]
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
@@ -227,12 +228,14 @@ def main():
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='least_likely':
+                    print('We are here')
                     least_likely_nll, least_likely_token_idx = 0, token_idx
                     for next_token_idx in range(len(prompt[token_idx:])):
                         predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
+                        predicted_token_id = prompt[token_idx+next_token_idx]
                         part_prompt = prompt[:predicting_token_idx]
                         print(tokenizer.decode(part_prompt, skip_special_tokens=True))
-                    #     nll = get_token_nll(model, part_prompt, device)
+                    #     nll = get_token_nll(model, part_prompt, device, predicted_token_id)
                     #     if nll > least_likely_nll:
                     #         least_likely_nll = nll
                     #         least_likely_token_idx = predicting_token_idx
