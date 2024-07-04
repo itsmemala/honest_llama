@@ -520,7 +520,7 @@ def get_token_nll(model, prompt, device, predicted_token_id):
         output = model(prompt)
         nll = output.logits[0,-1,predicted_token_id].item() # logits: (bs, tokens, vocab)
         print(nll)
-        return
+        return nll
 
 def get_llama_logits(model, prompt, device): 
 
