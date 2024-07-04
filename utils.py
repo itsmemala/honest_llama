@@ -514,14 +514,16 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
     else:
         return activation
 
-def get_token_nll(model, prompt, device, predicted_token_id):
+def get_token_logit(model, prompt, device, predicted_token_id):
     with torch.no_grad():
         prompt = prompt.to(device)
         output = model(prompt)
-        nll1 = output.logits[0,-1,predicted_token_id].item() # logits: (bs, tokens, vocab)
-        output = model.generate(prompt,max_new_tokens=1,do_sample=False,return_dict_in_generate=True,output_scores=True)
-        nll = output.scores[0][0,predicted_token_id].item() # scores[0]: (bs, vocab)
-        print(nll1,nll)
+        logits = output.logits[0,-1,:] # output.logits: (bs, tokens, vocab)
+        nll = -F.log_softmax(logits)[predicted_token_id].item()
+        # output = model.generate(prompt,max_new_tokens=1,do_sample=False,return_dict_in_generate=True,output_scores=True)
+        # scores = output.scores[0][0,predicted_token_id].item() # output.scores[0]: (bs, vocab)
+        # print(logits,scores) # Checked for a few - the two values are the same
+        print(nll)
         return nll
 
 def get_llama_logits(model, prompt, device): 
