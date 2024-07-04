@@ -135,7 +135,7 @@ def main():
     #     prompts, labels = formatter(dataset, tokenizer)
 
     # if args.token=='tagged_tokens' or args.token=='tagged_tokens_and_last':
-    tagged_token_idxs = get_token_tags(prompts[:5],prompt_tokens[:5])
+    tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
 
 
     if 'tqa' in args.dataset_name:
@@ -187,7 +187,7 @@ def main():
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
-    load_ranges = [(0,5)]
+    # load_ranges = [(0,5)]
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
@@ -240,8 +240,8 @@ def main():
                         if nll > least_likely_nll:
                             least_likely_nll = nll
                             least_likely_token_idx = predicting_token_idx
-                    # act = get_llama_activations_bau_custom(model, part_prompt, device, 'layer', layer, args.token, least_likely_token_idx, tagged_idxs)
-                    # all_layer_wise_activations.append(act)
+                    act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, least_likely_token_idx)
+                    all_layer_wise_activations.append(act.numpy())
                 elif args.token=='prompt_last_and_answer_last':
                     all_layer_wise_activations.append(np.stack((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1))
                     all_head_wise_activations.append(np.stack((head_wise_activations[:,token_idx-1,:],head_wise_activations[:,-1,:]),axis=1))

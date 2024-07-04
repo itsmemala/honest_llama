@@ -490,8 +490,10 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
         with TraceDict(model, ANALYSE) as ret:
             output = model(prompt, output_hidden_states = True)
         if using_act in ['mlp','mlp_l1','ah']: activation = ret[ANALYSE[0]].output.squeeze().detach().to(torch.float32)
-        layer_activation = output.hidden_states[layer].squeeze().detach().cpu().to(torch.float32)
-
+        if layer==-1: 
+            layer_activation = torch.stack(output.hidden_states, dim=0).squeeze().detach().cpu().to(torch.float32)
+        else:
+            layer_activation = output.hidden_states[layer].squeeze().detach().cpu().to(torch.float32)
         del output
 
     if using_act=='layer' and token=='answer_last':
@@ -502,6 +504,8 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
         return activation[answer_token_idx-1,:]
     elif token=='maxpool_all':
         return torch.max(activation,dim=0)[0]
+    elif using_act=='layer' and token=='least_likely':
+        return layer_activation[:,answer_token_idx,:]
     elif using_act=='layer' and token=='tagged_tokens':
         tagged_token_idxs = tagged_token_idxs if len(tagged_token_idxs)>0 else [(1,layer_activation.shape[0])] # Skip the first token
         return torch.cat([layer_activation[a:b,:] for a,b in tagged_token_idxs],dim=0)
@@ -519,11 +523,11 @@ def get_token_nll(model, prompt, device, predicted_token_id):
         prompt = prompt.to(device)
         output = model(prompt)
         logits = output.logits[0,-1,:] # output.logits: (bs, tokens, vocab)
-        nll = -F.log_softmax(logits)[predicted_token_id].item()
+        nll = -F.log_softmax(logits, dim=-1)[predicted_token_id].item()
         # output = model.generate(prompt,max_new_tokens=1,do_sample=False,return_dict_in_generate=True,output_scores=True)
         # scores = output.scores[0][0,predicted_token_id].item() # output.scores[0]: (bs, vocab)
         # print(logits,scores) # Checked for a few - the two values are the same
-        print(nll)
+        # print(nll)
         return nll
 
 def get_llama_logits(model, prompt, device): 
