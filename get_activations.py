@@ -228,18 +228,18 @@ def main():
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='least_likely':
-                    print(print(tokenizer.decode(prompt[0], skip_special_tokens=True)))
-                    print(len(prompt[0]),len(prompt[0][token_idx:]))
+                    # print(print(tokenizer.decode(prompt[0], skip_special_tokens=True)))
+                    # print(len(prompt[0]),len(prompt[0][token_idx:]))
                     least_likely_nll, least_likely_token_idx = 0, token_idx
                     for next_token_idx in range(len(prompt[0][token_idx:])):
                         predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
                         predicted_token_id = prompt[0][token_idx+next_token_idx]
                         part_prompt = prompt[0][:predicting_token_idx]
-                        print(tokenizer.decode(part_prompt, skip_special_tokens=True))
-                    #     nll = get_token_nll(model, part_prompt, device, predicted_token_id)
-                    #     if nll > least_likely_nll:
-                    #         least_likely_nll = nll
-                    #         least_likely_token_idx = predicting_token_idx
+                        # print(tokenizer.decode(part_prompt, skip_special_tokens=True))
+                        nll = get_token_nll(model, part_prompt, device, predicted_token_id)
+                        if nll > least_likely_nll:
+                            least_likely_nll = nll
+                            least_likely_token_idx = predicting_token_idx
                     # act = get_llama_activations_bau_custom(model, part_prompt, device, 'layer', layer, args.token, least_likely_token_idx, tagged_idxs)
                     # all_layer_wise_activations.append(act)
                 elif args.token=='prompt_last_and_answer_last':

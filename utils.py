@@ -514,6 +514,15 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
     else:
         return activation
 
+def get_token_nll(model, prompt, device, predicted_token_id):
+    with torch.no_grad():
+        prompt = prompt.to(device)
+        output = model(prompt)
+        print(output.logits.shape)
+        nll = output.logits[predicted_token_id]
+        print(nll)
+        return
+
 def get_llama_logits(model, prompt, device): 
 
     model.eval()
