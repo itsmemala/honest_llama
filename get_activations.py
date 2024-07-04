@@ -135,7 +135,7 @@ def main():
     #     prompts, labels = formatter(dataset, tokenizer)
 
     # if args.token=='tagged_tokens' or args.token=='tagged_tokens_and_last':
-    tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
+    tagged_token_idxs = get_token_tags(prompts[:5],prompt_tokens[:5])
 
 
     if 'tqa' in args.dataset_name:
@@ -228,8 +228,7 @@ def main():
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='least_likely':
-                    print('We are here')
-                    print(prompt)
+                    print(print(tokenizer.decode(prompt, skip_special_tokens=True)))
                     print(len(prompt),len(prompt[token_idx:]))
                     least_likely_nll, least_likely_token_idx = 0, token_idx
                     for next_token_idx in range(len(prompt[token_idx:])):
