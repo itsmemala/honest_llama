@@ -187,7 +187,7 @@ def main():
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
-    # load_ranges = [(0,5)]
+    load_ranges = [(1000,1100)]
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
@@ -229,7 +229,8 @@ def main():
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='least_likely':
                     # print(print(tokenizer.decode(prompt[0], skip_special_tokens=True)))
-                    # print(len(prompt[0]),len(prompt[0][token_idx:]))
+                    if token_idx+len(prompt[0][token_idx:]-1-1)>len(prompt[0]):
+                        print(len(prompt[0]),token_idx,len(prompt[0][token_idx:]))
                     least_likely_nll, least_likely_token_idx = 0, token_idx
                     for next_token_idx in range(len(prompt[0][token_idx:])):
                         predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
