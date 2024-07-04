@@ -218,6 +218,10 @@ def main():
                     all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+                elif args.token=='slt': #last
+                    all_layer_wise_activations.append(layer_wise_activations[:,-2,:])
+                    all_head_wise_activations.append(head_wise_activations[:,-2,:])
+                    all_mlp_wise_activations.append(mlp_wise_activations[:,-2,:])
                 elif args.token=='prompt_last':
                     all_layer_wise_activations.append(layer_wise_activations[:,token_idx-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
