@@ -229,7 +229,7 @@ def main():
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
                 elif args.token=='least_likely':
                     # print(print(tokenizer.decode(prompt[0], skip_special_tokens=True)))
-                    if token_idx+len(prompt[0][token_idx:]-1-1)>len(prompt[0]):
+                    if token_idx+len(prompt[0][token_idx:])-1-1>len(prompt[0]):
                         print(len(prompt[0]),token_idx,len(prompt[0][token_idx:]))
                     least_likely_nll, least_likely_token_idx = 0, token_idx
                     for next_token_idx in range(len(prompt[0][token_idx:])):
