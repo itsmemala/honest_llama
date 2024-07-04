@@ -226,6 +226,18 @@ def main():
                     all_layer_wise_activations.append(layer_wise_activations[:,token_idx-1,:])
                     all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
                     all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
+                elif args.token=='least_likely':
+                    least_likely_nll, least_likely_token_idx = 0, token_idx
+                    for next_token_idx in range(len(prompt[token_idx:])):
+                        predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
+                        part_prompt = prompt[:predicting_token_idx]
+                        print(tokenizer.decode(part_prompt, skip_special_tokens=True))
+                    #     nll = get_token_nll(model, part_prompt, device)
+                    #     if nll > least_likely_nll:
+                    #         least_likely_nll = nll
+                    #         least_likely_token_idx = predicting_token_idx
+                    # act = get_llama_activations_bau_custom(model, part_prompt, device, 'layer', layer, args.token, least_likely_token_idx, tagged_idxs)
+                    # all_layer_wise_activations.append(act)
                 elif args.token=='prompt_last_and_answer_last':
                     all_layer_wise_activations.append(np.stack((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1))
                     all_head_wise_activations.append(np.stack((head_wise_activations[:,token_idx-1,:],head_wise_activations[:,-1,:]),axis=1))
