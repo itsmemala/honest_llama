@@ -518,8 +518,7 @@ def get_token_nll(model, prompt, device, predicted_token_id):
     with torch.no_grad():
         prompt = prompt.to(device)
         output = model(prompt)
-        print(output.logits.shape)
-        nll = output.logits[predicted_token_id]
+        nll = output.logits[0,-1,predicted_token_id] # logits: (bs, tokens, vocab)
         print(nll)
         return
 
