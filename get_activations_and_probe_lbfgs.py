@@ -430,7 +430,7 @@ def main():
                             if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias): inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                             outputs = nlinear_model(inputs)
                             loss = criterion(outputs, targets.to(device).float())
-                            epoch_train_loss += loss.item()
+                            # epoch_train_loss += loss.item()
                             if 'specialised' in args.method and len(model_wise_mc_sample_idxs)>0:
                                 mean_vectors = []
                                 for idxs in model_wise_mc_sample_idxs: # for each previous model
@@ -478,6 +478,7 @@ def main():
                                 epoch_spl_loss += spl_loss.item()
                             train_loss.append(loss.item())
                             loss.backward()
+                            return loss
                             # for n,p in nlinear_model.named_parameters():
                             #     if layer==3 and p.grad is not None: print(step,n,torch.min(p.grad),torch.max(p.grad))
                         optimizer.step(closure)
