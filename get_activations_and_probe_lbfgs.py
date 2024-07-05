@@ -398,7 +398,7 @@ def main():
                     {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                     {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
                 ]
-                optimizer = torch.optim.LBFGS(optimizer_grouped_parameters, history_size=10, max_iter=4)
+                optimizer = torch.optim.LBFGS(nlinear_model.parameters(), history_size=10, max_iter=4)
                 for epoch in range(args.epochs):
                     epoch_train_loss, epoch_spl_loss = 0, 0
                     nlinear_model.train()
