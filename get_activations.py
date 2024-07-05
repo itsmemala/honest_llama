@@ -134,8 +134,10 @@ def main():
     # else: 
     #     prompts, labels = formatter(dataset, tokenizer)
 
-    # if args.token=='tagged_tokens' or args.token=='tagged_tokens_and_last':
-    tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
+    if 'tagged_tokens' in args.token:
+        tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
+    else:
+        tagged_token_idxs = [() for prompt in prompts] # Saves time
 
 
     if 'tqa' in args.dataset_name:
@@ -175,7 +177,7 @@ def main():
     elif args.dataset_name == 'trivia_qa':
         # load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100)) if (a*100)+100>1800] # dola generation file
         if '5000' in args.file_name: # or 'train' in args.file_name:
-            load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100)) if (a*100)+100>1000] # train file
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
         elif '20000' in args.file_name:
             load_ranges = [(a*100,(a*100)+100) for a in range(int(20000/100))] # train file
         elif '2000' in args.file_name:
