@@ -143,6 +143,7 @@ def main():
     all_semantic_set_ids = []
     result_dict = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.npy', allow_pickle=True)
     for row in result_dict:
+        print(row)
         all_semantic_set_ids.append(row['semantic_set_ids'])
     
     print('Loading sequence predictive entropies...')
