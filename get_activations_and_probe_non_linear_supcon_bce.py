@@ -170,7 +170,8 @@ def main():
                 for line in read_file:
                     data = json.loads(line)
                     if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    # if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    if 'hallu_pos' in args.method: label = 0 if data['squad_f1']>0.3 else 1 # pos class is hallu
                     labels.append(label)
                     # rouge_scores.append(data['rouge1_to_target'])
                     # squad_scores.append(data['squad_f1'])
@@ -187,7 +188,8 @@ def main():
                 for line in read_file:
                     data = json.loads(line)
                     if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    # if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    if 'hallu_pos' in args.method: label = 0 if data['squad_f1']>0.3 else 1 # pos class is hallu
                     test_labels.append(label)
                     # test_rouge_scores.append(data['rouge1_to_target'])
                     # test_squad_scores.append(data['squad_f1'])
