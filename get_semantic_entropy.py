@@ -157,7 +157,7 @@ def main():
         entropies.append(entropy)
     
     print('Saving semantic entropies...')
-    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_entropy_scores.npy', entropies)
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_entropy_scores.npy', entropies.numpy())
 
     print('Estimating SE labels...')
     # First estimate optimal threshold for binarizing
