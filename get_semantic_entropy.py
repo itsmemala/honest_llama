@@ -156,8 +156,11 @@ def main():
         entropy = - torch.sum(aggregated_likelihoods, dim=0) / torch.tensor(aggregated_likelihoods.shape[0])
         entropies.append(entropy.item())
         sem_set_wise_prob = np.array([(sum(semantic_set_ids_row == semantic_set_id)/len(semantic_set_ids_row)).item() for semantic_set_id in torch.unique(semantic_set_ids_row)])
-        dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
-        discrete_entropies.append(dis_entropy.item())
+        if len(dis_entropy)==1:
+            dis_entropy = 0
+        else:
+            dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
+        discrete_entropies.append(dis_entropy)
     entropies, discrete_entropies = np.array(entropies), np.array(discrete_entropies)
     
     print('Saving semantic entropies...')
