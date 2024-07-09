@@ -161,7 +161,7 @@ def main():
 
     print('Estimating SE labels...')
     # First estimate optimal threshold for binarizing
-    try_thresholds = np.histogram_bin_edges(entropies, bins='auto')
+    try_thresholds = np.histogram_bin_edges(entropies.numpy(), bins='auto')
     objective_func_vals = []
     for threshold in try_thresholds:
         entropies_below_t, entropies_above_t = [], []
