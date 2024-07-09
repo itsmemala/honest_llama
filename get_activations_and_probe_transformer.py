@@ -154,7 +154,7 @@ def main():
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
         if 'se_labels' in args.train_labels_file_name:
-            file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.npy'
+            file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
             labels = np.load(file_path)
         else:
             labels = []
@@ -169,7 +169,7 @@ def main():
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
         test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer)
         if 'se_labels' in args.test_labels_file_name:
-            file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.npy'
+            file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.test_labels_file_name}.npy'
             test_labels = np.load(file_path)
         else:
             test_labels = []
