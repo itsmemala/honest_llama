@@ -82,69 +82,65 @@ def main():
     deberta_predictions = []
     all_semantic_set_ids = []
 
-    # print('Calculating semantic similarities...')
-    # for id_,(question,generated_texts) in enumerate(tqdm(zip(prompts,responses))):
-    #     unique_generated_texts = list(set(generated_texts))
+    print('Calculating semantic similarities...')
+    for id_,(question,generated_texts) in enumerate(tqdm(zip(prompts,responses))):
+        unique_generated_texts = list(set(generated_texts))
 
-    #     answer_list_1 = []
-    #     answer_list_2 = []
-    #     has_semantically_different_answers = False
-    #     inputs = []
+        answer_list_1 = []
+        answer_list_2 = []
+        has_semantically_different_answers = False
+        inputs = []
 
-    #     semantic_set_ids = {}
-    #     for index, answer in enumerate(unique_generated_texts):
-    #         semantic_set_ids[answer] = index
+        semantic_set_ids = {}
+        for index, answer in enumerate(unique_generated_texts):
+            semantic_set_ids[answer] = index
 
-    #     if len(unique_generated_texts) > 1:
+        if len(unique_generated_texts) > 1:
 
-    #         # Evalauate semantic similarity
-    #         for i, reference_answer in enumerate(unique_generated_texts):
-    #             for j in range(i + 1, len(unique_generated_texts)):
+            # Evalauate semantic similarity
+            for i, reference_answer in enumerate(unique_generated_texts):
+                for j in range(i + 1, len(unique_generated_texts)):
 
-    #                 answer_list_1.append(unique_generated_texts[i])
-    #                 answer_list_2.append(unique_generated_texts[j])
+                    answer_list_1.append(unique_generated_texts[i])
+                    answer_list_2.append(unique_generated_texts[j])
 
-    #                 qa_1 = question + ' ' + unique_generated_texts[i]
-    #                 qa_2 = question + ' ' + unique_generated_texts[j]
+                    qa_1 = question + ' ' + unique_generated_texts[i]
+                    qa_2 = question + ' ' + unique_generated_texts[j]
 
-    #                 input = qa_1 + ' [SEP] ' + qa_2
-    #                 inputs.append(input)
-    #                 encoded_input = tokenizer.encode(input, padding=True)
-    #                 prediction = model(torch.tensor(torch.tensor([encoded_input]), device='cuda'))['logits']
-    #                 predicted_label = torch.argmax(prediction, dim=1)
+                    input = qa_1 + ' [SEP] ' + qa_2
+                    inputs.append(input)
+                    encoded_input = tokenizer.encode(input, padding=True)
+                    prediction = model(torch.tensor(torch.tensor([encoded_input]), device='cuda'))['logits']
+                    predicted_label = torch.argmax(prediction, dim=1)
 
-    #                 reverse_input = qa_2 + ' [SEP] ' + qa_1
-    #                 encoded_reverse_input = tokenizer.encode(reverse_input, padding=True)
-    #                 reverse_prediction = model(torch.tensor(torch.tensor([encoded_reverse_input]), device='cuda'))['logits']
-    #                 reverse_predicted_label = torch.argmax(reverse_prediction, dim=1)
+                    reverse_input = qa_2 + ' [SEP] ' + qa_1
+                    encoded_reverse_input = tokenizer.encode(reverse_input, padding=True)
+                    reverse_prediction = model(torch.tensor(torch.tensor([encoded_reverse_input]), device='cuda'))['logits']
+                    reverse_predicted_label = torch.argmax(reverse_prediction, dim=1)
 
-    #                 deberta_prediction = 1
-    #                 # print(qa_1, qa_2, predicted_label, reverse_predicted_label)
-    #                 if 0 in predicted_label or 0 in reverse_predicted_label:
-    #                     has_semantically_different_answers = True
-    #                     deberta_prediction = 0
+                    deberta_prediction = 1
+                    # print(qa_1, qa_2, predicted_label, reverse_predicted_label)
+                    if 0 in predicted_label or 0 in reverse_predicted_label:
+                        has_semantically_different_answers = True
+                        deberta_prediction = 0
 
-    #                 else:
-    #                     semantic_set_ids[unique_generated_texts[j]] = semantic_set_ids[unique_generated_texts[i]]
+                    else:
+                        semantic_set_ids[unique_generated_texts[j]] = semantic_set_ids[unique_generated_texts[i]]
 
-    #                 deberta_predictions.append([unique_generated_texts[i], unique_generated_texts[j], deberta_prediction])    
+                    deberta_predictions.append([unique_generated_texts[i], unique_generated_texts[j], deberta_prediction])    
 
-    #     result_dict[id_] = {
-    #         'has_semantically_different_answers': has_semantically_different_answers
-    #     }
-    #     list_of_semantic_set_ids = [semantic_set_ids[x] for x in generated_texts]
-    #     result_dict[id_]['semantic_set_ids'] = list_of_semantic_set_ids
-    #     all_semantic_set_ids.append(list_of_semantic_set_ids)
+        result_dict[id_] = {
+            'has_semantically_different_answers': has_semantically_different_answers
+        }
+        list_of_semantic_set_ids = [semantic_set_ids[x] for x in generated_texts]
+        result_dict[id_]['semantic_set_ids'] = list_of_semantic_set_ids
+        all_semantic_set_ids.append(list_of_semantic_set_ids)
 
-    # print('Saving semantic sets...')
-    # with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.npy', 'wb') as outfile:
-    #     pickle.dump(result_dict, outfile)
-
-    all_semantic_set_ids = []
-    result_dict = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.npy', allow_pickle=True)
-    for row in result_dict:
-        print(row)
-        all_semantic_set_ids.append(row['semantic_set_ids'])
+    print('Saving semantic sets...')
+    with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.json', 'wb') as outfile:
+        for row in result_dict:
+            json.dump(row, outfile)
+            outfile.write('\n')
     
     print('Loading sequence predictive entropies...')
     uncertainties = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy')
