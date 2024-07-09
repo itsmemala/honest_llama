@@ -27,5 +27,7 @@ python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file
 
 python analyse_crossdataset_bce.py hl_llama_7B trivia_qa --responses_file_name baseline_responses_test --probes_file_name NLSC_hl_llama_7B_trivia_qa_baseline_responses_train_5000_1_layer_answer_last_individual_non_linear_2_hallu_pos_bs128_epochs20_0.005_False --save_path ~/Desktop/honest_llama_data --mitigated_responses_file_name dola16to32_responses_test
 
+
+
 4) Another approach is to go selfsupervised, try to ask the model to correct its answers and say that the answer is hallucinated. Gather the responses:
 Given a question, extract different responses from the normal questions (maybe 2 suffices), and responses after commenting that the answer is hallucinated. Treat the two normal answers as positives and the answer on the hallucination as negative. Train with contrastive loss. Maybe then train a classifier or estimates prototypes.. to use for classifying test samples based on one answer.

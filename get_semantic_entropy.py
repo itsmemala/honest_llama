@@ -159,7 +159,26 @@ def main():
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_entropy_scores.npy', entropies)
 
     print('Estimating SE labels...')
-    
+    # First estimate optimal threshold for binarizing
+    try_thresholds = np.histogram_bin_edges(entropies, bins='auto')
+    objective_func_vals = []
+    for threshold in try_thresholds:
+        entropies_below_t, entropies_above_t = [], []
+        for sem_entropy in entropies:
+            if sem_entropy<threshold:
+                entropies_below_t.append(sem_entropy)
+            else:
+                entropies_above_t.append(sem_entropy)
+        low_entropy_avg, high_entropy_avg = np.mean(entropies_below_t), np.mean(entropies_above_t)
+        low_entropy_sum_sq_err, high_entropy_sum_sq_err = np.sum([(ent-low_entropy_avg)**2 for ent in entropies_below_t]), np.sum([(ent-high_entropy_avg)**2 for ent in entropies_above_t])
+        objective_func_vals.append(low_entropy_sum_sq_err + high_entropy_sum_sq_err)
+    optimal_threshold = try_thresholds[np.argmin(objective_func_vals)]
+    # Labels
+    se_labels = [1 if ent>optimal_threshold else 0 for ent in entropies]
+
+    print('Saving semantic entropy labels...')
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy', se_labels)
+
 
 if __name__ == '__main__':
     main()
