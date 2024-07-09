@@ -154,14 +154,15 @@ def main():
             aggregated_likelihoods.append(torch.logsumexp(row[semantic_set_ids_row == semantic_set_id], dim=0))
         aggregated_likelihoods = torch.tensor(aggregated_likelihoods) # - llh_shift
         entropy = - torch.sum(aggregated_likelihoods, dim=0) / torch.tensor(aggregated_likelihoods.shape[0])
-        entropies.append(entropy.numpy())
+        entropies.append(entropy.item())
+    entropies = np.array(entropies)
     
     print('Saving semantic entropies...')
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_entropy_scores.npy', entropies)
 
     print('Estimating SE labels...')
     # First estimate optimal threshold for binarizing
-    try_thresholds = np.histogram_bin_edges(np.array(entropies)[~np.isnan(entropies)], bins='auto')
+    try_thresholds = np.histogram_bin_edges(entropies[~np.isnan(entropies)], bins='auto')
     print(entropies)
     objective_func_vals = []
     for threshold in try_thresholds:
