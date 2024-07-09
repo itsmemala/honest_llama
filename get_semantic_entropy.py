@@ -145,7 +145,7 @@ def main():
     avg_nll = torch.squeeze(uncertainties[:,:,1]) # uncertainties: (prompts, samples, 2)
 
     print('Calculating semantic entropies...')
-    entropies = []
+    entropies, discrete_entropies = [], []
     for row_index in range(avg_nll[:10].shape[0]):
         aggregated_likelihoods = []
         row = avg_nll[row_index]
@@ -155,19 +155,22 @@ def main():
         aggregated_likelihoods = torch.tensor(aggregated_likelihoods) # - llh_shift
         entropy = - torch.sum(aggregated_likelihoods, dim=0) / torch.tensor(aggregated_likelihoods.shape[0])
         entropies.append(entropy.item())
-    entropies = np.array(entropies)
+        sem_set_wise_prob = np.array([(sum(semantic_set_ids_row == semantic_set_id)/len(semantic_set_ids_row)).item() for semantic_set_id in torch.unique(semantic_set_ids_row)])
+        dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(torch.unique(semantic_set_ids_row)),sem_set_wise_prob)).sum(axis=1)
+        discrete_entropies.append(dis_entropy.item())
+    entropies, discrete_entropies = np.array(entropies), np.array(discrete_entropies)
     
     print('Saving semantic entropies...')
-    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_entropy_scores.npy', entropies)
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_entropy_scores.npy', entropies) # TODO: (1) consider the negative sign (2) investigate nans
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_discrete_semantic_entropy_scores.npy', discrete_entropies)
 
     print('Estimating SE labels...')
     # First estimate optimal threshold for binarizing
-    try_thresholds = np.histogram_bin_edges(entropies[~np.isnan(entropies)], bins='auto')
-    print(entropies)
+    try_thresholds = np.histogram_bin_edges(discrete_entropies, bins='auto')
     objective_func_vals = []
     for threshold in try_thresholds:
         entropies_below_t, entropies_above_t = [], []
-        for sem_entropy in entropies:
+        for sem_entropy in discrete_entropies:
             if sem_entropy<threshold:
                 entropies_below_t.append(sem_entropy)
             else:
@@ -176,8 +179,10 @@ def main():
         low_entropy_sum_sq_err, high_entropy_sum_sq_err = np.sum([(ent-low_entropy_avg)**2 for ent in entropies_below_t]), np.sum([(ent-high_entropy_avg)**2 for ent in entropies_above_t])
         objective_func_vals.append(low_entropy_sum_sq_err + high_entropy_sum_sq_err)
     optimal_threshold = try_thresholds[np.argmin(objective_func_vals)]
+    print(try_thresholds)
+    print(objective_func_vals)
     # Labels
-    se_labels = [1 if ent>optimal_threshold else 0 for ent in entropies]
+    se_labels = [1 if ent>optimal_threshold else 0 for ent in discrete_entropies]
 
     print('Saving semantic entropy labels...')
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy', se_labels)
