@@ -141,8 +141,8 @@ def main():
         pickle.dump(result_dict, outfile)
     
     print('Loading sequence predictive entropies...')
-    uncertainties = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy')
-    avg_nll = np.squeeze(uncertainties[:,:,1]) # uncertainties: (prompts, samples, 2)
+    uncertainties = torch.from_numpy(np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy'))
+    avg_nll = torch.squeeze(uncertainties[:,:,1]) # uncertainties: (prompts, samples, 2)
 
     print('Calculating semantic entropies...')
     entropies = []
