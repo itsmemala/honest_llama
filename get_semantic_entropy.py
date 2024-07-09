@@ -160,7 +160,7 @@ def main():
             dis_entropy = 0
         else:
             # dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
-            dis_entropy = (-sem_set_wise_prob*np.log2(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
+            dis_entropy = (-sem_set_wise_prob*np.log2(sem_set_wise_prob)).sum(axis=0)
         discrete_entropies.append(dis_entropy)
     entropies, discrete_entropies = np.array(entropies), np.array(discrete_entropies)
     
@@ -190,7 +190,8 @@ def main():
 
     print('Saving semantic entropy labels...')
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy', se_labels)
-
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_thresholds.npy', try_thresholds)
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_obj_func_vals.npy', objective_func_vals)
 
 if __name__ == '__main__':
     main()
