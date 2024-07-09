@@ -159,7 +159,8 @@ def main():
         if len(sem_set_wise_prob)==1:
             dis_entropy = 0
         else:
-            dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
+            # dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
+            dis_entropy = (-sem_set_wise_prob*np.log2(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
         discrete_entropies.append(dis_entropy)
     entropies, discrete_entropies = np.array(entropies), np.array(discrete_entropies)
     
