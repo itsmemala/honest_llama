@@ -11,7 +11,7 @@ from utils import tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, tok
 import llama
 import pickle
 import argparse
-from transformers import BitsAndBytesConfig, GenerationConfig
+from transformers import BitsAndBytesConfig, GenerationConfig, AutoTokenizer, AutoModelForSequenceClassification
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 
