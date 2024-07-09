@@ -152,7 +152,7 @@ def main():
         semantic_set_ids_row = torch.Tensor(all_semantic_set_ids[row_index])
         for semantic_set_id in torch.unique(semantic_set_ids_row):
             aggregated_likelihoods.append(torch.logsumexp(row[semantic_set_ids_row == semantic_set_id], dim=0))
-        aggregated_likelihoods = torch.tensor(aggregated_likelihoods) - llh_shift
+        aggregated_likelihoods = torch.tensor(aggregated_likelihoods) #- llh_shift
         entropy = - torch.sum(aggregated_likelihoods, dim=0) / torch.tensor(aggregated_likelihoods.shape[0])
         entropies.append(entropy)
     
