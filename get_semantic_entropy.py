@@ -149,7 +149,7 @@ def main():
     for row_index in range(avg_nll[:10].shape[0]):
         aggregated_likelihoods = []
         row = avg_nll[row_index]
-        semantic_set_ids_row = all_semantic_set_ids[row_index]
+        semantic_set_ids_row = torch.Tensor(all_semantic_set_ids[row_index])
         for semantic_set_id in torch.unique(semantic_set_ids_row):
             aggregated_likelihoods.append(torch.logsumexp(row[semantic_set_ids_row == semantic_set_id], dim=0))
         aggregated_likelihoods = torch.tensor(aggregated_likelihoods) - llh_shift
