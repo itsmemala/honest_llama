@@ -18,6 +18,7 @@ import evaluate
 HF_NAMES = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
     'hl_llama_7B': 'huggyllama/llama-7b',
+    'llama_2_7B': 'meta-llama/Llama-2-7b-hf',
     'honest_llama_7B': 'validation/results_dump/llama_7B_seed_42_top_48_heads_alpha_15',
     'alpaca_7B': 'circulus/alpaca-7b', 
     'vicuna_7B': 'AlekseyKorshuk/vicuna-7b', 
