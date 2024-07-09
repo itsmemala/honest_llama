@@ -137,10 +137,8 @@ def main():
         all_semantic_set_ids.append(list_of_semantic_set_ids)
 
     print('Saving semantic sets...')
-    with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.json', 'wb') as outfile:
-        for row in result_dict:
-            json.dump(row, outfile)
-            outfile.write('\n')
+    with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl', 'wb') as outfile:
+        pickle.dump(result_dict, outfile)
     
     print('Loading sequence predictive entropies...')
     uncertainties = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy')
