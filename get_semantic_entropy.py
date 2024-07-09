@@ -83,7 +83,7 @@ def main():
     all_semantic_set_ids = []
 
     print('Calculating semantic similarities...')
-    for id_,(question,generated_texts) in enumerate(tqdm(zip(prompts[:10],responses[:10]))):
+    for id_,(question,generated_texts) in enumerate(tqdm(zip(prompts,responses))):
         unique_generated_texts = list(set(generated_texts))
 
         answer_list_1 = []
@@ -146,7 +146,7 @@ def main():
 
     print('Calculating semantic entropies...')
     entropies, discrete_entropies = [], []
-    for row_index in range(avg_nll[:10].shape[0]):
+    for row_index in range(avg_nll.shape[0]):
         aggregated_likelihoods = []
         row = avg_nll[row_index]
         semantic_set_ids_row = torch.Tensor(all_semantic_set_ids[row_index])
