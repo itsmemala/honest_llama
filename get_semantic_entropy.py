@@ -156,7 +156,7 @@ def main():
         entropy = - torch.sum(aggregated_likelihoods, dim=0) / torch.tensor(aggregated_likelihoods.shape[0])
         entropies.append(entropy.item())
         sem_set_wise_prob = np.array([(sum(semantic_set_ids_row == semantic_set_id)/len(semantic_set_ids_row)).item() for semantic_set_id in torch.unique(semantic_set_ids_row)])
-        dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(torch.unique(semantic_set_ids_row)),sem_set_wise_prob)).sum(axis=0)
+        dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
         discrete_entropies.append(dis_entropy.item())
     entropies, discrete_entropies = np.array(entropies), np.array(discrete_entropies)
     
@@ -179,8 +179,8 @@ def main():
         low_entropy_sum_sq_err, high_entropy_sum_sq_err = np.sum([(ent-low_entropy_avg)**2 for ent in entropies_below_t]), np.sum([(ent-high_entropy_avg)**2 for ent in entropies_above_t])
         objective_func_vals.append(low_entropy_sum_sq_err + high_entropy_sum_sq_err)
     optimal_threshold = try_thresholds[np.argmin(objective_func_vals)]
-    print(try_thresholds)
-    print(objective_func_vals)
+    print('\nThresholds:',try_thresholds)
+    print('Obj func vals:',objective_func_vals,'\n')
     # Labels
     se_labels = [1 if ent>optimal_threshold else 0 for ent in discrete_entropies]
 
