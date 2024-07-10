@@ -442,11 +442,13 @@ def main():
                 val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                 val_preds.append(val_preds_batch)
                 val_logits.append(nlinear_model(inputs))
-        all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
+        val_preds = torch.cat(val_preds).cpu().numpy()
+        all_val_preds[i].append(val_preds)
         all_y_true_val[i].append(y_val_true)
         all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
         all_val_logits[i].append(torch.cat(val_logits))
         print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+        print('Val AUC:',roc_auc_score(y_val_true, val_preds))
         pred_correct = 0
         y_test_pred, y_test_true = [], []
         test_preds = []
