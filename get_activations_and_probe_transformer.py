@@ -307,13 +307,14 @@ def main():
         train_loss, val_loss = [], []
         best_val_loss = torch.inf
         best_model_state = deepcopy(nlinear_model.state_dict())
-        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-        named_params = list(nlinear_model.named_parameters())
-        optimizer_grouped_parameters = [
-            {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
-            {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
-        ]
-        optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+        # no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+        # named_params = list(nlinear_model.named_parameters())
+        # optimizer_grouped_parameters = [
+        #     {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
+        #     {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
+        # ]
+        # optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+        optimizer = torch.optim.Adam(nlinear_model.parameters())
         for epoch in tqdm(range(args.epochs)):
             num_samples_used, num_val_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0, 0
             nlinear_model.train()
