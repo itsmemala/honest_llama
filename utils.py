@@ -71,7 +71,7 @@ class My_Transformer_Layer(torch.nn.Module):
         if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
         x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
-        # if self.n_blocks==2: x = self.transfomer2(x)
+        if self.n_blocks==2: x = self.transfomer2(x)
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
