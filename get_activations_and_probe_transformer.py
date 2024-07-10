@@ -61,7 +61,8 @@ def main():
     parser.add_argument('--tokens_first',type=bool, default=False) # Specifies order of tokens and layers when using_act='tagged_tokens'
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--use_dropout',type=bool, default=False)
-    parser.add_argument('--no_bias',type=bool, default=False)
+    # parser.add_argument('--no_bias',type=bool, default=False)
+    parser.add_argument('--norm_input',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--bs',type=int, default=4)
@@ -342,6 +343,7 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
+                if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 outputs = nlinear_model(inputs)
                 loss = criterion(outputs, targets.to(device).float())
@@ -380,6 +382,7 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
+                if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -437,6 +440,7 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
+                if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                 y_val_pred += predicted
                 y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
@@ -484,6 +488,7 @@ def main():
                         inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                     else:
                         inputs = torch.stack(activations,axis=0)
+                    if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                     predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                     y_test_pred += predicted
                     y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
