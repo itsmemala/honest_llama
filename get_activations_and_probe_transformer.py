@@ -61,7 +61,7 @@ def main():
     parser.add_argument('--tokens_first',type=bool, default=False) # Specifies order of tokens and layers when using_act='tagged_tokens'
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--use_dropout',type=bool, default=False)
-    # parser.add_argument('--no_bias',type=bool, default=False)
+    parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--norm_input',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
