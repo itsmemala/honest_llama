@@ -27,7 +27,24 @@ python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file
 
 python analyse_crossdataset_bce.py hl_llama_7B trivia_qa --responses_file_name baseline_responses_test --probes_file_name NLSC_hl_llama_7B_trivia_qa_baseline_responses_train_5000_1_layer_answer_last_individual_non_linear_2_hallu_pos_bs128_epochs20_0.005_False --save_path ~/Desktop/honest_llama_data --mitigated_responses_file_name dola16to32_responses_test
 
-
-
+------------------------------------------
 4) Another approach is to go selfsupervised, try to ask the model to correct its answers and say that the answer is hallucinated. Gather the responses:
 Given a question, extract different responses from the normal questions (maybe 2 suffices), and responses after commenting that the answer is hallucinated. Treat the two normal answers as positives and the answer on the hallucination as negative. Train with contrastive loss. Maybe then train a classifier or estimates prototypes.. to use for classifying test samples based on one answer.
+-------------------------------------------
+
+##################### Active commands
+python analyse_crossdataset_bce.py alpaca_7B trivia_qa --probes_file_name NLSC_alpaca_7B_trivia_qa_greedy_responses_train20000_20000_1_layer_answer_last_individual_non_linear_2_supcon_hallu_pos_256_250_0.005_0.1_bs128_epochs20_0.05_False --save_path ~/Desktop/honest_llama_data --best_threshold True
+
+python get_prompt_responses_mi.py llama_7B --device 0 --save_path ~/Desktop/honest_llama_data --prompt_type E
+
+/home/malavika/anaconda3/envs/iti/lib/python3.8/site-packages/transformers/generation/
+
+python get_activations_and_probe_transformer.py alpaca_7B nq_open --train_file_name nq_open_greedy_responses_train5000 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_file_name nq_open_greedy_responses_validation1800 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 5000 --num_folds 1 --using_act layer --token least_likely --method transformer_hallu_pos --bs 128 --epochs 100 --lr 0.00001 --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data --fast_mode True
+
+python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_baseline_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 1832 --num_folds 1 --using_act layer --token prompt_last --method transformer_hallu_pos --bs 128 --epochs 100 --lr 0.00001 --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data --fast_mode True
+
+python get_activations_and_probe_non_linear_supcon_bce.py llama_2_7B trivia_qa --train_file_name trivia_qa_greedy_responses_train2000 --test_file_name trivia_qa_greedy_responses_validation2000 --train_labels_file_name trivia_qa_sampled_responses_train2000_se_labels --test_labels_file_name trivia_qa_sampled_responses_validation2000_se_labels --len_dataset 2000 --num_folds 1 --using_act layer --token slt --method individual_linear_hallu_pos --bs 128 --epochs 20 --lr 0.005 --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data --fast_mode True
+
+
+
+
