@@ -299,7 +299,8 @@ def main():
 
         act_dims = 4096
         bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
-        nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias).to(device)
+        n_blocks = 2 if 'transformer2' in args.method else 1
+        nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks).to(device)
         wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
         criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
         criterion_supcon = NTXentLoss()
