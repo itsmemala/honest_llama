@@ -193,7 +193,7 @@ def main():
     # np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_thresholds.npy', try_thresholds)
     # np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_obj_func_vals.npy', objective_func_vals)
 
-    se_labels1 = np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy')
+    se_labels1 = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy')
 
     discrete_entropies = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_sampled_responses_train200_discrete_semantic_entropy_scores.npy')[:200]
     try_thresholds = np.histogram_bin_edges(discrete_entropies, bins='auto')
