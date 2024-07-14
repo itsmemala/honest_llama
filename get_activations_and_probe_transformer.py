@@ -330,7 +330,7 @@ def main():
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                         # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                        if act.shape[1] > args.max_tokens: act = act[:,:args.max_tokens,:] # Truncate inputs with large number of tokens to avoid OOM
+                        if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                         if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                         # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                         # act = torch.cat((act,sep_token), dim=1)
@@ -370,7 +370,7 @@ def main():
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                         # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                        if act.shape[1] > args.max_tokens: act = act[:,:args.max_tokens,:] # Truncate inputs with large number of tokens to avoid OOM
+                        if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                         if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                         # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                         # act = torch.cat((act,sep_token), dim=1)
@@ -430,7 +430,7 @@ def main():
                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                         # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                        if act.shape[1] > args.max_tokens: act = act[:,:args.max_tokens,:] # Truncate inputs with large number of tokens to avoid OOM
+                        if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                         if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                         # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                         # act = torch.cat((act,sep_token), dim=1)
@@ -477,7 +477,7 @@ def main():
                             act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                             # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                             # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                            if act.shape[1] > args.max_tokens: act = act[:,:args.max_tokens,:] # Truncate inputs with large number of tokens to avoid OOM
+                            if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                             if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
                             # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
                             # act = torch.cat((act,sep_token), dim=1)
