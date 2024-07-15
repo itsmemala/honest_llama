@@ -55,7 +55,7 @@ def combine_acts(idx,file_name,args):
         act1 = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_answer_last/{args.model_name}_{file_name}_answer_last_{act_type[args.using_act]}_{file_end}.pkl'
         act2 = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-        act = torch.concatenate([act1,act2],dim=1)
+        act = torch.concatenate([act1[:,None,:],act2[:,None,:]],dim=1)
         print(act1.shape,act.shape)
     return act
 
