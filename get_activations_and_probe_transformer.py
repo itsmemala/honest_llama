@@ -48,9 +48,9 @@ def num_tagged_tokens(tagged_token_idxs_prompt):
 def combine_acts(idx,file_name,args):
     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
     if args.token=='prompt_last_and_answer_last':
-        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_prompt_last_{act_type[args.using_act]}_{file_end}.pkl'
+        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{file_name}_prompt_last_{act_type[args.using_act]}_{file_end}.pkl'
         act1 = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_answer_last_{act_type[args.using_act]}_{file_end}.pkl'
+        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{file_name}_answer_last_{act_type[args.using_act]}_{file_end}.pkl'
         act2 = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
         act = torch.concatenate([act1,act2],dim=1)
         print(act1.shape,act.shape)
