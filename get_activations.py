@@ -247,6 +247,10 @@ def main():
                             least_likely_token_idx = predicting_token_idx
                     act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, least_likely_token_idx)
                     all_layer_wise_activations.append(act.numpy())
+                elif args.token=='random':
+                    random_token_idx = token_idx + np.random.choice(len(prompt[0][token_idx:]), 1)
+                    act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, random_token_idx)
+                    all_layer_wise_activations.append(act.numpy())
                 elif args.token=='prompt_last_and_answer_last':
                     all_layer_wise_activations.append(np.stack((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1))
                     all_head_wise_activations.append(np.stack((head_wise_activations[:,token_idx-1,:],head_wise_activations[:,-1,:]),axis=1))
