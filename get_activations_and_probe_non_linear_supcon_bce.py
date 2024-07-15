@@ -168,14 +168,24 @@ def main():
             labels, rouge_scores, squad_scores = [], [], []
             file_path = f'{args.save_path}/responses/{args.train_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json'
             with open(file_path, 'r') as read_file:
+                num_samples_with_no_var = 0
                 for line in read_file:
                     data = json.loads(line)
-                    if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
-                    # if 'hallu_pos' in args.method: label = 0 if data['squad_f1']>0.3 else 1 # pos class is hallu
-                    labels.append(label)
-                    # rouge_scores.append(data['rouge1_to_target'])
-                    # squad_scores.append(data['squad_f1'])
+                    if 'greedy' in args.train_labels_file_name:
+                        if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                        if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                        # if 'hallu_pos' in args.method: label = 0 if data['squad_f1']>0.3 else 1 # pos class is hallu
+                        labels.append(label)
+                        # rouge_scores.append(data['rouge1_to_target'])
+                        # squad_scores.append(data['squad_f1'])
+                    else:
+                        sum_over_samples = 0
+                        for j in range(1,num_samples+1,1):
+                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                            labels.append(label)
+                            sum_over_samples += label
+                        if sum_over_samples==0 or sum_over_samples==10: num_samples_with_no_var += 1
         labels = labels[:args.len_dataset]
         num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 10 if 'sampled' in args.test_file_name else 1
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
@@ -187,17 +197,28 @@ def main():
             test_labels, test_rouge_scores, test_squad_scores = [], [], []
             file_path = f'{args.save_path}/responses/{args.test_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json'
             with open(file_path, 'r') as read_file:
+                test_num_samples_with_no_var = 0
                 for line in read_file:
                     data = json.loads(line)
-                    if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
-                    # if 'hallu_pos' in args.method: label = 0 if data['squad_f1']>0.3 else 1 # pos class is hallu
-                    test_labels.append(label)
-                    # test_rouge_scores.append(data['rouge1_to_target'])
-                    # test_squad_scores.append(data['squad_f1'])
+                    if 'greedy' in args.test_labels_file_name:
+                        if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                        if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                        # if 'hallu_pos' in args.method: label = 0 if data['squad_f1']>0.3 else 1 # pos class is hallu
+                        test_labels.append(label)
+                        # test_rouge_scores.append(data['rouge1_to_target'])
+                        # test_squad_scores.append(data['squad_f1'])
+                    else:
+                        sum_over_samples = 0
+                        for j in range(1,num_samples+1,1):
+                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                            labels.append(label)
+                            sum_over_samples += label
+                        if sum_over_samples==0 or sum_over_samples==10: test_num_samples_with_no_var += 1
     
     # print(np.corrcoef(rouge_scores,squad_scores))
     # print(np.corrcoef(test_rouge_scores,test_squad_scores))
+    print(num_samples_with_no_var, test_num_samples_with_no_var)
 
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
 
