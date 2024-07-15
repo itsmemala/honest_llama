@@ -51,6 +51,7 @@ def main():
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
     parser.add_argument("--file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -128,6 +129,7 @@ def main():
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
+        num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 10 if 'sampled' in args.file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
