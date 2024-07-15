@@ -48,6 +48,7 @@ def num_tagged_tokens(tagged_token_idxs_prompt):
     return sum([b-a+1 for a,b in tagged_token_idxs_prompt])
 
 def combine_acts(idx,file_name,args):
+    device = args.device
     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
     if args.token=='prompt_last_and_answer_last':
         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_prompt_last/{args.model_name}_{file_name}_prompt_last_{act_type[args.using_act]}_{file_end}.pkl'
