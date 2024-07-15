@@ -131,7 +131,7 @@ def main():
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
         num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 10 if 'sampled' in args.file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
-        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer)
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
     # else: 
     #     prompts, labels = formatter(dataset, tokenizer)
@@ -186,7 +186,7 @@ def main():
         #     load_ranges = [(a*100,(a*100)+100) for a in range(int(2000/100))] # test file
         # else:
         #     load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
-        load_ranges = [(a*100,(a*100)+100) for a in range(int(len(prompts)/100)) if (a*100)+100>2000] # train file with sampled responses
+        load_ranges = [(a*100,(a*100)+100) for a in range(int(len(prompts)/100))] # train file with sampled responses
     elif args.dataset_name == 'strqa':
         load_ranges = [(a*50,(a*50)+50) for a in range(int(2300/50))] # all responses
     elif args.dataset_name == 'gsm8k':
