@@ -37,6 +37,8 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b'
 }
 
+act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+
 def boolean_string(s):
     if s not in {'False', 'True'}:
         raise ValueError('Not a valid boolean string')
@@ -234,8 +236,6 @@ def main():
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
-    act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-
     if args.fast_mode:
         print("Loading acts...")
         my_train_acts, my_test_acts = [], []
