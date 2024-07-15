@@ -66,6 +66,7 @@ def main():
     parser.add_argument('--spl_knn',type=int, default=5)
     parser.add_argument('--excl_ce',type=bool, default=False)
     parser.add_argument('--len_dataset',type=int, default=5000)
+    parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--supcon_bs',type=int, default=128)
     parser.add_argument('--bs',type=int, default=4)
