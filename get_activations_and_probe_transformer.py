@@ -87,6 +87,7 @@ def main():
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--max_tokens',type=int, default=25)
     parser.add_argument('--tokens_first',type=bool, default=False) # Specifies order of tokens and layers when using_act='tagged_tokens'
+    parser.add_argument('--no_sep',type=bool, default=False)
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
@@ -261,8 +262,9 @@ def main():
                 # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 act = combine_acts(idx,args.train_file_name,args)
                 if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                # act = torch.cat((act,sep_token), dim=1)
+                if args.no_sep==False:
+                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                    act = torch.cat((act,sep_token), dim=1)
                 act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
             else:
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
@@ -277,8 +279,9 @@ def main():
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     act = combine_acts(idx,args.test_file_name,args)
                     if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                    # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                    # act = torch.cat((act,sep_token), dim=1)
+                    if args.no_sep==False:
+                        sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                        act = torch.cat((act,sep_token), dim=1)
                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
@@ -360,8 +363,9 @@ def main():
                         # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                         if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                        # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                        # act = torch.cat((act,sep_token), dim=1)
+                        if args.no_sep==False:
+                            sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                            act = torch.cat((act,sep_token), dim=1)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -400,8 +404,9 @@ def main():
                         # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                         if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                        # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                        # act = torch.cat((act,sep_token), dim=1)
+                        if args.no_sep==False:
+                            sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                            act = torch.cat((act,sep_token), dim=1)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -460,8 +465,9 @@ def main():
                         # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                         if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                         if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                        # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                        # act = torch.cat((act,sep_token), dim=1)
+                        if args.no_sep==False:
+                            sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                            act = torch.cat((act,sep_token), dim=1)
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
@@ -507,8 +513,9 @@ def main():
                             # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
                             if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
                             if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                            # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                            # act = torch.cat((act,sep_token), dim=1)
+                            if args.no_sep==False:
+                                sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                                act = torch.cat((act,sep_token), dim=1)
                             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                             batch_target_idxs.append(k)
                         else:
