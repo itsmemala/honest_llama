@@ -261,8 +261,8 @@ def main():
                 # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 act = combine_acts(idx,args.train_file_name,args)
                 if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                act = torch.cat((act,sep_token), dim=1)
+                # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                # act = torch.cat((act,sep_token), dim=1)
                 act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
             else:
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
@@ -277,8 +277,8 @@ def main():
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     act = combine_acts(idx,args.test_file_name,args)
                     if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                    act = torch.cat((act,sep_token), dim=1)
+                    # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                    # act = torch.cat((act,sep_token), dim=1)
                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
