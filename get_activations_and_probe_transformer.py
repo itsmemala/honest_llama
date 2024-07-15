@@ -56,7 +56,13 @@ def combine_acts(idx,file_name,args):
         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_answer_last/{args.model_name}_{file_name}_answer_last_{act_type[args.using_act]}_{file_end}.pkl'
         act2 = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
         act = torch.concatenate([act1[:,None,:],act2[:,None,:]],dim=1)
-        print(act1.shape,act.shape)
+        # print(act1.shape,act.shape)
+    if args.token=='least_likely_and_last':
+        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_least_likely/{args.model_name}_{file_name}_least_likely_{act_type[args.using_act]}_{file_end}.pkl'
+        act1 = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_answer_last/{args.model_name}_{file_name}_answer_last_{act_type[args.using_act]}_{file_end}.pkl'
+        act2 = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+        act = torch.concatenate([act1[:,None,:],act2[:,None,:]],dim=1)
     return act
 
 def main(): 
@@ -243,7 +249,7 @@ def main():
         for idx in train_idxs[:1]:
             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-            if args.token=='prompt_last_and_answer_last':
+            if args.token in ['prompt_last_and_answer_last','least_likely_and_last']:
                 # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 act = combine_acts(idx,args.train_file_name,args)
                 if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
@@ -255,331 +261,332 @@ def main():
             my_train_acts.append(act)
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
-    #     if args.test_file_name is not None:
-    #         for idx in test_idxs:
-    #             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-    #             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-    #             if args.token=='prompt_last_and_answer_last':
-    #                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-    #                 if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-    #                 sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-    #                 act = torch.cat((act,sep_token), dim=1)
-    #                 act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-    #             else:
-    #                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-    #             my_test_acts.append(act)
-    #         # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
+        if args.test_file_name is not None:
+            for idx in test_idxs:
+                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                if args.token in ['prompt_last_and_answer_last','least_likely_and_last']:
+                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    act = combine_acts(idx,args.train_file_name,args)
+                    if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                    act = torch.cat((act,sep_token), dim=1)
+                    act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                else:
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                my_test_acts.append(act)
+            # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
 
-    # method_concat = args.method + '_dropout' if args.use_dropout else args.method
-    # method_concat = args.method + '_no_bias' if args.no_bias else method_concat
+    method_concat = args.method + '_dropout' if args.use_dropout else args.method
+    method_concat = args.method + '_no_bias' if args.no_bias else method_concat
 
-    # for i in range(args.num_folds):
-    #     print('Training FOLD',i)
-    #     train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
-    #     test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
-    #     train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
-    #     val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+    for i in range(args.num_folds):
+        print('Training FOLD',i)
+        train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
+        test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
+        train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
+        val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
-    #     y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
-    #     y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
-    #     y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
-    #     if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
+        y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
+        y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
+        y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
+        if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
         
-    #     all_train_loss[i], all_val_loss[i] = [], []
-    #     all_val_accs[i], all_val_f1s[i] = [], []
-    #     all_test_accs[i], all_test_f1s[i] = [], []
-    #     all_val_preds[i], all_test_preds[i] = [], []
-    #     all_y_true_val[i], all_y_true_test[i] = [], []
-    #     all_val_logits[i], all_test_logits[i] = [], []
-    #     all_val_sim[i], all_test_sim[i] = [], []
-    #     model_wise_mc_sample_idxs, probes_saved = [], []
-    #     num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+        all_train_loss[i], all_val_loss[i] = [], []
+        all_val_accs[i], all_val_f1s[i] = [], []
+        all_test_accs[i], all_test_f1s[i] = [], []
+        all_val_preds[i], all_test_preds[i] = [], []
+        all_y_true_val[i], all_y_true_test[i] = [], []
+        all_val_logits[i], all_test_logits[i] = [], []
+        all_val_sim[i], all_test_sim[i] = [], []
+        model_wise_mc_sample_idxs, probes_saved = [], []
+        num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
         
-    #     cur_probe_train_set_idxs = train_set_idxs
-    #     cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
-    #     train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
-    #     class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
-    #     weight = 1. / class_sample_count
-    #     samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
-    #     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-    #     ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
-    #     ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
-    #     ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-    #     ds_val = DataLoader(ds_val, batch_size=args.bs)
-    #     if args.test_file_name is not None: 
-    #         ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-    #         ds_test = DataLoader(ds_test, batch_size=args.bs)
+        cur_probe_train_set_idxs = train_set_idxs
+        cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
+        train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
+        class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
+        weight = 1. / class_sample_count
+        samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
+        sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+        ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
+        ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler)
+        ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
+        ds_val = DataLoader(ds_val, batch_size=args.bs)
+        if args.test_file_name is not None: 
+            ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
+            ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-    #     act_dims = 4096
-    #     bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
-    #     n_blocks = 2 if 'transformer2' in args.method else 1
-    #     nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks).to(device)
-    #     wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
-    #     criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
-    #     criterion_supcon = NTXentLoss()
+        act_dims = 4096
+        bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
+        n_blocks = 2 if 'transformer2' in args.method else 1
+        nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks).to(device)
+        wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
+        criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
+        criterion_supcon = NTXentLoss()
         
-    #     # Training
-    #     train_loss, val_loss = [], []
-    #     best_val_loss = torch.inf
-    #     best_model_state = deepcopy(nlinear_model.state_dict())
-    #     no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-    #     named_params = list(nlinear_model.named_parameters())
-    #     optimizer_grouped_parameters = [
-    #         {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
-    #         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
-    #     ]
-    #     optimizer = torch.optim.Adam(optimizer_grouped_parameters)
-    #     # optimizer = torch.optim.Adam(nlinear_model.parameters())
-    #     for epoch in tqdm(range(args.epochs)):
-    #         num_samples_used, num_val_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0, 0
-    #         nlinear_model.train()
-    #         for step,batch in enumerate(ds_train):
-    #             optimizer.zero_grad()
-    #             activations, batch_target_idxs = [], []
-    #             for k,idx in enumerate(batch['inputs_idxs']):
-    #                 if 'tagged_tokens' in args.token: 
-    #                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-    #                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-    #                     act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-    #                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-    #                     # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-    #                     if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-    #                     if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-    #                     # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-    #                     # act = torch.cat((act,sep_token), dim=1)
-    #                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-    #                     batch_target_idxs.append(k)
-    #                 else:
-    #                     act = my_train_acts[idx]
-    #                 activations.append(act)
-    #             if len(activations)==0: continue
-    #             num_samples_used += len(batch_target_idxs)
-    #             if 'tagged_tokens' in args.token:
-    #                 inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
-    #             else:
-    #                 inputs = torch.stack(activations,axis=0)
-    #             if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-    #             targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-    #             outputs = nlinear_model(inputs)
-    #             loss = criterion(outputs, targets.to(device).float())
-    #             epoch_train_loss += loss.item()
-    #             train_loss.append(loss.item())
-    #             try:
-    #                 loss.backward()
-    #             except torch.cuda.OutOfMemoryError:
-    #                 print('Num of tokens in input:',activations[0].shape[0])
-    #             optimizer.step()
+        # Training
+        train_loss, val_loss = [], []
+        best_val_loss = torch.inf
+        best_model_state = deepcopy(nlinear_model.state_dict())
+        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+        named_params = list(nlinear_model.named_parameters())
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
+            {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
+        ]
+        optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+        # optimizer = torch.optim.Adam(nlinear_model.parameters())
+        for epoch in tqdm(range(args.epochs)):
+            num_samples_used, num_val_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0, 0
+            nlinear_model.train()
+            for step,batch in enumerate(ds_train):
+                optimizer.zero_grad()
+                activations, batch_target_idxs = [], []
+                for k,idx in enumerate(batch['inputs_idxs']):
+                    if 'tagged_tokens' in args.token: 
+                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                        act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                        # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                        if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                        # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                        # act = torch.cat((act,sep_token), dim=1)
+                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                        batch_target_idxs.append(k)
+                    else:
+                        act = my_train_acts[idx]
+                    activations.append(act)
+                if len(activations)==0: continue
+                num_samples_used += len(batch_target_idxs)
+                if 'tagged_tokens' in args.token:
+                    inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                else:
+                    inputs = torch.stack(activations,axis=0)
+                if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
+                outputs = nlinear_model(inputs)
+                loss = criterion(outputs, targets.to(device).float())
+                epoch_train_loss += loss.item()
+                train_loss.append(loss.item())
+                try:
+                    loss.backward()
+                except torch.cuda.OutOfMemoryError:
+                    print('Num of tokens in input:',activations[0].shape[0])
+                optimizer.step()
 
-    #         # Get val loss
-    #         nlinear_model.eval()
-    #         epoch_val_loss = 0
-    #         for step,batch in enumerate(ds_val):
-    #             optimizer.zero_grad()
-    #             activations, batch_target_idxs = [], []
-    #             for k,idx in enumerate(batch['inputs_idxs']):
-    #                 if 'tagged_tokens' in args.token: 
-    #                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-    #                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-    #                     act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-    #                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-    #                     # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-    #                     if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-    #                     if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-    #                     # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-    #                     # act = torch.cat((act,sep_token), dim=1)
-    #                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-    #                     batch_target_idxs.append(k)
-    #                 else:
-    #                     act = my_train_acts[idx]
-    #                 activations.append(act)
-    #             if len(activations)==0: continue
-    #             num_val_samples_used += len(batch_target_idxs)
-    #             if 'tagged_tokens' in args.token:
-    #                 inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
-    #             else:
-    #                 inputs = torch.stack(activations,axis=0)
-    #             if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-    #             targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-    #             outputs = nlinear_model(inputs)
-    #             epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
-    #         val_loss.append(epoch_val_loss)
-    #         print('Loss:',epoch_spl_loss, epoch_train_loss, epoch_val_loss)
-    #         print('Samples:',num_samples_used, num_val_samples_used)
-    #         # Choose best model
-    #         if epoch_val_loss < best_val_loss:
-    #             best_val_loss = epoch_val_loss
-    #             best_model_state = deepcopy(nlinear_model.state_dict())
-    #         # Early stopping
-    #         patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
-    #         if len(val_loss)>=patience:
-    #             for epoch_id in range(1,patience,1):
-    #                 val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
-    #                 if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
-    #             if is_not_decreasing==patience-1: break
-    #     all_train_loss[i].append(np.array(train_loss))
-    #     all_val_loss[i].append(np.array(val_loss))
-    #     nlinear_model.load_state_dict(best_model_state)
+            # Get val loss
+            nlinear_model.eval()
+            epoch_val_loss = 0
+            for step,batch in enumerate(ds_val):
+                optimizer.zero_grad()
+                activations, batch_target_idxs = [], []
+                for k,idx in enumerate(batch['inputs_idxs']):
+                    if 'tagged_tokens' in args.token: 
+                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                        act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                        # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                        if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                        # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                        # act = torch.cat((act,sep_token), dim=1)
+                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                        batch_target_idxs.append(k)
+                    else:
+                        act = my_train_acts[idx]
+                    activations.append(act)
+                if len(activations)==0: continue
+                num_val_samples_used += len(batch_target_idxs)
+                if 'tagged_tokens' in args.token:
+                    inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                else:
+                    inputs = torch.stack(activations,axis=0)
+                if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
+                outputs = nlinear_model(inputs)
+                epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+            val_loss.append(epoch_val_loss)
+            print('Loss:',epoch_spl_loss, epoch_train_loss, epoch_val_loss)
+            print('Samples:',num_samples_used, num_val_samples_used)
+            # Choose best model
+            if epoch_val_loss < best_val_loss:
+                best_val_loss = epoch_val_loss
+                best_model_state = deepcopy(nlinear_model.state_dict())
+            # Early stopping
+            patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
+            if len(val_loss)>=patience:
+                for epoch_id in range(1,patience,1):
+                    val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
+                    if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+                if is_not_decreasing==patience-1: break
+        all_train_loss[i].append(np.array(train_loss))
+        all_val_loss[i].append(np.array(val_loss))
+        nlinear_model.load_state_dict(best_model_state)
         
-    #     # print(np.array(val_loss))
-    #     if args.save_probes:
-    #         probe_save_path = f'{args.save_path}/probes/models/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}'
-    #         torch.save(nlinear_model, probe_save_path)
-    #         probes_saved.append(probe_save_path)
+        # print(np.array(val_loss))
+        if args.save_probes:
+            probe_save_path = f'{args.save_path}/probes/models/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}'
+            torch.save(nlinear_model, probe_save_path)
+            probes_saved.append(probe_save_path)
         
-    #     # Val and Test performance
-    #     pred_correct = 0
-    #     y_val_pred, y_val_true = [], []
-    #     val_preds = []
-    #     val_logits = []
-    #     val_sim = []
-    #     with torch.no_grad():
-    #         nlinear_model.eval()
-    #         for step,batch in enumerate(ds_val):
-    #             activations, batch_target_idxs = [], []
-    #             for k,idx in enumerate(batch['inputs_idxs']):
-    #                 if 'tagged_tokens' in args.token: 
-    #                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-    #                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-    #                     act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-    #                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-    #                     # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-    #                     if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-    #                     if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-    #                     # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-    #                     # act = torch.cat((act,sep_token), dim=1)
-    #                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-    #                     batch_target_idxs.append(k)
-    #                 else:
-    #                     act = my_train_acts[idx]
-    #                 activations.append(act)
-    #             if len(activations)==0: continue
-    #             if 'tagged_tokens' in args.token:
-    #                 inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
-    #             else:
-    #                 inputs = torch.stack(activations,axis=0)
-    #             if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-    #             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
-    #             y_val_pred += predicted
-    #             y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
-    #             val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
-    #             val_preds.append(val_preds_batch)
-    #             val_logits.append(nlinear_model(inputs))
-    #     val_preds = torch.cat(val_preds).cpu().numpy()
-    #     all_val_preds[i].append(val_preds)
-    #     all_y_true_val[i].append(y_val_true)
-    #     all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-    #     all_val_logits[i].append(torch.cat(val_logits))
-    #     print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
-    #     print('Val AUC:',roc_auc_score(y_val_true, val_preds))
-    #     pred_correct = 0
-    #     y_test_pred, y_test_true = [], []
-    #     test_preds = []
-    #     test_logits = []
-    #     test_sim = []
-    #     samples_used_idxs = []
-    #     if args.test_file_name is not None: 
-    #         with torch.no_grad():
-    #             num_test_samples_used = 0
-    #             nlinear_model.eval()
-    #             for step,batch in enumerate(ds_test):
-    #                 activations, batch_target_idxs = [], []
-    #                 for k,idx in enumerate(batch['inputs_idxs']):
-    #                     if 'tagged_tokens' in args.token: 
-    #                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-    #                         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-    #                         act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-    #                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-    #                         # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-    #                         if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-    #                         if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-    #                         # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-    #                         # act = torch.cat((act,sep_token), dim=1)
-    #                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-    #                         batch_target_idxs.append(k)
-    #                     else:
-    #                         act = my_test_acts[idx]
-    #                     activations.append(act)
-    #                 if len(activations)==0: continue
-    #                 num_test_samples_used += len(batch_target_idxs)
-    #                 samples_used_idxs += batch['inputs_idxs'][np.array(batch_target_idxs)]
-    #                 if 'tagged_tokens' in args.token:
-    #                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
-    #                 else:
-    #                     inputs = torch.stack(activations,axis=0)
-    #                 if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-    #                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
-    #                 y_test_pred += predicted
-    #                 y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
-    #                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
-    #                 test_preds.append(test_preds_batch)
-    #                 test_logits.append(nlinear_model(inputs))
-    #         test_preds = torch.cat(test_preds).cpu().numpy()
-    #         all_test_preds[i].append(test_preds)
-    #         all_y_true_test[i].append(y_test_true)
-    #         all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-    #         precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
-    #         print('AuPR for cls1:',auc(recall,precision))
-    #         print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
-    #         print('Recall for cls1:',recall_score(y_test_true, y_test_pred))
-    #         print('AuROC for cls1:',roc_auc_score(y_test_true, test_preds))
-    #         print('Samples:',num_test_samples_used)
-    #         all_test_logits[i].append(torch.cat(test_logits))
+        # Val and Test performance
+        pred_correct = 0
+        y_val_pred, y_val_true = [], []
+        val_preds = []
+        val_logits = []
+        val_sim = []
+        with torch.no_grad():
+            nlinear_model.eval()
+            for step,batch in enumerate(ds_val):
+                activations, batch_target_idxs = [], []
+                for k,idx in enumerate(batch['inputs_idxs']):
+                    if 'tagged_tokens' in args.token: 
+                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                        act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                        # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                        # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                        if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                        # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                        # act = torch.cat((act,sep_token), dim=1)
+                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                        batch_target_idxs.append(k)
+                    else:
+                        act = my_train_acts[idx]
+                    activations.append(act)
+                if len(activations)==0: continue
+                if 'tagged_tokens' in args.token:
+                    inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                else:
+                    inputs = torch.stack(activations,axis=0)
+                if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                y_val_pred += predicted
+                y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
+                val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
+                val_preds.append(val_preds_batch)
+                val_logits.append(nlinear_model(inputs))
+        val_preds = torch.cat(val_preds).cpu().numpy()
+        all_val_preds[i].append(val_preds)
+        all_y_true_val[i].append(y_val_true)
+        all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+        all_val_logits[i].append(torch.cat(val_logits))
+        print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+        print('Val AUC:',roc_auc_score(y_val_true, val_preds))
+        pred_correct = 0
+        y_test_pred, y_test_true = [], []
+        test_preds = []
+        test_logits = []
+        test_sim = []
+        samples_used_idxs = []
+        if args.test_file_name is not None: 
+            with torch.no_grad():
+                num_test_samples_used = 0
+                nlinear_model.eval()
+                for step,batch in enumerate(ds_test):
+                    activations, batch_target_idxs = [], []
+                    for k,idx in enumerate(batch['inputs_idxs']):
+                        if 'tagged_tokens' in args.token: 
+                            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                            act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                            # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                            # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                            if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                            if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                            # sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                            # act = torch.cat((act,sep_token), dim=1)
+                            act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                            batch_target_idxs.append(k)
+                        else:
+                            act = my_test_acts[idx]
+                        activations.append(act)
+                    if len(activations)==0: continue
+                    num_test_samples_used += len(batch_target_idxs)
+                    samples_used_idxs += batch['inputs_idxs'][np.array(batch_target_idxs)]
+                    if 'tagged_tokens' in args.token:
+                        inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                    else:
+                        inputs = torch.stack(activations,axis=0)
+                    if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                    predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                    y_test_pred += predicted
+                    y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
+                    test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
+                    test_preds.append(test_preds_batch)
+                    test_logits.append(nlinear_model(inputs))
+            test_preds = torch.cat(test_preds).cpu().numpy()
+            all_test_preds[i].append(test_preds)
+            all_y_true_test[i].append(y_test_true)
+            all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+            precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
+            print('AuPR for cls1:',auc(recall,precision))
+            print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+            print('Recall for cls1:',recall_score(y_test_true, y_test_pred))
+            print('AuROC for cls1:',roc_auc_score(y_test_true, test_preds))
+            print('Samples:',num_test_samples_used)
+            all_test_logits[i].append(torch.cat(test_logits))
 
-    #         # # Get preds on all tokens
-    #         # alltokens_preds = []
-    #         # tokenmax_preds, tokenavg_preds = [], []
-    #         # acts_per_file = args.acts_per_file
-    #         # for i in tqdm(range(len(test_labels))):
-    #         #     # Load activations
-    #         #     file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
-    #         #     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
-    #         #     acts_by_layer_token = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
-    #         #     # acts_by_layer = acts_by_layer[layer][test_answer_token_idxes[i]:]
-    #         #     preds_by_token = []
-    #         #     for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
-    #         #         token_idx = test_answer_token_idxes[i] + token_num
-    #         #         inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # inputs: (layers, act_dims)
-    #         #         inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
-    #         #         preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
-    #         #     preds_by_token = np.array(preds_by_token)
-    #         #     alltokens_preds.append(preds_by_token)
-    #         #     tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
-    #         #     tokenavg_preds.append(1 if np.mean(preds_by_token)>0.5 else 0)
-    #         # alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                 
-    #         # alltokens_preds_arr[:] = alltokens_preds
-    #         # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_alltokens_preds.npy',alltokens_preds_arr)
-    #         # print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
-    #         # print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
+            # # Get preds on all tokens
+            # alltokens_preds = []
+            # tokenmax_preds, tokenavg_preds = [], []
+            # acts_per_file = args.acts_per_file
+            # for i in tqdm(range(len(test_labels))):
+            #     # Load activations
+            #     file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
+            #     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
+            #     acts_by_layer_token = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
+            #     # acts_by_layer = acts_by_layer[layer][test_answer_token_idxes[i]:]
+            #     preds_by_token = []
+            #     for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
+            #         token_idx = test_answer_token_idxes[i] + token_num
+            #         inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # inputs: (layers, act_dims)
+            #         inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
+            #         preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
+            #     preds_by_token = np.array(preds_by_token)
+            #     alltokens_preds.append(preds_by_token)
+            #     tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
+            #     tokenavg_preds.append(1 if np.mean(preds_by_token)>0.5 else 0)
+            # alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                 
+            # alltokens_preds_arr[:] = alltokens_preds
+            # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_alltokens_preds.npy',alltokens_preds_arr)
+            # print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
+            # print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
     
 
-    # # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
-    # # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_train_loss.npy', all_train_loss)
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon_train_loss.npy', all_supcon_train_loss)
-    # all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_pred.npy', all_val_preds)
-    # all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_f1.npy', all_val_f1s)
-    # all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_true.npy', all_y_true_val)
-    # all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_logits.npy', all_val_logits)
-    # # all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
-    # # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
-    # # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
-    # # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
-    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_samples_used.npy', samples_used_idxs)
+    # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
+    # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_train_loss.npy', all_train_loss)
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon_train_loss.npy', all_supcon_train_loss)
+    all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_pred.npy', all_val_preds)
+    all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_f1.npy', all_val_f1s)
+    all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_true.npy', all_y_true_val)
+    all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_logits.npy', all_val_logits)
+    # all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
+    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
+    # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
+    # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
+    np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_samples_used.npy', samples_used_idxs)
 
-    # if args.test_file_name is not None:
-    #     all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-    #     np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_pred.npy', all_test_preds)
-    #     all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-    #     np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_f1.npy', all_test_f1s)
-    #     all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
-    #     np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
-    #     all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-    #     np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
+    if args.test_file_name is not None:
+        all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
+        np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_pred.npy', all_test_preds)
+        all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
+        np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_f1.npy', all_test_f1s)
+        all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
+        np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
+        all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+        np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
 
 if __name__ == '__main__':
     main()
