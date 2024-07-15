@@ -361,7 +361,7 @@ def tokenized_nq(dataset, tokenizer):
         
     return all_prompts, all_labels
 
-def tokenized_from_file(file_path, tokenizer): 
+def tokenized_from_file(file_path, tokenizer, num_samples=1): 
 
     all_prompts, all_tokenized_prompts, resp_tokenized = [], [], []
     answer_token_idxes = []
@@ -371,13 +371,14 @@ def tokenized_from_file(file_path, tokenizer):
             data.append(json.loads(line))
     for row in data:
         question = row['prompt']
-        answer = row['response1']
-        prompt = question + answer
-        all_prompts.append(prompt)
-        tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
-        all_tokenized_prompts.append(tokenized_prompt)
-        resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in tokenized_prompt[0]])
-        answer_token_idxes.append(len(tokenizer(question, return_tensors = 'pt').input_ids[0]))
+        for j in range(1,num_samples+1,1):
+            answer = row['response'+str(j)]
+            prompt = question + answer
+            all_prompts.append(prompt)
+            tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
+            all_tokenized_prompts.append(tokenized_prompt)
+            resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in tokenized_prompt[0]])
+            answer_token_idxes.append(len(tokenizer(question, return_tensors = 'pt').input_ids[0]))
         
     return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
 
