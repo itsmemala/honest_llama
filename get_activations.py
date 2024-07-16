@@ -192,7 +192,7 @@ def main():
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
-    # load_ranges = [(1070,1100)]
+    load_ranges = [(300,400)]
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
@@ -248,6 +248,7 @@ def main():
                     act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, least_likely_token_idx)
                     all_layer_wise_activations.append(act.numpy())
                 elif args.token=='random':
+                    if len(prompt[0][token_idx:])==0: print(tokenizer.decode(prompt, skip_special_tokens=True))
                     random_token_idx = token_idx + np.random.choice(len(prompt[0][token_idx:]), 1)
                     act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, random_token_idx)
                     all_layer_wise_activations.append(act.numpy())
