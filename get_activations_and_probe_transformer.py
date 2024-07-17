@@ -305,8 +305,14 @@ def main():
         print('Training FOLD',i)
         train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
         test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
-        train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
-        val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+        if 'sampled' in args.train_file_name:
+            num_samples = args.num_samples if args.num_samples is not None else 10
+            num_prompts = len(train_idxs)/num_samples
+            train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples]
+            val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+        else:
+            train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
+            val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
         y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
