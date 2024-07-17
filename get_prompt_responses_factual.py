@@ -183,7 +183,7 @@ def clean_answer(model_pred, random_guess=False):
     elif SHORT_ANSWER_TRIGGER.lower() in model_pred:
         preds = model_pred.split(SHORT_ANSWER_TRIGGER.lower())[1].split(".")[0].strip()
     else:
-        # print("Warning: answer trigger not found in model prediction:", model_pred, "; returning yes/no based on exact match of `no`.", flush=True)
+        print("Warning: answer trigger not found in model prediction:", model_pred, "; returning yes/no based on exact match of `no`.", flush=True)
         if random_guess:
             preds = "no" if "no" in model_pred else "yes"
         else:
@@ -325,7 +325,7 @@ def main():
     result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []} #, 'raw_model_generation': []}
     correct_rate = 0
     if args.dataset_name=='strqa':
-        period_token_id = tokenizer('\n')['input_ids'] # is this ok?
+        period_token_id = tokenizer("\n\n##")['input_ids'] # is this ok?
         eos_tokens = ["Q:", "\n\n##"]
         checkgens = ["Q:", "\n\n##"]
     elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
