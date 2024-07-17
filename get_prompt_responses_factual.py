@@ -324,6 +324,7 @@ def main():
     responses = []
     result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []} #, 'raw_model_generation': []}
     if args.dataset_name=='strqa':
+        period_token_id = tokenizer('\n')['input_ids']
         eos_tokens = ["Q:", "\n\n##"]
         checkgens = ["Q:", "\n\n##"]
     elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
