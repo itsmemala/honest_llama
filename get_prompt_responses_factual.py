@@ -325,7 +325,8 @@ def main():
     result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []} #, 'raw_model_generation': []}
     correct_rate = 0
     if args.dataset_name=='strqa':
-        period_token_id = tokenizer("\n\n##")['input_ids'] # is this ok?
+        # period_token_id = tokenizer("\n\n##")['input_ids'] # is this ok?
+        period_token_id = tokenizer("\n")['input_ids'] # is this ok?
         eos_tokens = ["Q:", "\n\n##"]
         checkgens = ["Q:", "\n\n##"]
     elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
@@ -373,7 +374,7 @@ def main():
                     is_cor.append(is_correct(cur_model_answer, all_gt_answers[i]))
                     input_text.append(all_input_texts[i])
                 correct_rate += sum(is_cor)
-                print('/n# Correct answers:',correct_rate,'/n')
+                print('\n# Correct answers:',correct_rate,'\n')
                 result_dict['is_correct'].append(is_cor)
                 result_dict['model_answer'].append(model_answer)
                 result_dict['model_completion'].append(model_completion)
