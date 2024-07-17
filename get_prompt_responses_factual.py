@@ -18,6 +18,10 @@ import argparse
 # from peft.tuners.lora import LoraLayer
 import evaluate
 
+import ssl
+import urllib.request
+import zipfile
+
 # Squad F1 calculation from: https://github.com/tangbinh/question-answering/blob/master/evaluate.py
 
 def normalize_answer(s):
