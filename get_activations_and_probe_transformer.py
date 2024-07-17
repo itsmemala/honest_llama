@@ -93,6 +93,7 @@ def main():
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--norm_input',type=bool, default=False)
+    parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
