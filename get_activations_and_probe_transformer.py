@@ -404,7 +404,7 @@ def main():
                     emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
                     logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
                     supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
-                    epoch_supcon_loss += loss.item()
+                    epoch_supcon_loss += supcon_loss.item()
                     supcon_loss.backward()
                     # CE backward
                     emb = nlinear_model.forward_upto_classifier(inputs).detach()
