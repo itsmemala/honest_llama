@@ -76,7 +76,7 @@ def main():
     parser.add_argument('--lr',type=float, default=0.05)
     parser.add_argument('--optimizer',type=str, default='Adam')
     parser.add_argument('--use_class_wgt',type=bool, default=False)
-    parser.add_argument('--batch_sampling',type=bool, default=True)
+    parser.add_argument('--no_batch_sampling',type=bool, default=False)
     parser.add_argument('--load_act',type=bool, default=False)
     parser.add_argument('--acts_per_file',type=int, default=100)
     parser.add_argument('--save_probes',type=bool, default=False)
@@ -343,7 +343,7 @@ def main():
                 samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                 sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
                 ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
-                ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler) if args.batch_sampling else DataLoader(ds_train, batch_size=args.bs)
+                ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler) if args.no_batch_sampling==False else DataLoader(ds_train, batch_size=args.bs)
                 ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                 ds_val = DataLoader(ds_val, batch_size=args.bs)
                 if args.test_file_name is not None: 
