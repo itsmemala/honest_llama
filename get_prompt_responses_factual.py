@@ -254,7 +254,7 @@ def main():
     start_at = args.start_at
     if args.dataset_name=='strqa':
         download_url(
-            'https://storage.googleapis.com/ai2i/strategyqa/data/strategyqa_dataset.zip', args.data_path)
+            'https://storage.googleapis.com/ai2i/strategyqa/data/strategyqa_dataset.zip', args.save_path)
         # Once the file is downloaded, unzip it
         with zipfile.ZipFile(os.path.join(args.data_path, 'strategyqa_dataset.zip'), 'r') as zip_ref:
             zip_ref.extractall(args.data_path)
