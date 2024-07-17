@@ -59,6 +59,7 @@ class My_Transformer_Layer(torch.nn.Module):
         self.class_token = torch.nn.Parameter(torch.randn(1,1,d_model))
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.transfomer2 = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
+        self.projection = nn.Linear(d_model,d_model/2)
         self.classifier = torch.nn.Linear(d_model, n_outputs, bias)
         # self.classifier = torch.nn.Linear(d_model*n_layers, n_outputs, bias)
         torch.nn.init.normal_(self.class_token, std=0.02)
@@ -75,6 +76,7 @@ class My_Transformer_Layer(torch.nn.Module):
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
+        x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         y_pred = self.classifier(x)
         return y_pred
 
