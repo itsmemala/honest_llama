@@ -257,11 +257,13 @@ def main():
     len_dataset = args.len_dataset
     start_at = args.start_at
     if args.dataset_name=='strqa':
-        download_url(
-            'https://storage.googleapis.com/ai2i/strategyqa/data/strategyqa_dataset.zip', args.save_path)
-        # Once the file is downloaded, unzip it
-        with zipfile.ZipFile(os.path.join(args.save_path, 'strategyqa_dataset.zip'), 'r') as zip_ref:
-            zip_ref.extractall(args.save_path)
+        fp = os.path.join(args.save_path, 'strategyqa_train.json')
+        if not os.path.exists(fp):
+            download_url(
+                'https://storage.googleapis.com/ai2i/strategyqa/data/strategyqa_dataset.zip', args.save_path)
+            # Once the file is downloaded, unzip it
+            with zipfile.ZipFile(os.path.join(args.save_path, 'strategyqa_dataset.zip'), 'r') as zip_ref:
+                zip_ref.extractall(args.save_path)
         list_data_dict = load_jsonl(fp)
         all_input_texts, all_gt_answers, tokenized_prompts = [], [], []
         for sample in list_data_dict[:5]:

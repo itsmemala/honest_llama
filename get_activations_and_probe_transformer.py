@@ -408,7 +408,7 @@ def main():
                     supcon_loss.backward()
                     # CE backward
                     emb = nlinear_model.forward_upto_classifier(inputs).detach()
-                    outputs = nlinear_model.classifier(emb)
+                    outputs = nlinear_model.classifier(emb) # norm before passing here?
                     loss = criterion(outputs, targets.to(device).float())
                     loss.backward()
                 else:
