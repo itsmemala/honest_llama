@@ -359,7 +359,7 @@ def main():
         optimizer = torch.optim.Adam(optimizer_grouped_parameters)
         # optimizer = torch.optim.Adam(nlinear_model.parameters())
         for epoch in tqdm(range(args.epochs)):
-            num_samples_used, num_val_samples_used, epoch_train_loss, epoch_spl_loss = 0, 0, 0, 0
+            num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss = 0, 0, 0, 0
             nlinear_model.train()
             for step,batch in enumerate(ds_train):
                 optimizer.zero_grad()
@@ -389,15 +389,31 @@ def main():
                     inputs = torch.stack(activations,axis=0)
                 if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                outputs = nlinear_model(inputs)
-                loss = criterion(outputs, targets.to(device).float())
+                if 'supcon' in args.method:
+                    # SupCon backward
+                    emb = nlinear_model.forward_upto_classifier(inputs)
+                    norm_emb = F.normalize(emb, p=2, dim=-1)
+                    emb_projection = nlinear_model.projection(norm_emb)
+                    emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
+                    logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
+                    supcon_loss = criterion_supcon(logits, targets.to(device))
+                    epoch_supcon_loss += loss.item()
+                    supcon_loss.backward()
+                    # CE backward
+                    emb = nlinear_model.forward_upto_classifier(inputs).detach()
+                    outputs = nlinear_model.classifier(emb)
+                    loss = criterion(outputs, targets.to(device).float())
+                    loss.backward()
+                else:
+                    outputs = nlinear_model(inputs)
+                    loss = criterion(outputs, targets.to(device).float())
+                    try:
+                        loss.backward()
+                    except torch.cuda.OutOfMemoryError:
+                        print('Num of tokens in input:',activations[0].shape[0])
+                optimizer.step()
                 epoch_train_loss += loss.item()
                 train_loss.append(loss.item())
-                try:
-                    loss.backward()
-                except torch.cuda.OutOfMemoryError:
-                    print('Num of tokens in input:',activations[0].shape[0])
-                optimizer.step()
 
             # Get val loss
             nlinear_model.eval()
@@ -433,7 +449,7 @@ def main():
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
             val_loss.append(epoch_val_loss)
-            print('Loss:',epoch_spl_loss, epoch_train_loss, epoch_val_loss)
+            print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
             print('Samples:',num_samples_used, num_val_samples_used)
             # Choose best model
             if epoch_val_loss < best_val_loss:

@@ -79,6 +79,20 @@ class My_Transformer_Layer(torch.nn.Module):
         # x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         y_pred = self.classifier(x)
         return y_pred
+    def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs)
+        layer_wise_x = []
+        for layer in range(x.shape[-2]):
+            layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+        x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
+        if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
+        x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
+        x = self.transfomer(x) # x: (bs, n_layers, d_model)
+        if self.n_blocks==2: x = self.transfomer2(x)
+        # x = x[:,-1,:] # Take last token embedding
+        # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
+        x = x[:,0,:] # Take first token embedding (CLS token)
+        # x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        return x
 
 class LogisticRegression_Torch(torch.nn.Module):    
     # build the constructor
