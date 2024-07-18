@@ -460,7 +460,7 @@ def main():
                 ]
                 optimizer = torch.optim.Adam(optimizer_grouped_parameters)
                 for epoch in range(args.epochs):
-                    epoch_supcon_train_loss, epoch_train_loss, epoch_spl_loss = 0, 0, 0
+                    epoch_supcon_loss, epoch_train_loss, epoch_spl_loss = 0, 0, 0
                     nlinear_model.train()
                     for step,batch in enumerate(ds_train):
                         optimizer.zero_grad()
