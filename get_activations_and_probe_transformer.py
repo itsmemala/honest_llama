@@ -331,7 +331,7 @@ def main():
         y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
         if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
         
-        all_train_loss[i], all_val_loss[i] = [], []
+        all_supcon_train_loss[i], all_train_loss[i], all_val_loss[i] = [], [], []
         all_val_accs[i], all_val_f1s[i] = [], []
         all_test_accs[i], all_test_f1s[i] = [], []
         all_val_preds[i], all_test_preds[i] = [], []
