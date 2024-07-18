@@ -158,7 +158,7 @@ def main():
             result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
             result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
     
-    print(len(result_dict['is_correct']))
+    print(len(result_dict['is_correct'])) # 1831
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplus_responses_train.json', 'w') as f:
             json.dump(result_dict, f)
     ##
