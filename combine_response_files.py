@@ -123,9 +123,11 @@ def main():
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'r') as read_file:
         train_data = json.load(read_file)
     train_data_pd = pd.DataFrame.from_dict(train_data)
+    print(len(train_data_pd))
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'r') as read_file:
         test_data = json.load(read_file)
     test_data_pd = pd.DataFrame.from_dict(test_data)
+    print(len(test_data_pd))
     print(train_data_pd[:2])
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_validation0.json', 'r') as read_file:
         response_data = json.load(read_file)
