@@ -147,9 +147,15 @@ def main():
         greedy_train_data = json.load(read_file)
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train.json', 'r') as read_file:
         sampled_train_data = json.load(read_file)
-    print(len(sampled_train_data['is_correct']))
-    print(sampled_train_data.keys())
-    
+    # print(len(sampled_train_data['is_correct']))
+    # print(sampled_train_data.keys())
+    for i in range(len(sampled_train_data['is_correct'][:2])):
+        if len(sampled_train_data['is_correct'][i])>0:
+            print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
+            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
+            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
+            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
+            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
     ##
 
     ## tqa_gen
