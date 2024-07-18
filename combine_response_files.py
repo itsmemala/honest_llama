@@ -147,7 +147,8 @@ def main():
         greedy_train_data = json.load(read_file)
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train.json', 'r') as read_file:
         sampled_train_data = json.load(read_file)
-    print(len(sampled_train_data),sampled_train_data.dtype)
+    print(len(sampled_train_data))
+    print(sampled_train_data.keys())
     
     ##
 
