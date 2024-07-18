@@ -499,7 +499,7 @@ def main():
                             supcon_loss.backward()
                             # supcon_train_loss.append(supcon_loss.item())
                             # CE backward
-                            emb = nlinear_model.forward_upto_classifier(inputs).detach()
+                            emb = nlinear_model.relu1(nlinear_model.linear1(inputs)).detach()
                             norm_emb = F.normalize(emb, p=2, dim=-1)
                             outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
                             loss = criterion(outputs, targets.to(device).float())
