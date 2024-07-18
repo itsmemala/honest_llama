@@ -20,37 +20,37 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
     
-    greedy_labels_data = []
-    with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_greedy_responses_labels_train2000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_labels_data.append(json.loads(line))
-    sampled_labels_data = []
-    with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_labels_data.append(json.loads(line))
-    for i,g_row in enumerate(greedy_labels_data):
-        sampled_labels_data[i]['rouge1_to_target_response11'] = g_row['rouge1_to_target']
+    # greedy_labels_data = []
+    # with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_greedy_responses_labels_train2000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_labels_data.append(json.loads(line))
+    # sampled_labels_data = []
+    # with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_labels_data.append(json.loads(line))
+    # for i,g_row in enumerate(greedy_labels_data):
+    #     sampled_labels_data[i]['rouge1_to_target_response11'] = g_row['rouge1_to_target']
         
-    with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'w') as outfile:
-        for entry in sampled_labels_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'w') as outfile:
+    #     for entry in sampled_labels_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
-    greedy_resp_data = []
-    with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_greedy_responses_train2000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_resp_data.append(json.loads(line))
-    sampled_resp_data = []
-    with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampled_responses_train2000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_resp_data.append(json.loads(line))
-    for i,g_row in enumerate(greedy_resp_data):
-        sampled_resp_data[i]['response11'] = g_row['response1']
+    # greedy_resp_data = []
+    # with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_greedy_responses_train2000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_resp_data.append(json.loads(line))
+    # sampled_resp_data = []
+    # with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampled_responses_train2000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_resp_data.append(json.loads(line))
+    # for i,g_row in enumerate(greedy_resp_data):
+    #     sampled_resp_data[i]['response11'] = g_row['response1']
         
-    with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampledplus_responses_train2000.json', 'w') as outfile:
-        for entry in sampled_resp_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # with open(f'{args.save_path}/responses/llama_2_7B_trivia_qa_sampledplus_responses_train2000.json', 'w') as outfile:
+    #     for entry in sampled_resp_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
 
     # labels_data = []
@@ -119,6 +119,25 @@ def main():
     # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses_test.json', 'r') as read_file:
     #     response_data = json.load(read_file)
     # print(sum(response_data['is_correct'])/len(response_data['is_correct']))
+
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'r') as read_file:
+        train_data = json.load(read_file)
+    train_data_pd = pd.DataFrame.from_dict(train_data)
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'r') as read_file:
+        test_data = json.load(read_file)
+    test_data_pd = pd.DataFrame.from_dict(test_data)
+    print(train_data_pd[:2])
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_validation0.json', 'r') as read_file:
+        response_data = json.load(read_file)
+    response_data_pd = pd.DataFrame.from_dict(response_data)
+    train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'])]
+    test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'])]
+    print(train[:2])
+    print(len(train),len(test))
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train.json', 'w') as outfile:
+    #     json.dump(train.to_dict(orient='list'), outfile)
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_test.json', 'w') as outfile:
+    #     json.dump(test.to_dict(orient='list'), outfile)
     ##
 
     ## tqa_gen
