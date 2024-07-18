@@ -324,6 +324,7 @@ def main():
     responses = []
     result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []} #, 'raw_model_generation': []}
     correct_rate = 0
+    oom_err_idxs = []
     if args.dataset_name=='strqa':
         # period_token_id = tokenizer("\n\n##")['input_ids'] # is this ok?
         period_token_id = tokenizer("\n")['input_ids'] # is this ok?
@@ -346,12 +347,21 @@ def main():
     # print('Bad word ids:',question_framing_ids)
     for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
         tokenized_prompt = tokenized_prompt.to(device)
-        response = model.generate(tokenized_prompt, max_new_tokens=512,
-                                    # num_beams=1,
-                                    temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
-                                    eos_token_id=period_token_id,
-                                    bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-                                    )[:, tokenized_prompt.shape[-1]:]
+        try:
+            response = model.generate(tokenized_prompt, max_new_tokens=512,
+                                        # num_beams=1,
+                                        temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
+                                        eos_token_id=period_token_id,
+                                        bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+                                        )[:, tokenized_prompt.shape[-1]:]
+        except torch.cuda.OutOfMemoryError: # This is for strqa sampling: Skip samples that don't fit on gpu
+            is_cor, model_answer, model_completion, input_text = [], [], [], []
+            result_dict['is_correct'].append(is_cor)
+            result_dict['model_answer'].append(model_answer)
+            result_dict['model_completion'].append(model_completion)
+            result_dict['full_input_text'].append(input_text)
+            oom_err_idxs.append(i)
+            continue
         if args.num_ret_seq==1:
             response = tokenizer.decode(response[0], skip_special_tokens=True)
             for check_gen in checkgens: # Fix generation stopping errors
@@ -435,6 +445,7 @@ def main():
     if args.dataset_name=='strqa':
         with open(save_fname, 'w') as f:
             json.dump(result_dict, f)
+        np.save(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}_oom_idxs.npy',oom_err_idxs)
     else:
         with open(save_fname, 'w') as outfile:
             for entry in responses:
