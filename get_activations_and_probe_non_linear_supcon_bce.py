@@ -468,7 +468,7 @@ def main():
                         for idx in batch['inputs_idxs']:
                             if args.load_act==False:
                                 if args.fast_mode:
-                                    act = my_train_acts[idx][layer]
+                                    act = my_train_acts[idx][layer].to(device)
                                 else:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
                                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
@@ -598,7 +598,7 @@ def main():
                         for idx in batch['inputs_idxs']:
                             if args.load_act==False:
                                 if args.fast_mode:
-                                    act = my_train_acts[idx][layer]
+                                    act = my_train_acts[idx][layer].to(device)
                                 else:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
                                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
@@ -633,12 +633,12 @@ def main():
                             best_val_loss = epoch_val_loss
                             best_model_state = deepcopy(nlinear_model.state_dict())
                     # Early stopping
-                    patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
-                    if len(val_loss)>=patience:
-                        for epoch_id in range(1,patience,1):
-                            val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
-                            if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
-                        if is_not_decreasing==patience-1: break
+                    # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
+                    # if len(val_loss)>=patience:
+                    #     for epoch_id in range(1,patience,1):
+                    #         val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
+                    #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+                    #     if is_not_decreasing==patience-1: break
                 all_supcon_train_loss[i].append(np.array(supcon_train_loss))
                 all_train_loss[i].append(np.array(train_loss))
                 all_val_loss[i].append(np.array(val_loss))
@@ -697,7 +697,7 @@ def main():
                         for idx in batch['inputs_idxs']:
                             if args.load_act==False:
                                 if args.fast_mode:
-                                    act = my_train_acts[idx][layer]
+                                    act = my_train_acts[idx][layer].to(device)
                                 else:
                                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
                                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
@@ -735,7 +735,7 @@ def main():
                             for idx in batch['inputs_idxs']:
                                 if args.load_act==False:
                                     if args.fast_mode:
-                                        act = my_test_acts[idx][layer]
+                                        act = my_test_acts[idx][layer].to(device)
                                     else:
                                         act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
                                         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
