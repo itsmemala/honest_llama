@@ -264,6 +264,7 @@ def main():
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
     if args.fast_mode:
+        device_id, device = 0, 'cuda:0' # start with first gpu
         print("Loading acts...")
         my_train_acts, my_test_acts = [], []
         for idx in train_idxs:
@@ -278,7 +279,12 @@ def main():
                     act = torch.cat((act,sep_token), dim=1)
                 act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
             else:
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                try:
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                except torch.cuda.OutOfMemoryError:
+                    device_id += 1
+                    device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             my_train_acts.append(act)
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
@@ -386,7 +392,7 @@ def main():
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
-                        act = my_train_acts[idx]
+                        act = my_train_acts[idx].to(device)
                     activations.append(act)
                 if len(activations)==0: continue
                 num_samples_used += len(batch_target_idxs)
@@ -444,7 +450,7 @@ def main():
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
-                        act = my_train_acts[idx]
+                        act = my_train_acts[idx].to(device)
                     activations.append(act)
                 if len(activations)==0: continue
                 num_val_samples_used += len(batch_target_idxs)
@@ -505,7 +511,7 @@ def main():
                         act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                         batch_target_idxs.append(k)
                     else:
-                        act = my_train_acts[idx]
+                        act = my_train_acts[idx].to(device)
                     activations.append(act)
                 if len(activations)==0: continue
                 if 'tagged_tokens' in args.token:
@@ -553,7 +559,7 @@ def main():
                             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                             batch_target_idxs.append(k)
                         else:
-                            act = my_test_acts[idx]
+                            act = my_test_acts[idx].to(device)
                         activations.append(act)
                     if len(activations)==0: continue
                     num_test_samples_used += len(batch_target_idxs)
