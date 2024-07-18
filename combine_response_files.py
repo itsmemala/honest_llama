@@ -132,8 +132,9 @@ def main():
     with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_validation0.json', 'r') as read_file:
         response_data = json.load(read_file)
     response_data_pd = pd.DataFrame.from_dict(response_data)
-    train = response_data_pd.loc[response_data_pd.index.isin(train_data_pd['index'])]
-    test = response_data_pd.loc[response_data_pd.index.isin(test_data_pd['index'])]
+    response_data_pd['index'] = response_data_pd.index
+    train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
+    test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
     print(train[:2])
     print(len(train),len(test))
     # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train.json', 'w') as outfile:
