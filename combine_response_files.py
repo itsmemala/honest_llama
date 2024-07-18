@@ -149,13 +149,18 @@ def main():
         sampled_train_data = json.load(read_file)
     # print(len(sampled_train_data['is_correct']))
     # print(sampled_train_data.keys())
-    for i in range(len(sampled_train_data['is_correct'][:2])):
+    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
+    for i in range(len(sampled_train_data['is_correct'])):
         if len(sampled_train_data['is_correct'][i])>0:
-            print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
-            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
-            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
-            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
-            # sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]]
+            # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
+            result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]])
+            result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][i]])
+            result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
+            result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
+    
+    print(len(result_dict['is_correct']))
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplus_responses_train.json', 'w') as f:
+            json.dump(result_dict, f)
     ##
 
     ## tqa_gen
