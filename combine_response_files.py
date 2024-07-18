@@ -136,7 +136,7 @@ def main():
     train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
     test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
     print(train[:2])
-    print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()))
+    print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()),len(response_data_pd['index']))
     print(len(train),len(test))
     # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train.json', 'w') as outfile:
     #     json.dump(train.to_dict(orient='list'), outfile)
