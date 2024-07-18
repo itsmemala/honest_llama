@@ -417,7 +417,7 @@ def main():
                     supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
                     epoch_supcon_loss += supcon_loss.item()
                     supcon_loss.backward()
-                    supcon_train_loss.append(supcon_loss.item())
+                    # supcon_train_loss.append(supcon_loss.item())
                     # CE backward
                     emb = nlinear_model.forward_upto_classifier(inputs).detach()
                     norm_emb = F.normalize(emb, p=2, dim=-1)
@@ -433,7 +433,7 @@ def main():
                         print('Num of tokens in input:',activations[0].shape[0])
                 optimizer.step()
                 epoch_train_loss += loss.item()
-                train_loss.append(loss.item())
+                # train_loss.append(loss.item())
 
             # Get val loss
             nlinear_model.eval()
@@ -468,6 +468,8 @@ def main():
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+            supcon_train_loss.append(epoch_supcon_loss)
+            train_loss.append(epoch_train_loss)
             val_loss.append(epoch_val_loss)
             print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
             print('Samples:',num_samples_used, num_val_samples_used)
