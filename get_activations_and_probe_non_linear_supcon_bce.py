@@ -81,6 +81,7 @@ def main():
     parser.add_argument('--acts_per_file',type=int, default=100)
     parser.add_argument('--save_probes',type=bool, default=False)
     parser.add_argument('--device', type=int, default=0)
+    parser.add_argument('--multi_gpu', type=bool, default=False)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
     parser.add_argument("--train_file_name", type=str, default=None, help='local directory with dataset')
@@ -270,13 +271,19 @@ def main():
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
     if args.fast_mode:
+        device_id, device = 0, 'cuda:0' # start with first gpu
         print("Loading acts...")
         act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
         my_train_acts, my_test_acts = [], []
         for idx in train_idxs:
             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
             file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-            act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+            try:
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+            except torch.cuda.OutOfMemoryError:
+                device_id += 1
+                device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             my_train_acts.append(act)
         if args.test_file_name is not None:
             for idx in test_idxs:
@@ -284,6 +291,10 @@ def main():
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_test_acts.append(act)
+
+    if args.multi_gpu:
+        device_id += 1
+        device = 'cuda:'+str(device_id) # move to next empty gpu for model processing
 
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
     method_concat = args.method + '_no_bias' if args.no_bias else method_concat
@@ -361,93 +372,95 @@ def main():
 
                 # Sup-Con training
                 if 'supcon' in args.method:
-                    print('Sup-Con training...')
-                    train_loss = []
-                    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-                    named_params = [] # list(nlinear_model.named_parameters())
-                    print([n for n,_ in nlinear_model.named_parameters()])
-                    for n,param in nlinear_model.named_parameters():
-                        if final_layer_name in n: # Do not train final layer params
-                            param.requires_grad = False
-                        else:
-                            named_params.append((n,param))
-                            param.requires_grad = True
-                    optimizer_grouped_parameters = [
-                        {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.supcon_lr},
-                        {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.supcon_lr}
-                    ]
-                    # print([n for n,p in named_params])
-                    ds_train_sc = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train_supcon}).with_format("torch")
-                    ds_train_sc = DataLoader(ds_train_sc, batch_size=args.supcon_bs, sampler=sampler)
-                    optimizer = torch.optim.Adam(optimizer_grouped_parameters)
-                    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-                    for epoch in range(args.supcon_epochs):
-                        epoch_train_loss = 0
-                        nlinear_model.train()
-                        for step,batch in enumerate(ds_train_sc):
-                            optimizer.zero_grad()
-                            activations = []
-                            for idx in batch['inputs_idxs']:
-                                if args.load_act==False:
-                                    if args.fast_mode:
-                                        act = my_train_acts[idx][layer]
-                                    else:
-                                        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
-                                else:
-                                    act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                activations.append(act)
-                            inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
-                            if args.token in single_token_types:
-                                targets = batch['labels']
-                            elif args.token=='all':
-                                targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
-                            if args.token=='tagged_tokens':
-                                targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                            emb = nlinear_model.relu1(nlinear_model.linear1(nlinear_model.dropout(inputs))) if args.use_dropout else nlinear_model.relu1(nlinear_model.linear1(inputs))
-                            norm_emb = F.normalize(emb, p=2, dim=-1)
-                            emb_projection = nlinear_model.projection(norm_emb)
-                            emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
-                            logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
-                            loss = criterion_supcon(logits, targets.to(device))
-                            epoch_train_loss += loss.item()
-                            loss.backward()
-                            optimizer.step()
-                        # scheduler.step()
-                        print(epoch_train_loss)
-                        train_loss.append(epoch_train_loss)
-                    all_supcon_train_loss[i].append(np.array(train_loss))
+                    pass
+                    # print('Sup-Con training...')
+                    # train_loss = []
+                    # no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+                    # named_params = [] # list(nlinear_model.named_parameters())
+                    # print([n for n,_ in nlinear_model.named_parameters()])
+                    # for n,param in nlinear_model.named_parameters():
+                    #     if final_layer_name in n: # Do not train final layer params
+                    #         param.requires_grad = False
+                    #     else:
+                    #         named_params.append((n,param))
+                    #         param.requires_grad = True
+                    # optimizer_grouped_parameters = [
+                    #     {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.supcon_lr},
+                    #     {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.supcon_lr}
+                    # ]
+                    # # print([n for n,p in named_params])
+                    # ds_train_sc = Dataset.from_dict({"inputs_idxs": train_set_idxs, "labels": y_train_supcon}).with_format("torch")
+                    # ds_train_sc = DataLoader(ds_train_sc, batch_size=args.supcon_bs, sampler=sampler)
+                    # optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+                    # # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+                    # for epoch in range(args.supcon_epochs):
+                    #     epoch_train_loss = 0
+                    #     nlinear_model.train()
+                    #     for step,batch in enumerate(ds_train_sc):
+                    #         optimizer.zero_grad()
+                    #         activations = []
+                    #         for idx in batch['inputs_idxs']:
+                    #             if args.load_act==False:
+                    #                 if args.fast_mode:
+                    #                     act = my_train_acts[idx][layer]
+                    #                 else:
+                    #                     act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+                    #                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                    #                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                    #                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
+                    #             else:
+                    #                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
+                    #             activations.append(act)
+                    #         inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
+                    #         if args.token in single_token_types:
+                    #             targets = batch['labels']
+                    #         elif args.token=='all':
+                    #             targets = torch.cat([torch.Tensor([y_label for j in range(len(prompt_tokens[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
+                    #         if args.token=='tagged_tokens':
+                    #             targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
+                    #         emb = nlinear_model.relu1(nlinear_model.linear1(nlinear_model.dropout(inputs))) if args.use_dropout else nlinear_model.relu1(nlinear_model.linear1(inputs))
+                    #         norm_emb = F.normalize(emb, p=2, dim=-1)
+                    #         emb_projection = nlinear_model.projection(norm_emb)
+                    #         emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
+                    #         logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
+                    #         loss = criterion_supcon(logits, targets.to(device))
+                    #         epoch_train_loss += loss.item()
+                    #         loss.backward()
+                    #         optimizer.step()
+                    #     # scheduler.step()
+                    #     print(epoch_train_loss)
+                    #     train_loss.append(epoch_train_loss)
+                    # all_supcon_train_loss[i].append(np.array(train_loss))
                 
                 # Final layer classifier training
                 print('Final layer classifier training...')
-                train_loss, val_loss = [], []
+                supcon_train_loss, train_loss, val_loss = [], [], []
                 best_val_loss, best_spl_loss = torch.inf, torch.inf
                 best_model_state = deepcopy(nlinear_model.state_dict())
                 no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-                named_params = [] # list(nlinear_model.named_parameters())
-                for n,param in nlinear_model.named_parameters():
-                    if final_layer_name in n: # Always train final layer params
-                        named_params.append((n,param))
-                        param.requires_grad = True
-                        if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -1, 1)) # Clip grads
-                    else:
-                        if 'supcon' in args.method: # Do not train non-final layer params when using supcon
-                            param.requires_grad = False
-                            # named_params.append((n,param)) # Debug by training all params
-                            # param.requires_grad = True
-                        else: # Train all params when not using supcon (Note: projection layer is detached from loss so does not matter)
-                            named_params.append((n,param))
-                            param.requires_grad = True
-                            if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -1, 1)) # Clip grads
+                named_params = list(nlinear_model.named_parameters())
+                # named_params = [] # list(nlinear_model.named_parameters())
+                # for n,param in nlinear_model.named_parameters():
+                #     if final_layer_name in n: # Always train final layer params
+                #         named_params.append((n,param))
+                #         param.requires_grad = True
+                #         if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -1, 1)) # Clip grads
+                #     else:
+                #         if 'supcon' in args.method: # Do not train non-final layer params when using supcon
+                #             param.requires_grad = False
+                #             # named_params.append((n,param)) # Debug by training all params
+                #             # param.requires_grad = True
+                #         else: # Train all params when not using supcon (Note: projection layer is detached from loss so does not matter)
+                #             named_params.append((n,param))
+                #             param.requires_grad = True
+                #             if 'specialised' in args.method: param.register_hook(lambda grad: torch.clamp(grad, -1, 1)) # Clip grads
                 optimizer_grouped_parameters = [
                     {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                     {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
                 ]
                 optimizer = torch.optim.Adam(optimizer_grouped_parameters)
                 for epoch in range(args.epochs):
-                    epoch_train_loss, epoch_spl_loss = 0, 0
+                    epoch_supcon_train_loss, epoch_train_loss, epoch_spl_loss = 0, 0, 0
                     nlinear_model.train()
                     for step,batch in enumerate(ds_train):
                         optimizer.zero_grad()
@@ -474,8 +487,27 @@ def main():
                             # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                             targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                         if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias): inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
-                        outputs = nlinear_model(inputs)
-                        loss = criterion(outputs, targets.to(device).float())
+                        if 'supcon' in args.method:
+                            # SupCon backward
+                            emb = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            norm_emb = F.normalize(emb, p=2, dim=-1)
+                            emb_projection = nlinear_model.projection(norm_emb)
+                            emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
+                            logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
+                            supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
+                            epoch_supcon_loss += supcon_loss.item()
+                            supcon_loss.backward()
+                            # supcon_train_loss.append(supcon_loss.item())
+                            # CE backward
+                            emb = nlinear_model.forward_upto_classifier(inputs).detach()
+                            norm_emb = F.normalize(emb, p=2, dim=-1)
+                            outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
+                            loss = criterion(outputs, targets.to(device).float())
+                            loss.backward()
+                        else:
+                            outputs = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            loss = criterion(outputs, targets.to(device).float())
+                            loss.backward()
                         epoch_train_loss += loss.item()
                         if 'specialised' in args.method and len(model_wise_mc_sample_idxs)>0:
                             mean_vectors = []
@@ -522,8 +554,7 @@ def main():
                                                         )
                             loss = loss + args.spl_wgt*spl_loss
                             epoch_spl_loss += spl_loss.item()
-                        train_loss.append(loss.item())
-                        loss.backward()
+                        # train_loss.append(loss.item())
                         # for n,p in nlinear_model.named_parameters():
                         #     if layer==3 and p.grad is not None: print(step,n,torch.min(p.grad),torch.max(p.grad))
                         optimizer.step()
@@ -588,8 +619,10 @@ def main():
                         if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias): inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                         outputs = nlinear_model(inputs)
                         epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                    supcon_train_loss.append(epoch_supcon_loss)
+                    train_loss.append(epoch_train_loss)
                     val_loss.append(epoch_val_loss)
-                    print(epoch_spl_loss, epoch_train_loss, epoch_val_loss)
+                    print(epoch_spl_loss, epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
                     # Choose best model
                     if 'specialised' in args.method:
                         if epoch_spl_loss < best_spl_loss:
@@ -606,6 +639,7 @@ def main():
                             val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
                             if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
                         if is_not_decreasing==patience-1: break
+                all_supcon_train_loss[i].append(np.array(supcon_train_loss))
                 all_train_loss[i].append(np.array(train_loss))
                 all_val_loss[i].append(np.array(val_loss))
                 nlinear_model.load_state_dict(best_model_state)
