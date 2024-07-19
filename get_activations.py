@@ -190,9 +190,9 @@ def main():
         load_ranges = [(a*100,(a*100)+100) for a in range(int(len(prompts)/100))] # train file with sampled responses
     elif args.dataset_name == 'strqa':
         # load_ranges = [(a*50,(a*50)+50) for a in range(int(2300/50))] # all responses
-        print(len(prompts))
-        # load_ranges = [(a*50,(a*50)+50) for a in range(int(len(prompts)/50))] # if (a*50)+50 > 14600]
-        load_ranges = [(0,0)]
+        # print(len(prompts))
+        load_ranges = [(a*50,(a*50)+50) for a in range(int(len(prompts)/50))] # if (a*50)+50 > 14600]
+        assert load_ranges[-1][1] == 16500
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
