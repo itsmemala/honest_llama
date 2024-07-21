@@ -50,7 +50,7 @@ python get_activations_and_probe_non_linear_supcon_bce.py llama_2_7B trivia_qa -
 
 python analyse_crossdataset_bce.py llama_2_7B trivia_qa --probes_file_name NLSC_llama_2_7B_trivia_qa_sampledplus_responses_train2000_22000_1_layer_answer_last_individual_non_linear_2_supcon_hallu_pos_128_10_0.05_0.1_bs165_epochs250_0.0005_False --save_path ~/Desktop/honest_llama_data --best_threshold True
 
-python get_activations_and_probe_transformer.py llama_2_7B trivia_qa --train_file_name trivia_qa_sampledplus_responses_train2000 --train_labels_file_name trivia_qa_sampledplus_responses_labels_train2000 --test_file_name trivia_qa_greedy_responses_validation2000 --test_labels_file_name trivia_qa_greedy_responses_labels_validation2000 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method transformer_hallu_pos --bs 128 --epochs 100 --lr 0.00001 --save_probes True --device 0 --save_path ~/Desktop/honest_llama_data --fast_mode True --num_samples 11
+python get_activations_and_probe_transformer.py llama_2_7B trivia_qa --train_file_name trivia_qa_sampledplus_responses_train2000 --train_labels_file_name trivia_qa_greedy_responses_labels_train2000 --test_file_name trivia_qa_greedy_responses_validation2000 --test_labels_file_name trivia_qa_greedy_responses_labels_validation2000 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method transformer_supcon_hallu_pos --bs 165 --epochs 250 --lr 0.0001 --save_probes True --save_path ~/honest_llama_data --fast_mode True --num_samples 11 --no_batch_sampling True --multi_gpu True
 
 
 ## strqa sampledplus ##
