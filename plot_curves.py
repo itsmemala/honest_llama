@@ -52,6 +52,8 @@ def main():
     print(len(val_loss))
     print(len(train_loss))
     if len(supcon_train_loss)>0: print(len(supcon_train_loss))
+
+    print(val_loss)
     
     plt.subplot(1, 3, 1)
     plt.plot(val_loss)
