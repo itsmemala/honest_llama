@@ -32,8 +32,7 @@ def main():
     val_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
     train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
     try:
-        supcon_train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()#[0]
-        print(supcon_train_loss.keys())
+        supcon_train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[1]
     except FileNotFoundError:
         supcon_train_loss = []
 
@@ -52,7 +51,7 @@ def main():
 
     print(len(val_loss))
     print(len(train_loss))
-    if len(supcon_train_loss)>0: print(supcon_train_loss.shape)
+    if len(supcon_train_loss)>0: print(len(supcon_train_loss))
     
     plt.subplot(1, 3, 1)
     plt.plot(val_loss)
