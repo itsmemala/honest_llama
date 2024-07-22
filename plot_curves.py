@@ -1,10 +1,10 @@
 import os
-import torch
-import torch.nn.functional as F
-from tqdm import tqdm
+# import torch
+# import torch.nn.functional as F
+# from tqdm import tqdm
 import numpy as np
-import pickle
-import json
+# import pickle
+# import json
 import argparse
 from matplotlib import pyplot as plt
 import wandb
@@ -32,13 +32,13 @@ def main():
     val_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
     train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
     try:
-        supcon_train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0]
+        supcon_train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()#[0]
     except FileNotFoundError:
         supcon_train_loss = []
 
-    val_loss = val_loss[-1] # Last layer only
-    train_loss = train_loss[-1] # Last layer only
-    if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
+    # val_loss = val_loss[-1] # Last layer only
+    # train_loss = train_loss[-1] # Last layer only
+    # if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
 
     if len(val_loss)!=len(train_loss):
         train_loss_by_epoch = []
