@@ -278,7 +278,7 @@ def main():
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
     if args.fast_mode:
-        device_id, device = 7, 'cuda:0' # start with first gpu
+        device_id, device = 0, 'cuda:0' # start with first gpu
         print("Loading acts...")
         act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
         my_train_acts, my_test_acts = [], []
@@ -288,7 +288,7 @@ def main():
             try:
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             except (torch.cuda.OutOfMemoryError, RuntimeError):
-                device_id -= 1
+                device_id += 1
                 device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
                 print('Loading on device',device_id)
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
