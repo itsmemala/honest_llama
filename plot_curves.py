@@ -40,6 +40,11 @@ def main():
     # train_loss = train_loss[-1] # Last layer only
     # if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
 
+    if len(val_loss)==1:
+        val_loss = val_loss[0]
+        train_loss = train_loss[0]
+        if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[0]
+
     if len(val_loss)!=len(train_loss):
         train_loss_by_epoch = []
         batches = int(len(train_loss)/len(val_loss))
@@ -52,8 +57,6 @@ def main():
     print(len(val_loss))
     print(len(train_loss))
     if len(supcon_train_loss)>0: print(len(supcon_train_loss))
-
-    print(val_loss)
     
     plt.subplot(1, 3, 1)
     plt.plot(val_loss)
