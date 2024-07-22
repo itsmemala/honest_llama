@@ -29,30 +29,20 @@ def main():
 
     device = 0
 
-    # wandb.init(
-    # project="LLM-Hallu-Detection",
-    # config={
-    # "run_name": args.probes_file_name,
-    # "model": args.model_name,
-    # "dataset": args.dataset_name,
-    # "act_type": args.using_act,
-    # "token": args.token,
-    # "method": args.method,
-    # "bs": args.bs,
-    # "lr": args.lr,
-    # }
-    # )
-
     val_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
-    val_loss = val_loss[-1] # Last layer only
-    print(val_loss.shape)
     train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
-    print(train_loss.shape)
     try:
         supcon_train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0]
-        print(supcon_train_loss.shape)
     except FileNotFoundError:
         supcon_train_loss = []
+
+    val_loss = val_loss[-1] # Last layer only
+    train_loss = train_loss[-1] # Last layer only
+    if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
+
+    print(val_loss.shape)
+    print(train_loss.shape)
+    print(supcon_train_loss.shape)
     
     # plt.subplot(1, 3, 1)
     # plt.plot(val_loss)
@@ -66,6 +56,20 @@ def main():
     # plt.plot(supcon_train_loss)
     # plt.xlabel("epoch")
     # plt.ylabel( "loss")
+
+    # wandb.init(
+    # project="LLM-Hallu-Detection",
+    # config={
+    # "run_name": args.probes_file_name,
+    # "model": args.model_name,
+    # "dataset": args.dataset_name,
+    # "act_type": args.using_act,
+    # "token": args.token,
+    # "method": args.method,
+    # "bs": args.bs,
+    # "lr": args.lr,
+    # }
+    # )
     # wandb.log({'chart': plt})
 
 
