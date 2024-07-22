@@ -233,14 +233,15 @@ def main():
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
     parser.add_argument('--save_path',type=str, default='')
+    parser.add_argument('--seed',type=int, default=42)
     args = parser.parse_args()
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
 
     # set seeds
-    torch.manual_seed(42)
-    np.random.seed(42)
-    torch.cuda.manual_seed_all(42)
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
     print('Loading model..')
     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
