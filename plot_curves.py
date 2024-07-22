@@ -42,7 +42,7 @@ def main():
 
     if len(val_loss)!=len(train_loss):
         train_loss_by_epoch = []
-        batches = len(train_loss)/len(val_loss)
+        batches = int(len(train_loss)/len(val_loss))
         start_at = 0
         for epoch in range(len(val_loss)):
             train_loss_by_epoch.append(sum(train_loss[start_at:(start_at+batches)]))
