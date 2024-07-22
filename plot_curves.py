@@ -48,14 +48,15 @@ def main():
     plt.plot(val_loss)
     plt.xlabel("epoch")
     plt.ylabel( "loss")
+    plt.title('val loss')
     plt.subplot(1, 3, 2)
     plt.plot(train_loss)
     plt.xlabel("epoch")
-    plt.ylabel( "loss")
+    plt.title('train ce loss')
     plt.subplot(1, 3, 3)
     plt.plot(supcon_train_loss)
     plt.xlabel("epoch")
-    plt.ylabel( "loss")
+    plt.title('train supcon loss')
     plt.savefig(f'{args.save_path}/testfig.png')
 
     # wandb.init(
