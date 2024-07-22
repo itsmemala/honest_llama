@@ -278,7 +278,7 @@ def main():
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
     if args.fast_mode:
-        device_id, device = 8, 'cuda:0' # start with first gpu
+        device_id, device = 7, 'cuda:0' # start with first gpu
         print("Loading acts...")
         act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
         my_train_acts, my_test_acts = [], []
