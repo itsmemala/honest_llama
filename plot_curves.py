@@ -44,6 +44,7 @@ def main():
     # )
 
     val_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
+    val_loss = val_loss[-1] # Last layer only
     print(val_loss.shape)
     train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
     print(train_loss.shape)
