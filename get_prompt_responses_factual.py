@@ -401,7 +401,7 @@ def main():
             else:
                 resp_dict = {'prompt':prompts[i]}
                 for j in range(args.num_ret_seq):
-                    cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
+                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True)
                     for check_gen in checkgens: # Fix generation stopping errors
                         cur_response = cur_response.split(check_gen)[0]
                     resp_dict['response'+str(j+1)] = cur_response
@@ -443,10 +443,10 @@ def main():
     #         responses.append(json.loads(line))
     
     # Fix llama-2 generation issue
-    for i,row in enumerate(responses):
-        for j in range(args.num_ret_seq):
-            resp = row['response'+str(j+1)]
-            responses[i]['response'+str(j+1)] = resp.split("\n")[0]
+    # for i,row in enumerate(responses):
+    #     for j in range(args.num_ret_seq):
+    #         resp = row['response'+str(j+1)]
+    #         responses[i]['response'+str(j+1)] = resp.split("\n")[0]
         # if resp.split("\n")[0]!=resp:
         #     print(i,"\n",resp,"\n\n",resp.split("\n")[0])
     # print('Saving model responses..')
