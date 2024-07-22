@@ -66,22 +66,22 @@ def main():
     plt.plot(supcon_train_loss)
     plt.xlabel("epoch")
     plt.title('train supcon loss')
-    plt.savefig(f'{args.save_path}/testfig2.png')
+    # plt.savefig(f'{args.save_path}/testfig2.png')
 
-    # wandb.init(
-    # project="LLM-Hallu-Detection",
-    # config={
-    # "run_name": args.probes_file_name,
-    # "model": args.model_name,
-    # "dataset": args.dataset_name,
-    # "act_type": args.using_act,
-    # "token": args.token,
-    # "method": args.method,
-    # "bs": args.bs,
-    # "lr": args.lr,
-    # }
-    # )
-    # wandb.log({'chart': plt})
+    wandb.init(
+    project="LLM-Hallu-Detection",
+    config={
+    "run_name": args.probes_file_name,
+    "model": args.model_name,
+    "dataset": args.dataset_name,
+    "act_type": args.using_act,
+    "token": args.token,
+    "method": args.method,
+    "bs": args.bs,
+    "lr": args.lr,
+    }
+    )
+    wandb.log({'chart': plt})
 
 
     
