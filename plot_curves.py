@@ -33,6 +33,7 @@ def main():
     train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
     try:
         supcon_train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()#[0]
+        print(supcon_train_loss.keys())
     except FileNotFoundError:
         supcon_train_loss = []
 
