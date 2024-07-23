@@ -55,7 +55,7 @@ class My_Transformer_Layer(torch.nn.Module):
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
         nhead = 16 # 16 # 8
-        max_length = 
+        max_length = 512 # max_new_tokens in generation config
         self.use_pe =  use_pe
         self.n_blocks = n_blocks
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
@@ -108,7 +108,7 @@ class My_Transformer_Layer(torch.nn.Module):
 
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
         if self.n_blocks==2: x = self.transfomer2(x)
-        
+
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)

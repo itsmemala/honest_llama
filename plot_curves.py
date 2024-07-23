@@ -84,6 +84,7 @@ def main():
     "method": args.method,
     "bs": args.bs,
     "lr": args.lr,
+    "tag": 'design_choices'
     }
     )
     wandb.log({'chart': plt})
