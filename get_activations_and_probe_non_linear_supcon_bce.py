@@ -515,7 +515,7 @@ def main():
                             loss = criterion(outputs, targets.to(device).float())
                             loss.backward()
                         else:
-                            outputs = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            outputs = nlinear_model.linear(inputs) if 'individual_linear' in args.method else nlinear_model.relu1(nlinear_model.linear1(inputs))
                             loss = criterion(outputs, targets.to(device).float())
                             loss.backward()
                         epoch_train_loss += loss.item()
