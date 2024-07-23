@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--method',type=str, default='')
     parser.add_argument('--bs',type=int, default=None)
     parser.add_argument('--lr',type=float, default=None)
+    parser.add_argument('--tag',type=str, default='')
     parser.add_argument('--norm_input',type=bool, default=None)
     parser.add_argument('--with_pe',type=bool, default=None)
     parser.add_argument('--num_blocks',type=int, default=None)
@@ -88,7 +89,7 @@ def main():
     "method": args.method,
     "bs": args.bs,
     "lr": args.lr,
-    "tag": 'design_choices',
+    "tag": args.tag, #'design_choices',
     "norm_inp": args.norm_input,
     "with_pe": args.with_pe,
     "num_blocks": args.num_blocks,

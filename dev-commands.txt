@@ -77,6 +77,10 @@ python analyse_crossdataset_bce.py hl_llama_7B strqa --probes_file_name NLSC_hl_
 ## alpaca - trivia qa ######################################
 python get_activations_and_probe_non_linear_supcon_bce.py alpaca_7B trivia_qa --train_file_name trivia_qa_sampledplus_responses_train2000 --test_file_name trivia_qa_greedy_responses_validation1800 --train_labels_file_name trivia_qa_sampledplus_responses_labels_train2000 --test_labels_file_name trivia_qa_greedy_responses_labels_validation1800 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method individual_non_linear_2_supcon_hallu_pos --bs 165 --epochs 250 --lr 0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --num_samples 11 --no_batch_sampling True --multi_gpu True
 
+python analyse_crossdataset_bce.py alpaca_7B trivia_qa --probes_file_name NLSC_alpaca_7B_trivia_qa_greedy_responses_train5000_2000_1_layer_answer_last_individual_linear_hallu_pos_bs128_epochs20_0.005_False --save_path ~/Desktop/honest_llama_data --best_threshold True
+
+python plot_curves.py alpaca_7B trivia_qa --save_path ~/Desktop/honest_llama_data --probes_file_name NLSC_alpaca_7B_trivia_qa_greedy_responses_train5000_2000_1_layer_answer_last_individual_linear_hallu_pos_bs128_epochs100_0.005_False --using_act layer --token answer_last --method last_layer --bs 128 --lr 0.005
+
 python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file_name trivia_qa_sampledplus_responses_train2000 --train_labels_file_name trivia_qa_sampledplus_responses_labels_train2000 --test_file_name trivia_qa_greedy_responses_validation2000 --test_labels_file_name trivia_qa_greedy_responses_labels_validation2000 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method transformer_hallu_pos --bs 128 --epochs 100 --lr 0.00001 --save_probes True --save_path ~/honest_llama_data --fast_mode True --num_samples 11 --multi_gpu True
 
 
