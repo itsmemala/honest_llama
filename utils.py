@@ -50,7 +50,7 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, device='cuda'):
         super().__init__()
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
@@ -69,7 +69,7 @@ class My_Transformer_Layer(torch.nn.Module):
 
         # Positional Encoding: https://medium.com/@hunter-j-phillips/positional-encoding-7a93db4109e6
         # self.dropout = nn.Dropout(p=dropout)      
-        self.pe = torch.zeros(max_length, d_model) # create tensor of 0s
+        self.pe = torch.zeros(max_length, d_model).to(device) # create tensor of 0s
         k = torch.arange(0, max_length).unsqueeze(1) # create position column  
         div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model)) # calc divisor for positional encoding
         self.pe[:, 0::2] = torch.sin(k * div_term) # calc sine on even indices
