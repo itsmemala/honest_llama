@@ -74,8 +74,8 @@ class My_Transformer_Layer(torch.nn.Module):
         div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model)) # calc divisor for positional encoding
         self.pe[:, 0::2] = torch.sin(k * div_term) # calc sine on even indices
         self.pe[:, 1::2] = torch.cos(k * div_term)  # calc cosine on odd indices 
-        self.pe = pe.unsqueeze(0) # add dimension      
-        self.register_buffer("pe", pe) # buffers are saved in state_dict but not trained by the optimizer 
+        self.pe = self.pe.unsqueeze(0) # add dimension      
+        self.register_buffer("pe", self.pe) # buffers are saved in state_dict but not trained by the optimizer 
 
     # make predictions
     def forward(self, x): # x: (bs, n_layers, n_inputs)
