@@ -75,7 +75,7 @@ class My_Transformer_Layer(torch.nn.Module):
         self.pe[:, 0::2] = torch.sin(k * div_term) # calc sine on even indices
         self.pe[:, 1::2] = torch.cos(k * div_term)  # calc cosine on odd indices 
         self.pe = self.pe.unsqueeze(0) # add dimension      
-        self.register_buffer("pe", self.pe) # buffers are saved in state_dict but not trained by the optimizer 
+        # self.register_buffer("pe", self.pe) # buffers are saved in state_dict but not trained by the optimizer # TODO: fix attribute already exists err
 
     # make predictions
     def forward(self, x): # x: (bs, n_layers, n_inputs)
