@@ -546,8 +546,8 @@ def main():
         all_y_true_val[i].append(y_val_true)
         all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
         all_val_logits[i].append(torch.cat(val_logits))
-        print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
-        print('Val AUC:',roc_auc_score(y_val_true, val_preds))
+        print('Val F1: ',"%.2f" % f1_score(y_val_true,y_val_pred),"%.2f" % f1_score(y_val_true,y_val_pred,pos_label=0))
+        print('Val AUC:',"%.2f" % roc_auc_score(y_val_true, val_preds))
         pred_correct = 0
         y_test_pred, y_test_true = [], []
         test_preds = []
