@@ -124,6 +124,9 @@ def main():
     elif args.dataset_name == 'counselling':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
+    elif args.dataset_name == 'counselling_wudata':
+        file_path = f'{args.save_path}/responses/'
+        prompts = tokenized_mi_v2(file_path, tokenizer)
     elif args.dataset_name == 'strqa' or args.dataset_name == 'gsm8k' or ('baseline' in args.file_name or 'dola' in args.file_name):
         num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 8 if 'sampled' in args.file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'

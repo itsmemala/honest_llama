@@ -3,6 +3,7 @@ import sys
 sys.path.insert(0, "TruthfulQA")
 
 import json
+import jsonlines
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -49,11 +50,13 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False):
         super().__init__()
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
         nhead = 16 # 16 # 8
+        max_length = 
+        self.use_pe =  use_pe
         self.n_blocks = n_blocks
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
         self.class_token = torch.nn.Parameter(torch.randn(1,1,d_model))
@@ -63,6 +66,17 @@ class My_Transformer_Layer(torch.nn.Module):
         self.classifier = torch.nn.Linear(d_model, n_outputs, bias)
         # self.classifier = torch.nn.Linear(d_model*n_layers, n_outputs, bias)
         torch.nn.init.normal_(self.class_token, std=0.02)
+
+        # Positional Encoding: https://medium.com/@hunter-j-phillips/positional-encoding-7a93db4109e6
+        # self.dropout = nn.Dropout(p=dropout)      
+        self.pe = torch.zeros(max_length, d_model) # create tensor of 0s
+        k = torch.arange(0, max_length).unsqueeze(1) # create position column  
+        div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model)) # calc divisor for positional encoding
+        self.pe[:, 0::2] = torch.sin(k * div_term) # calc sine on even indices
+        self.pe[:, 1::2] = torch.cos(k * div_term)  # calc cosine on odd indices 
+        self.pe = pe.unsqueeze(0) # add dimension      
+        self.register_buffer("pe", pe) # buffers are saved in state_dict but not trained by the optimizer 
+
     # make predictions
     def forward(self, x): # x: (bs, n_layers, n_inputs)
         layer_wise_x = []
@@ -71,14 +85,18 @@ class My_Transformer_Layer(torch.nn.Module):
         x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
         if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
         x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
+        if self.use_pe: x = x + self.pe[:, : x.size(1)].requires_grad_(False)
+
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
         if self.n_blocks==2: x = self.transfomer2(x)
+
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
         # x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         y_pred = self.classifier(x)
         return y_pred
+    
     def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs)
         layer_wise_x = []
         for layer in range(x.shape[-2]):
@@ -86,8 +104,11 @@ class My_Transformer_Layer(torch.nn.Module):
         x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
         if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
         x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
+        if self.use_pe: x = x + self.pe[:, : x.size(1)].requires_grad_(False)
+
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
         if self.n_blocks==2: x = self.transfomer2(x)
+        
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
@@ -461,6 +482,46 @@ def tokenized_mi(file_path, tokenizer):
         all_prompts.append(prompt)
         
     return all_prompts
+
+def tokenized_mi_v2(file_path, tokenizer):
+    sampled_responses = pd.read_excel(file_path+'annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
+    
+    train_data = []
+    with jsonlines.open(file_path+'annomi_nlg_train.jsonl') as f:
+        for line in f.iter():
+            train_data.append(line)
+    with jsonlines.open(file_path+'annomi_nlg_valid.jsonl') as f:
+        for line in f.iter():
+            train_data.append(line)
+    train_reflection_indexes = []
+    for i, row in enumerate(train_data):
+        if 'reflection' in row['prompt']:
+            train_reflection_indexes.append(i)
+    
+    all_prompts = []
+    for i in sampled_responses.index:
+        random.seed(i)
+        eg_idx = random.sample(train_reflection_indexes,4)
+        prompt = "Below are a few examples of how a therapist responds to a client given the context of their previous exchanges. Learn from these examples and write the therapist response for the last example. "
+        prompt += "# Example 1 ## Context: " + train_data[eg_idx[0]]['prompt'] + " ## Response: " + train_data[eg_idx[0]]['completion'] + " "
+        prompt += "# Example 2 ## Context: " + train_data[eg_idx[1]]['prompt'] + " ## Response: " + train_data[eg_idx[1]]['completion'] + " "
+        prompt += "# Example 3 ## Context: " + train_data[eg_idx[2]]['prompt'] + " ## Response: " + train_data[eg_idx[2]]['completion'] + " "
+        prompt += "# Example 4 ## Context: " + train_data[eg_idx[3]]['prompt'] + " ## Response: " + train_data[eg_idx[3]]['completion'] + " "
+        # prompt += "# Example 5 ## Context: " + train_data[eg_idx[4]]['prompt'] + " ## Response: " + train_data[eg_idx[4]]['completion'] + " "
+        context = sampled_responses[sampled_responses.index==i]['dialogue_context'][i]
+        formatted_context = ''
+        text = context
+        while '{"' in text:
+            text = text.split('{"',1)[1]
+            formatted_context += '<'+text.split('"',1)[0]+'>'
+            text = text.split(': "',1)[1]
+
+            formatted_context += text.split('"}',1)[0]+'|'
+            text = text.split('"}',1)[1]
+        prompt += "# Example 5 ## Context: " + formatted_context + " ## Response: "
+        all_prompts.append(prompt)
+
+
 
 def get_token_tags(responses,resp_tokenized):
     # Load the small English model
