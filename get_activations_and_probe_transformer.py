@@ -546,8 +546,8 @@ def main():
         all_y_true_val[i].append(y_val_true)
         all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
         all_val_logits[i].append(torch.cat(val_logits))
-        print('Val F1: ',"%.2f" % f1_score(y_val_true,y_val_pred),"%.2f" % f1_score(y_val_true,y_val_pred,pos_label=0))
-        print('Val AUC:',"%.2f" % roc_auc_score(y_val_true, val_preds))
+        print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
+        print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
         pred_correct = 0
         y_test_pred, y_test_true = [], []
         test_preds = []
@@ -596,10 +596,10 @@ def main():
             all_y_true_test[i].append(y_test_true)
             all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
             precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
-            print('AuPR for cls1:',auc(recall,precision))
-            print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
-            print('Recall for cls1:',recall_score(y_test_true, y_test_pred))
-            print('AuROC for cls1:',roc_auc_score(y_test_true, test_preds))
+            print('AuPR:',"%.3f" % auc(recall,precision))
+            print('F1:',"%.3f" % f1_score(y_test_true,y_test_pred),"%.3f" % f1_score(y_test_true,y_test_pred,pos_label=0))
+            print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
+            print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
             print('Samples:',num_test_samples_used)
             all_test_logits[i].append(torch.cat(test_logits))
 
