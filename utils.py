@@ -11,7 +11,7 @@ import llama
 from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
-import llama
+import math
 import pandas as pd
 import warnings
 from einops import rearrange
