@@ -200,7 +200,7 @@ def main():
                             if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
                             labels.append(label)
                             sum_over_samples += label
-                        if sum_over_samples==0 or sum_over_samples==10: num_samples_with_no_var += 1
+                        if sum_over_samples==0 or sum_over_samples==num_samples: num_samples_with_no_var += 1
         labels = labels[:args.len_dataset]
         num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 10 if 'sampled' in args.test_file_name else 1
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
@@ -233,7 +233,7 @@ def main():
     
     # print(np.corrcoef(rouge_scores,squad_scores))
     # print(np.corrcoef(test_rouge_scores,test_squad_scores))
-    # print(num_samples_with_no_var, test_num_samples_with_no_var)
+    print(num_samples_with_no_var, test_num_samples_with_no_var)
 
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
 
