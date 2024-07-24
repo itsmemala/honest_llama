@@ -187,19 +187,20 @@ class My_SupCon_NonLinear_Classifier4(nn.Module):
         return output
 
 class My_SupCon_NonLinear_Classifier(nn.Module):
-    def __init__(self, input_size, output_size=2, bias=True, use_dropout=False, path=None):
+    def __init__(self, input_size, output_size=2, bias=True, use_dropout=False, supcon=False, path=None):
         super().__init__()
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(0.2)
         self.linear1 = nn.Linear(input_size, 256)
         self.relu1 = nn.ReLU()
-        self.projection = nn.Linear(256,128)
+        self.supcon=supcon
+        self.projection = nn.Linear(256,128,bias=False)
         self.classifier = nn.Linear(256, output_size, bias=bias)
     def forward(self,x):
         if self.use_dropout: x = self.dropout(x)
         x = self.linear1(x)
         emb = self.relu1(x)
-        norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        if self.supcon: norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         output = self.classifier(norm_emb)
         return output
 
