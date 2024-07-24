@@ -473,7 +473,12 @@ def main():
                     inputs = torch.stack(activations,axis=0)
                 if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                outputs = nlinear_model(inputs)
+                if 'supcon' in args.method:
+                    emb = nlinear_model.forward_upto_classifier(inputs)
+                    norm_emb = F.normalize(emb, p=2, dim=-1)
+                    outputs = nlinear_model(norm_emb)
+                else:
+                    outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
             supcon_train_loss.append(epoch_supcon_loss)
             train_loss.append(epoch_train_loss)
