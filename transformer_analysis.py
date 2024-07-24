@@ -50,7 +50,7 @@ def main():
 
     pred_labels1 = np.array([1 if v>0.5 else 0 for v in all_preds1])
     pred_labels2 = np.array([1 if v>0.5 else 0 for v in all_preds2])
-    print(sum(pred_labels1!=pred_labels1))
+    print(sum(pred_labels1!=pred_labels2))
 
     # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
 
