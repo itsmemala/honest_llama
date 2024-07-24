@@ -54,8 +54,8 @@ def main():
 
     print('Classifier1 acc:',sum(pred_labels1==labels)/len(labels))
     print('Classifier2 acc:',sum(pred_labels2==labels)/len(labels))
-    print(np.concatenate(all_preds1,all_preds2).shape)
-    # all_preds3 = np.max(np.stack(all_preds1,all_preds2),axis=0)
+    print(np.stack([all_preds1,all_preds2]).shape)
+    # all_preds3 = np.max(np.stack([all_preds1,all_preds2]),axis=0)
     # pred_labels3 = np.array([1 if v>0.5 else 0 for v in all_preds3])
     # print('Ensemble acc:',sum(pred_labels3==labels)/len(labels))
 
