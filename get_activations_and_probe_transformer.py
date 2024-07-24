@@ -327,8 +327,8 @@ def main():
         if 'sampled' in args.train_file_name:
             num_samples = args.num_samples if args.num_samples is not None else 10
             num_prompts = len(train_idxs)/num_samples
-            # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
-            train_set_idxs = train_idxs[-int(num_prompts*(1-0.2))*num_samples:] # Last 80%
+            train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
+            # train_set_idxs = train_idxs[-int(num_prompts*(1-0.2))*num_samples:] # Last 80%
             val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
         else:
             train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
