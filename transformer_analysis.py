@@ -43,9 +43,9 @@ def main():
     # else:
     #     acts_per_file = 100
     
-    all_preds1 = np.load(f'{args.save_path}/probes/{args.probes_file_name1}_test_pred.npy')[0]
-    all_preds2 = np.load(f'{args.save_path}/probes/{args.probes_file_name2}_test_pred.npy')[0]
-    labels = np.load(f'{args.save_path}/probes/{args.probes_file_name1}_test_true.npy')[0]
+    all_preds1 = np.squeeze(np.load(f'{args.save_path}/probes/{args.probes_file_name1}_test_pred.npy')[0])
+    all_preds2 = np.squeeze(np.load(f'{args.save_path}/probes/{args.probes_file_name2}_test_pred.npy')[0])
+    labels = np.squeeze(np.load(f'{args.save_path}/probes/{args.probes_file_name1}_test_true.npy')[0])
     print(all_preds1.shape, all_preds2.shape, labels.shape)
 
 
