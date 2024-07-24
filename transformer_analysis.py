@@ -21,8 +21,8 @@ def list_of_ints(arg):
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('model_name', type=str, default='llama_7B')
-    parser.add_argument('dataset_name', type=str, default='strqa')
+    # parser.add_argument('model_name', type=str, default='llama_7B')
+    # parser.add_argument('dataset_name', type=str, default='strqa')
     parser.add_argument("--probes_file_name1", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name2", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
