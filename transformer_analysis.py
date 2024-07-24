@@ -30,8 +30,8 @@ def main():
 
     device = 0
 
-    if args.probes_file_name is None: args.probes_file_name = 'hallu_pos'
-    hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
+    # if args.probes_file_name is None: args.probes_file_name = 'hallu_pos'
+    # hallu_cls = 1 if 'hallu_pos' in args.probes_file_name else 0
     
     # args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
     # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
