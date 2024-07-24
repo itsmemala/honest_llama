@@ -476,7 +476,7 @@ def main():
                 if 'supcon' in args.method:
                     emb = nlinear_model.forward_upto_classifier(inputs)
                     norm_emb = F.normalize(emb, p=2, dim=-1)
-                    outputs = nlinear_model(norm_emb)
+                    outputs = nlinear_model.classifier(norm_emb)
                 else:
                     outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
