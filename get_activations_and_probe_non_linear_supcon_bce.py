@@ -569,6 +569,9 @@ def main():
                         # for n,p in nlinear_model.named_parameters():
                         #     if layer==3 and p.grad is not None: print(step,n,torch.min(p.grad),torch.max(p.grad))
                         optimizer.step()
+                    if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
+                    epoch_train_loss = epoch_train_loss/(step+1)
+
                     
                     # After each epoch, print mean similarity to top-k samples from first epoch
                     # if 'specialised' in args.method:
@@ -630,6 +633,7 @@ def main():
                         if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias): inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                         outputs = nlinear_model(inputs)
                         epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                    epoch_val_loss = epoch_val_loss/(step+1)
                     supcon_train_loss.append(epoch_supcon_loss)
                     train_loss.append(epoch_train_loss)
                     val_loss.append(epoch_val_loss)
