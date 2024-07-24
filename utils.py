@@ -63,7 +63,7 @@ class My_Transformer_Layer(torch.nn.Module):
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.transfomer2 = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.supcon=supcon
-        self.projection = torch.nn.Linear(d_model,int(d_model/2))
+        self.projection = torch.nn.Linear(d_model,int(d_model/2),bias=False)
         self.classifier = torch.nn.Linear(d_model, n_outputs, bias)
         # self.classifier = torch.nn.Linear(d_model*n_layers, n_outputs, bias)
         torch.nn.init.normal_(self.class_token, std=0.02)
