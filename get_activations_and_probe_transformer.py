@@ -496,7 +496,7 @@ def main():
         all_supcon_train_loss[i].append(np.array(supcon_train_loss))
         all_train_loss[i].append(np.array(train_loss))
         all_val_loss[i].append(np.array(val_loss))
-        # nlinear_model.load_state_dict(best_model_state)
+        nlinear_model.load_state_dict(best_model_state)
         
         # print(np.array(val_loss))
         if args.save_probes:
