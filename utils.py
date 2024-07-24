@@ -50,7 +50,7 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, device='cuda'):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, supcon=False, device='cuda'):
         super().__init__()
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
@@ -62,6 +62,7 @@ class My_Transformer_Layer(torch.nn.Module):
         self.class_token = torch.nn.Parameter(torch.randn(1,1,d_model))
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.transfomer2 = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
+        self.supcon=supcon
         self.projection = torch.nn.Linear(d_model,int(d_model/2))
         self.classifier = torch.nn.Linear(d_model, n_outputs, bias)
         # self.classifier = torch.nn.Linear(d_model*n_layers, n_outputs, bias)
@@ -93,7 +94,7 @@ class My_Transformer_Layer(torch.nn.Module):
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
-        # x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         y_pred = self.classifier(x)
         return y_pred
     

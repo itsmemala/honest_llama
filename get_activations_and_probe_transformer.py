@@ -366,7 +366,8 @@ def main():
         act_dims = 4096
         bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
         n_blocks = 2 if 'transformer2' in args.method else 1
-        nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe).to(device)
+        supcon = True if 'supcon' in args.method else False
+        nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, supcon=supcon).to(device)
         wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
         criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
         criterion_supcon = NTXentLoss()
@@ -473,12 +474,7 @@ def main():
                     inputs = torch.stack(activations,axis=0)
                 if args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                if 'supcon' in args.method:
-                    emb = nlinear_model.forward_upto_classifier(inputs)
-                    norm_emb = F.normalize(emb, p=2, dim=-1)
-                    outputs = nlinear_model.classifier(norm_emb)
-                else:
-                    outputs = nlinear_model(inputs)
+                outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
             supcon_train_loss.append(epoch_supcon_loss)
             train_loss.append(epoch_train_loss)
