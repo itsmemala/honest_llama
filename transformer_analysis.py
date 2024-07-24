@@ -57,6 +57,7 @@ def main():
     all_preds3 = np.max(np.stack([all_preds1,all_preds2]),axis=0)
     pred_labels3 = np.array([1 if v>0.5 else 0 for v in all_preds3])
     print('Ensemble acc:',sum(pred_labels3==labels)/len(labels))
+    print('Ensemble auc:',"%.3f" % roc_auc_score(labels, all_preds3))
 
     # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
 
