@@ -48,6 +48,7 @@ def main():
     labels = np.squeeze(np.load(f'{args.save_path}/probes/{args.probes_file_name1}_test_true.npy')[0])
     print(all_preds1.shape, all_preds2.shape, labels.shape)
 
+    print(all_preds1[:5])
 
     # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
 
