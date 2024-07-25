@@ -73,6 +73,7 @@ def main():
     plt.plot(supcon_train_loss, label='train_supcon_loss')
     plt.subplot(1, 2, 2)
     plt.plot(val_auc, label='val_auc')
+    plt.legend(loc="upper left")
     plt.savefig(f'{args.save_path}/testfig.png')
 
     # wandb.init(
