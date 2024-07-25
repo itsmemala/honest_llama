@@ -76,6 +76,7 @@ def main():
     plt.legend(loc="upper left")
     plt.subplot(1, 2, 2)
     plt.plot(val_auc, label='val_auc')
+    plt.legend(loc="upper left")
     plt.savefig(f'{args.save_path}/testfig.png')
 
     # wandb.init(
