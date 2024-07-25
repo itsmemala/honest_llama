@@ -20,7 +20,7 @@ import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, roc_auc_score
 from matplotlib import pyplot as plt
 
 HF_NAMES = {

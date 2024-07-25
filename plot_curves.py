@@ -35,9 +35,7 @@ def main():
 
     device = 0
 
-    val_pred = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
-    val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
-    val_auc = roc_auc_score(val_true, val_pred)
+    val_auc = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_auc.npy', allow_pickle=True).item()[0]
     val_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
     train_loss = np.load(f'{args.save_path}/probes/{args.probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
     try:
@@ -64,6 +62,7 @@ def main():
             start_at += batches
         train_loss = train_loss_by_epoch
 
+    print(len(val_auc))
     print(len(val_loss))
     print(len(train_loss))
     if len(supcon_train_loss)>0: print(len(supcon_train_loss))
@@ -72,29 +71,29 @@ def main():
     plt.plot(val_loss, label='val_ce_loss')
     plt.plot(train_loss, label='train_ce_loss')
     plt.plot(supcon_train_loss, label='train_supcon_loss')
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 2, 2)
+    plt.plot(val_auc, label='val_auc')
+    plt.savefig(f'{args.save_path}/testfig.png')
 
-    # plt.savefig(f'{args.save_path}/testfig2.png')
-
-    wandb.init(
-    project="LLM-Hallu-Detection",
-    config={
-    "run_name": args.probes_file_name,
-    "model": args.model_name,
-    "dataset": args.dataset_name,
-    "act_type": args.using_act,
-    "token": args.token,
-    "method": args.method,
-    "bs": args.bs,
-    "lr": args.lr,
-    "tag": args.tag, #'design_choices',
-    "norm_inp": args.norm_input,
-    "with_pe": args.with_pe,
-    "num_blocks": args.num_blocks,
-    "wd": args.wd
-    }
-    )
-    wandb.log({'chart': plt})
+    # wandb.init(
+    # project="LLM-Hallu-Detection",
+    # config={
+    # "run_name": args.probes_file_name,
+    # "model": args.model_name,
+    # "dataset": args.dataset_name,
+    # "act_type": args.using_act,
+    # "token": args.token,
+    # "method": args.method,
+    # "bs": args.bs,
+    # "lr": args.lr,
+    # "tag": args.tag, #'design_choices',
+    # "norm_inp": args.norm_input,
+    # "with_pe": args.with_pe,
+    # "num_blocks": args.num_blocks,
+    # "wd": args.wd
+    # }
+    # )
+    # wandb.log({'chart': plt})
 
 
     
