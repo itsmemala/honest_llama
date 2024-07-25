@@ -261,7 +261,7 @@ def main():
 
     # Individual probes
     all_supcon_train_loss, all_supcon_val_loss = {}, {}
-    all_train_loss, all_val_loss = {}, {}
+    all_train_loss, all_val_loss, all_val_auc = {}, {}, {}
     all_val_accs, all_val_f1s = {}, {}
     all_test_accs, all_test_f1s = {}, {}
     all_val_preds, all_test_preds = {}, {}
@@ -333,8 +333,8 @@ def main():
         y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
         if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
         
-        all_supcon_train_loss[i], all_supcon_val_loss[i] = [], []
-        all_train_loss[i], all_val_loss[i] = [], []
+        all_supcon_train_loss[i] = []
+        all_train_loss[i], all_val_loss[i], all_val_auc[i] = [], [], []
         all_val_accs[i], all_val_f1s[i] = [], []
         all_test_accs[i], all_test_f1s[i] = [], []
         all_val_preds[i], all_test_preds[i] = [], []
@@ -445,7 +445,7 @@ def main():
                 
                 # Final layer classifier training
                 print('Final layer classifier training...')
-                supcon_train_loss, train_loss, val_loss = [], [], []
+                supcon_train_loss, train_loss, val_loss, val_auc = [], [], [], []
                 best_val_loss, best_spl_loss = torch.inf, torch.inf
                 best_model_state = deepcopy(nlinear_model.state_dict())
                 no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
@@ -606,6 +606,7 @@ def main():
                     # Get val loss
                     nlinear_model.eval()
                     epoch_val_loss = 0
+                    val_preds, val_true = [], []
                     for step,batch in enumerate(ds_val):
                         optimizer.zero_grad()
                         activations = []
@@ -633,10 +634,14 @@ def main():
                         if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias): inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                         outputs = nlinear_model(inputs)
                         epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                        val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
+                        val_preds += val_preds_batch.tolist()
+                        val_true += batch['labels'].tolist()
                     epoch_val_loss = epoch_val_loss/(step+1)
                     supcon_train_loss.append(epoch_supcon_loss)
                     train_loss.append(epoch_train_loss)
                     val_loss.append(epoch_val_loss)
+                    val_auc.append(roc_auc_score(val_true, val_preds))
                     print(epoch_spl_loss, epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
                     # Choose best model
                     if 'specialised' in args.method:
@@ -657,6 +662,7 @@ def main():
                 all_supcon_train_loss[i].append(np.array(supcon_train_loss))
                 all_train_loss[i].append(np.array(train_loss))
                 all_val_loss[i].append(np.array(val_loss))
+                all_val_auc[i].append(np.array(val_auc))
                 nlinear_model.load_state_dict(best_model_state)
 
                 # Print similarity of top-k samples at the end of training
