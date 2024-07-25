@@ -89,7 +89,7 @@ def main():
     "method": args.method,
     "bs": args.bs,
     "lr": args.lr,
-    # "tag": args.tag, #'design_choices',
+    "tag": args.tag, #'design_choices',
     "norm_inp": args.norm_input,
     "with_pe": args.with_pe,
     "num_blocks": args.num_blocks,
