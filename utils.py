@@ -55,7 +55,7 @@ class My_Transformer_Layer(torch.nn.Module):
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
         nhead = 16 # 16 # 8
-        max_length = 512 # max_new_tokens in generation config
+        max_length = 512*33 # max_new_tokens in generation config x num_layers
         self.use_pe =  use_pe
         self.n_blocks = n_blocks
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
