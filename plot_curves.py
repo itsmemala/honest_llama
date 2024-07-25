@@ -76,27 +76,27 @@ def main():
     plt.subplot(1, 2, 2)
     plt.plot(val_auc, label='val_auc')
     plt.legend(loc="upper left")
-    plt.savefig(f'{args.save_path}/testfig.png')
+    # plt.savefig(f'{args.save_path}/testfig.png')
 
-    # wandb.init(
-    # project="LLM-Hallu-Detection",
-    # config={
-    # "run_name": args.probes_file_name,
-    # "model": args.model_name,
-    # "dataset": args.dataset_name,
-    # "act_type": args.using_act,
-    # "token": args.token,
-    # "method": args.method,
-    # "bs": args.bs,
-    # "lr": args.lr,
-    # "tag": args.tag, #'design_choices',
-    # "norm_inp": args.norm_input,
-    # "with_pe": args.with_pe,
-    # "num_blocks": args.num_blocks,
-    # "wd": args.wd
-    # }
-    # )
-    # wandb.log({'chart': plt})
+    wandb.init(
+    project="LLM-Hallu-Detection",
+    config={
+    "run_name": args.probes_file_name,
+    "model": args.model_name,
+    "dataset": args.dataset_name,
+    "act_type": args.using_act,
+    "token": args.token,
+    "method": args.method,
+    "bs": args.bs,
+    "lr": args.lr,
+    "tag": args.tag, #'design_choices',
+    "norm_inp": args.norm_input,
+    "with_pe": args.with_pe,
+    "num_blocks": args.num_blocks,
+    "wd": args.wd
+    }
+    )
+    wandb.log({'chart': plt})
 
 
     
