@@ -49,6 +49,7 @@ def main():
     # if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
 
     if len(val_loss)==1:
+        val_auc = val_auc[0]
         val_loss = val_loss[0]
         train_loss = train_loss[0]
         if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[0]
@@ -71,6 +72,7 @@ def main():
     plt.plot(val_loss, label='val_ce_loss')
     plt.plot(train_loss, label='train_ce_loss')
     plt.plot(supcon_train_loss, label='train_supcon_loss')
+    plt.title()
     plt.legend(loc="upper left")
     plt.subplot(1, 2, 2)
     plt.plot(val_auc, label='val_auc')
