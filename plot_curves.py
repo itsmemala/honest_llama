@@ -72,7 +72,6 @@ def main():
     plt.plot(val_loss, label='val_ce_loss')
     plt.plot(train_loss, label='train_ce_loss')
     plt.plot(supcon_train_loss, label='train_supcon_loss')
-    plt.title()
     plt.legend(loc="upper left")
     plt.subplot(1, 2, 2)
     plt.plot(val_auc, label='val_auc')
