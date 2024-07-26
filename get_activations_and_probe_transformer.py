@@ -252,8 +252,8 @@ def main():
     save_seed = args.seed if args.seed!=42 else '' # for backward compat
 
     # Individual probes
-    all_supcon_train_loss, all_supcon_val_loss = {}, {}
-    all_train_loss, all_val_loss = {}, {}
+    all_supcon_train_loss = {}
+    all_train_loss, all_val_loss, all_val_auc = {}, {}, {}
     all_val_accs, all_val_f1s = {}, {}
     all_test_accs, all_test_f1s = {}, {}
     all_val_preds, all_test_preds = {}, {}
@@ -339,7 +339,7 @@ def main():
         y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
         if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
         
-        all_supcon_train_loss[i], all_train_loss[i], all_val_loss[i] = [], [], []
+        all_supcon_train_loss[i], all_train_loss[i], all_val_loss[i], all_val_auc[i] = [], [], [], []
         all_val_accs[i], all_val_f1s[i] = [], []
         all_test_accs[i], all_test_f1s[i] = [], []
         all_val_preds[i], all_test_preds[i] = [], []
@@ -447,6 +447,7 @@ def main():
             # Get val loss
             nlinear_model.eval()
             epoch_val_loss = 0
+            val_preds, val_true = [], []
             for step,batch in enumerate(ds_val):
                 optimizer.zero_grad()
                 activations, batch_target_idxs = [], []
@@ -477,9 +478,13 @@ def main():
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                val_preds_batch = torch.sigmoid(outputs.data)
+                val_preds += val_preds_batch.tolist()
+                val_true += targets.tolist()
             supcon_train_loss.append(epoch_supcon_loss)
             train_loss.append(epoch_train_loss)
             val_loss.append(epoch_val_loss)
+            val_auc.append(roc_auc_score(val_true, val_preds))
             print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
             print('Samples:',num_samples_used, num_val_samples_used)
             # Choose best model
@@ -496,6 +501,7 @@ def main():
         all_supcon_train_loss[i].append(np.array(supcon_train_loss))
         all_train_loss[i].append(np.array(train_loss))
         all_val_loss[i].append(np.array(val_loss))
+        all_val_auc[i].append(np.array(val_auc))
         nlinear_model.load_state_dict(best_model_state)
         
         # print(np.array(val_loss))
