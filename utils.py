@@ -94,7 +94,7 @@ class My_Transformer_Layer(torch.nn.Module):
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
-        if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        # if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         x = F.normalize(x, p=2, dim=-1)
         y_pred = self.classifier(x)
         return y_pred
@@ -201,7 +201,8 @@ class My_SupCon_NonLinear_Classifier(nn.Module):
         if self.use_dropout: x = self.dropout(x)
         x = self.linear1(x)
         emb = self.relu1(x)
-        if self.supcon: norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        # if self.supcon: norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        norm_emb = F.normalize(emb, p=2, dim=-1)
         output = self.classifier(norm_emb)
         return output
 
