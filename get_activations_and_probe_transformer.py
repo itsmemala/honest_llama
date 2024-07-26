@@ -383,8 +383,12 @@ def main():
             {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
             {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
         ]
-        optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+        optimizer = torch.optim.AdamW(optimizer_grouped_parameters) #torch.optim.AdamW(optimizer_grouped_parameters)
         # optimizer = torch.optim.Adam(nlinear_model.parameters())
+        warmup_period = 5
+        scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
+        scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=args.epochs-warmup_period)
+        scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
         for epoch in tqdm(range(args.epochs)):
             num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss = 0, 0, 0, 0
             nlinear_model.train()
@@ -443,6 +447,7 @@ def main():
                 optimizer.step()
                 epoch_train_loss += loss.item()
                 # train_loss.append(loss.item())
+            scheduler.step()
             if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
             epoch_train_loss = epoch_train_loss/(step+1)
 
