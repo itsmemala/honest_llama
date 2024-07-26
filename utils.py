@@ -95,6 +95,7 @@ class My_Transformer_Layer(torch.nn.Module):
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
         if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        x = F.normalize(x, p=2, dim=-1)
         y_pred = self.classifier(x)
         return y_pred
     
