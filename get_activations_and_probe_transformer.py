@@ -374,7 +374,7 @@ def main():
         criterion_supcon = NTXentLoss()
         
         # Training
-        supcon_train_loss, train_loss, val_loss = [], [], []
+        supcon_train_loss, train_loss, val_loss, val_auc = [], [], [], []
         best_val_loss = torch.inf
         best_model_state = deepcopy(nlinear_model.state_dict())
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
