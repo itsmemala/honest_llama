@@ -502,7 +502,8 @@ def tokenized_mi_v2(file_path, tokenizer):
         if 'reflection' in row['prompt']:
             train_reflection_indexes.append(i)
     
-    all_prompts = []
+    all_prompts, all_tokenized_prompts, resp_tokenized = [], [], []
+    answer_token_idxes = []
     for i in sampled_responses.index:
         random.seed(i)
         eg_idx = random.sample(train_reflection_indexes,4)
@@ -523,8 +524,16 @@ def tokenized_mi_v2(file_path, tokenizer):
             formatted_context += text.split('"}',1)[0]+'|'
             text = text.split('"}',1)[1]
         prompt += "# Example 5 ## Context: " + formatted_context + " ## Response: "
-        all_prompts.append(prompt)
-
+        for resp_id in [1,2,3,4,5,6,7,8,9]:
+            answer = sampled_responses[sampled_responses.index==context_id]['response'+str(resp_id)][context_id]
+            full_prompt = prompt + answer
+            all_prompts.append(full_prompt)
+            tokenized_prompt = tokenizer(full_prompt, return_tensors = 'pt').input_ids
+            all_tokenized_prompts.append(tokenized_prompt)
+            resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in tokenized_prompt[0]])
+            answer_token_idxes.append(len(tokenizer(prompt, return_tensors = 'pt').input_ids[0]))
+    
+     return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
 
 
 def get_token_tags(responses,resp_tokenized):
@@ -642,7 +651,18 @@ def get_token_nll(model, prompt, device, predicted_token_id):
         # scores = output.scores[0][0,predicted_token_id].item() # output.scores[0]: (bs, vocab)
         # print(logits,scores) # Checked for a few - the two values are the same
         # print(nll)
-        return nll
+    return nll
+
+def get_token_logprobs(model, prompt, device):
+    token_logprobs = []
+    with torch.no_grad():
+        prompt = prompt.to(device)
+        output = model(prompt)
+        for i,predicted_token_id in enumerate(prompt[0]):
+            logits = output.logits[0,i,:] # output.logits: (bs, tokens, vocab)
+            logprob = F.log_softmax(logits, dim=-1)[predicted_token_id].item() # Do not apply -sign to match token logprobs returned from openai API
+            token_logprobs.append(logprob)
+    return token_logprobs
 
 def get_llama_logits(model, prompt, device): 
 

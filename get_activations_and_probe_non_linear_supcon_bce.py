@@ -22,6 +22,7 @@ from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from matplotlib import pyplot as plt
+import wandb
 
 HF_NAMES = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
