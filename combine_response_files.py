@@ -44,7 +44,7 @@ def main():
             hetero_prompts_sum.append(sum(labels))
     print(len(homo_prompts),len(hetero_prompts))
     print(len(all_hallu_prompts),len(all_nh_prompts))
-    print(np.hist(hetero_prompts_sum))
+    print(np.histogram(hetero_prompts_sum))
     
     # greedy_labels_data = []
     # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
