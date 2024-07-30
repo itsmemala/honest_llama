@@ -33,6 +33,7 @@ def main():
     
     homo_prompts, hetero_prompts = [], []
     all_hallu_prompts, all_nh_prompts = [], []
+    hetero_prompts_sum = []
     for i,labels in enumerate(prompt_wise_labels):
         if sum(labels)==0 or sum(labels)==len(labels):
             homo_prompts.append(i)
@@ -40,8 +41,10 @@ def main():
             if sum(labels)==0: all_nh_prompts.append(i)
         else:
             hetero_prompts.append(i)
+            hetero_prompts_sum.append(sum(labels))
     print(len(homo_prompts),len(hetero_prompts))
     print(len(all_hallu_prompts),len(all_nh_prompts))
+    print(np.hist(hetero_prompts_sum))
     
     # greedy_labels_data = []
     # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
