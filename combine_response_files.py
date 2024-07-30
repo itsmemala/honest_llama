@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
+    num_samples = 11
     prompt_wise_labels = []
     with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'r') as read_file:
         for line in read_file:
