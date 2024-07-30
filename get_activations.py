@@ -200,7 +200,7 @@ def main():
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
-    # load_ranges = [(300,400)]
+    load_ranges = [(13300,13400)]
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
