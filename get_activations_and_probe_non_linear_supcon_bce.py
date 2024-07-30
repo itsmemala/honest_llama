@@ -20,7 +20,7 @@ import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
-from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from matplotlib import pyplot as plt
 
 HF_NAMES = {
@@ -92,6 +92,8 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--fast_mode',type=bool, default=False) # use when GPU space is free, dataset is small and using only 1 token per sample
     parser.add_argument('--seed',type=int, default=42)
+    parser.add_argument('--plot_name',type=str, default=None) # Wandb args
+    parser.add_argument('--tag',type=str, default=None) # Wandb args
     args = parser.parse_args()
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
@@ -643,7 +645,7 @@ def main():
                     train_loss.append(epoch_train_loss)
                     val_loss.append(epoch_val_loss)
                     val_auc.append(roc_auc_score(val_true, val_preds))
-                    print(epoch_spl_loss, epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
+                    # print(epoch_spl_loss, epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
                     # Choose best model
                     if 'specialised' in args.method:
                         if epoch_spl_loss < best_spl_loss:
@@ -737,10 +739,12 @@ def main():
                         val_preds.append(val_preds_batch)
                         if args.token in single_token_types: val_logits.append(nlinear_model(inputs))
                         if args.token in ['all','tagged_tokens']: val_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
-                all_val_preds[i].append(torch.cat(val_preds).cpu().numpy())
+                val_preds = torch.cat(val_preds).cpu().numpy()
+                all_val_preds[i].append(val_preds)
                 all_y_true_val[i].append(y_val_true)
                 all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
                 print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
                 pred_correct = 0
                 y_test_pred, y_test_true = [], []
                 test_preds = []
@@ -775,10 +779,15 @@ def main():
                             test_preds.append(test_preds_batch)
                             if args.token in single_token_types: test_logits.append(nlinear_model(inputs))
                             if args.token in ['all','tagged_tokens']: test_logits.append(torch.stack([torch.max(nlinear_model(inp).data, dim=0)[0] for inp in inputs]))
-                    all_test_preds[i].append(torch.cat(test_preds).cpu().numpy())
+                    test_preds = torch.cat(test_preds).cpu().numpy()
+                    all_test_preds[i].append(test_preds)
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                    print('Test F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                    precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
+                    print('AuPR:',"%.3f" % auc(recall,precision))
+                    print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                    print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
+                    print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
                     all_test_logits[i].append(torch.cat(test_logits))
                 all_val_logits[i].append(torch.cat(val_logits))
                 
@@ -814,6 +823,72 @@ def main():
         np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
         all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
         np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
+
+    if args.plot_name is not None:
+        probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+        val_auc = np.load(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', allow_pickle=True).item()[0]
+        val_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
+        train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
+        try:
+            supcon_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0]
+        except (FileNotFoundError,KeyError):
+            supcon_train_loss = []
+        
+
+        # val_loss = val_loss[-1] # Last layer only
+        # train_loss = train_loss[-1] # Last layer only
+        # if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
+
+        if len(val_loss)==1:
+            val_auc = val_auc[0]
+            val_loss = val_loss[0]
+            train_loss = train_loss[0]
+            if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[0]
+
+        if len(val_loss)!=len(train_loss):
+            train_loss_by_epoch = []
+            batches = int(len(train_loss)/len(val_loss))
+            start_at = 0
+            for epoch in range(len(val_loss)):
+                train_loss_by_epoch.append(sum(train_loss[start_at:(start_at+batches)]))
+                start_at += batches
+            train_loss = train_loss_by_epoch
+
+        # print(len(val_auc))
+        # print(len(val_loss))
+        # print(len(train_loss))
+        # if len(supcon_train_loss)>0: print(len(supcon_train_loss))
+        
+        plt.subplot(1, 2, 1)
+        plt.plot(val_loss, label='val_ce_loss')
+        plt.plot(train_loss, label='train_ce_loss')
+        plt.plot(supcon_train_loss, label='train_supcon_loss')
+        plt.legend(loc="upper left")
+        plt.subplot(1, 2, 2)
+        plt.plot(val_auc, label='val_auc')
+        plt.legend(loc="upper left")
+        # plt.savefig(f'{args.save_path}/testfig.png')
+
+        wandb.init(
+        project="LLM-Hallu-Detection",
+        config={
+        "run_name": probes_file_name,
+        "model": args.model_name,
+        "dataset": args.dataset_name,
+        "act_type": args.using_act,
+        "token": args.token,
+        "method": args.method,
+        "bs": args.bs,
+        "lr": args.lr,
+        "tag": args.tag, #'design_choices',
+        "norm_inp": args.norm_input,
+        # "with_pe": args.with_pe,
+        # "num_blocks": args.num_blocks,
+        # "wd": args.wd
+        },
+        name=args.plot_name
+        )
+        wandb.log({'chart': plt})
 
 if __name__ == '__main__':
     main()

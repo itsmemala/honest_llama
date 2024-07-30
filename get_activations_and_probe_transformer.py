@@ -117,6 +117,8 @@ def main():
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--fast_mode',type=bool, default=False) # use when GPU space is free, dataset is small and using only 1 token per sample
     parser.add_argument('--seed',type=int, default=42)
+    parser.add_argument('--plot_name',type=str, default=None) # Wandb args
+    parser.add_argument('--tag',type=str, default=None) # Wandb args
     args = parser.parse_args()
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
@@ -391,7 +393,8 @@ def main():
         scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
         scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
         scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
-        for epoch in tqdm(range(args.epochs)):
+        # for epoch in tqdm(range(args.epochs)):
+        for epoch in range(args.epochs):
             num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss = 0, 0, 0, 0
             nlinear_model.train()
             for step,batch in enumerate(ds_train):
@@ -496,8 +499,8 @@ def main():
             train_loss.append(epoch_train_loss)
             val_loss.append(epoch_val_loss)
             val_auc.append(roc_auc_score(val_true, val_preds))
-            print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
-            print('Samples:',num_samples_used, num_val_samples_used)
+            # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
+            # print('Samples:',num_samples_used, num_val_samples_used)
             # Choose best model
             if epoch_val_loss < best_val_loss:
                 best_val_loss = epoch_val_loss
@@ -678,6 +681,72 @@ def main():
         np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
         all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
         np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
+
+    if args.plot_name is not None:
+        probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+        val_auc = np.load(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', allow_pickle=True).item()[0]
+        val_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
+        train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
+        try:
+            supcon_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0]
+        except (FileNotFoundError,KeyError):
+            supcon_train_loss = []
+        
+
+        # val_loss = val_loss[-1] # Last layer only
+        # train_loss = train_loss[-1] # Last layer only
+        # if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
+
+        if len(val_loss)==1:
+            val_auc = val_auc[0]
+            val_loss = val_loss[0]
+            train_loss = train_loss[0]
+            if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[0]
+
+        if len(val_loss)!=len(train_loss):
+            train_loss_by_epoch = []
+            batches = int(len(train_loss)/len(val_loss))
+            start_at = 0
+            for epoch in range(len(val_loss)):
+                train_loss_by_epoch.append(sum(train_loss[start_at:(start_at+batches)]))
+                start_at += batches
+            train_loss = train_loss_by_epoch
+
+        # print(len(val_auc))
+        # print(len(val_loss))
+        # print(len(train_loss))
+        # if len(supcon_train_loss)>0: print(len(supcon_train_loss))
+        
+        plt.subplot(1, 2, 1)
+        plt.plot(val_loss, label='val_ce_loss')
+        plt.plot(train_loss, label='train_ce_loss')
+        plt.plot(supcon_train_loss, label='train_supcon_loss')
+        plt.legend(loc="upper left")
+        plt.subplot(1, 2, 2)
+        plt.plot(val_auc, label='val_auc')
+        plt.legend(loc="upper left")
+        # plt.savefig(f'{args.save_path}/testfig.png')
+
+        wandb.init(
+        project="LLM-Hallu-Detection",
+        config={
+        "run_name": probes_file_name,
+        "model": args.model_name,
+        "dataset": args.dataset_name,
+        "act_type": args.using_act,
+        "token": args.token,
+        "method": args.method,
+        "bs": args.bs,
+        "lr": args.lr,
+        "tag": args.tag, #'design_choices',
+        "norm_inp": args.norm_input,
+        "with_pe": args.use_pe_pe,
+        # "num_blocks": args.num_blocks,
+        # "wd": args.wd
+        },
+        name=args.plot_name
+        )
+        wandb.log({'chart': plt})
 
 if __name__ == '__main__':
     main()
