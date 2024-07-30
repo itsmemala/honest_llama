@@ -45,6 +45,30 @@ def main():
     print(len(homo_prompts),len(hetero_prompts))
     print(len(all_hallu_prompts),len(all_nh_prompts))
     print(np.histogram(hetero_prompts_sum, bins=num_samples-1))
+
+    hetero_labels_data = []
+    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'r') as read_file:
+        i = 0
+        for line in read_file:
+            if i in hetero_prompts:
+                hetero_labels_data.append(json.loads(line))
+            i += 1
+    hetero_resp_data = []
+    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_train2000.json', 'r') as read_file:
+        i = 0
+        for line in read_file:
+            if i in hetero_prompts:
+                hetero_resp_data.append(json.loads(line))
+            i += 1
+    
+    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledhetero_responses_labels_train2000.json', 'w') as outfile:
+        for entry in hetero_labels_data:
+            json.dump(entry, outfile)
+            outfile.write('\n')
+    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledhetero_responses_train2000.json', 'w') as outfile:
+        for entry in hetero_resp_data:
+            json.dump(entry, outfile)
+            outfile.write('\n')
     
     # greedy_labels_data = []
     # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
