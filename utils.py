@@ -525,7 +525,10 @@ def tokenized_mi_v2(file_path, tokenizer):
             text = text.split('"}',1)[1]
         prompt += "# Example 5 ## Context: " + formatted_context + " ## Response: "
         for resp_id in [1,2,3,4,5,6,7,8,9]:
-            answer = sampled_responses[sampled_responses.index==context_id]['response'+str(resp_id)][context_id]
+            try:
+                answer = sampled_responses[sampled_responses.index==context_id]['response'+str(resp_id)][context_id]
+            except TypeError: # Some prompts have fewer samples
+                continue
             full_prompt = prompt + answer
             all_prompts.append(full_prompt)
             tokenized_prompt = tokenizer(full_prompt, return_tensors = 'pt').input_ids
@@ -652,17 +655,6 @@ def get_token_nll(model, prompt, device, predicted_token_id):
         # print(logits,scores) # Checked for a few - the two values are the same
         # print(nll)
     return nll
-
-def get_token_logprobs(model, prompt, device):
-    token_logprobs = []
-    with torch.no_grad():
-        prompt = prompt.to(device)
-        output = model(prompt)
-        for i,predicted_token_id in enumerate(prompt[0]):
-            logits = output.logits[0,i,:] # output.logits: (bs, tokens, vocab)
-            logprob = F.log_softmax(logits, dim=-1)[predicted_token_id].item() # Do not apply -sign to match token logprobs returned from openai API
-            token_logprobs.append(logprob)
-    return token_logprobs
 
 def get_llama_logits(model, prompt, device): 
 
