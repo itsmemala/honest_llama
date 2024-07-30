@@ -385,7 +385,7 @@ def main():
         ]
         optimizer = torch.optim.AdamW(optimizer_grouped_parameters) #torch.optim.AdamW(optimizer_grouped_parameters)
         # optimizer = torch.optim.Adam(nlinear_model.parameters())
-        warmup_period = 5
+        warmup_period = 2
         scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
         scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=args.epochs-warmup_period)
         scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
