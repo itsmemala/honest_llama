@@ -236,7 +236,7 @@ def main():
     
     # print(np.corrcoef(rouge_scores,squad_scores))
     # print(np.corrcoef(test_rouge_scores,test_squad_scores))
-    print(num_samples_with_no_var, test_num_samples_with_no_var)
+    # print(num_samples_with_no_var, test_num_samples_with_no_var)
 
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
 
