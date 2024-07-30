@@ -505,8 +505,8 @@ def tokenized_mi_v2(file_path, tokenizer):
     
     all_prompts, all_tokenized_prompts, resp_tokenized = [], [], []
     answer_token_idxes = []
-    for i in sampled_responses.index:
-        random.seed(i)
+    for i,context_id in enumerate(sampled_responses.index):
+        random.seed(context_id)
         eg_idx = random.sample(train_reflection_indexes,4)
         prompt = "Below are a few examples of how a therapist responds to a client given the context of their previous exchanges. Learn from these examples and write the therapist response for the last example. "
         prompt += "# Example 1 ## Context: " + train_data[eg_idx[0]]['prompt'] + " ## Response: " + train_data[eg_idx[0]]['completion'] + " "
@@ -514,7 +514,7 @@ def tokenized_mi_v2(file_path, tokenizer):
         prompt += "# Example 3 ## Context: " + train_data[eg_idx[2]]['prompt'] + " ## Response: " + train_data[eg_idx[2]]['completion'] + " "
         prompt += "# Example 4 ## Context: " + train_data[eg_idx[3]]['prompt'] + " ## Response: " + train_data[eg_idx[3]]['completion'] + " "
         # prompt += "# Example 5 ## Context: " + train_data[eg_idx[4]]['prompt'] + " ## Response: " + train_data[eg_idx[4]]['completion'] + " "
-        context = sampled_responses[sampled_responses.index==i]['dialogue_context'][i]
+        context = sampled_responses[sampled_responses.index==context_id]['dialogue_context'][context_id]
         formatted_context = ''
         text = context
         while '{"' in text:
