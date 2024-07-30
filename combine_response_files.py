@@ -19,40 +19,62 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
-    
-    greedy_labels_data = []
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_labels_data.append(json.loads(line))
-    greedy_labels_data = greedy_labels_data[:2000]
-    sampled_labels_data = []
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_labels_data.append(json.loads(line))
-    for i,g_row in enumerate(greedy_labels_data):
-        sampled_labels_data[i]['rouge1_to_target_response11'] = g_row['rouge1_to_target']
-        
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'w') as outfile:
-        for entry in sampled_labels_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
 
-    greedy_resp_data = []
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_train5000.json', 'r') as read_file:
+    prompt_wise_labels = []
+    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'r') as read_file:
         for line in read_file:
-            greedy_resp_data.append(json.loads(line))
-    greedy_resp_data = greedy_resp_data[:2000]
-    sampled_resp_data = []
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_train2000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_resp_data.append(json.loads(line))
-    for i,g_row in enumerate(greedy_resp_data):
-        sampled_resp_data[i]['response11'] = g_row['response1']
+            data = json.loads(line)
+            labels = []
+            for j in range(1,num_samples+1,1):
+                label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1
+                labels.append(label)
+            prompt_wise_labels.append(labels)
+    
+    homo_prompts, hetero_prompts = [], []
+    all_hallu_prompts, all_nh_prompts = [], []
+    for i,labels in enumerate(prompt_wise_labels):
+        if sum(labels)==0 or sum(labels)==len(labels):
+            homo_prompts.append(i)
+            if sum(labels)==len(labels): all_hallu_prompts.append(i)
+            if sum(labels)==0: all_nh_prompts.append(i)
+        else:
+            hetero_prompts.append(i)
+    print(len(homo_prompts),len(hetero_prompts))
+    print(len(all_hallu_prompts),len(all_nh_prompts))
+    
+    # greedy_labels_data = []
+    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_labels_data.append(json.loads(line))
+    # greedy_labels_data = greedy_labels_data[:2000]
+    # sampled_labels_data = []
+    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_labels_data.append(json.loads(line))
+    # for i,g_row in enumerate(greedy_labels_data):
+    #     sampled_labels_data[i]['rouge1_to_target_response11'] = g_row['rouge1_to_target']
         
-    with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_train2000.json', 'w') as outfile:
-        for entry in sampled_resp_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'w') as outfile:
+    #     for entry in sampled_labels_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
+
+    # greedy_resp_data = []
+    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_greedy_responses_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_resp_data.append(json.loads(line))
+    # greedy_resp_data = greedy_resp_data[:2000]
+    # sampled_resp_data = []
+    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_train2000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_resp_data.append(json.loads(line))
+    # for i,g_row in enumerate(greedy_resp_data):
+    #     sampled_resp_data[i]['response11'] = g_row['response1']
+        
+    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampledplus_responses_train2000.json', 'w') as outfile:
+    #     for entry in sampled_resp_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
 
     # labels_data = []
