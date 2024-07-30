@@ -22,6 +22,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from sklearn.linear_model import LogisticRegression
 import spacy
 import pickle
+import random
 from functools import partial
 
 from truthfulqa import utilities, models, metrics
