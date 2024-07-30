@@ -526,11 +526,11 @@ def tokenized_mi_v2(file_path, tokenizer):
             text = text.split('"}',1)[1]
         prompt += "# Example 5 ## Context: " + formatted_context + " ## Response: "
         for resp_id in [1,2,3,4,5,6,7,8,9]:
+            answer = sampled_responses[sampled_responses.index==context_id]['response'+str(resp_id)][context_id]
             try:
-                answer = sampled_responses[sampled_responses.index==context_id]['response'+str(resp_id)][context_id]
+                full_prompt = prompt + answer
             except TypeError: # Some prompts have fewer samples
                 continue
-            full_prompt = prompt + answer
             all_prompts.append(full_prompt)
             tokenized_prompt = tokenizer(full_prompt, return_tensors = 'pt').input_ids
             all_tokenized_prompts.append(tokenized_prompt)
