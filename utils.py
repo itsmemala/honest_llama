@@ -536,7 +536,7 @@ def tokenized_mi_v2(file_path, tokenizer):
             resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in tokenized_prompt[0]])
             answer_token_idxes.append(len(tokenizer(prompt, return_tensors = 'pt').input_ids[0]))
     
-     return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
+    return all_prompts, all_tokenized_prompts, answer_token_idxes, resp_tokenized
 
 
 def get_token_tags(responses,resp_tokenized):
