@@ -386,7 +386,7 @@ def main():
         optimizer = torch.optim.AdamW(optimizer_grouped_parameters) #torch.optim.AdamW(optimizer_grouped_parameters)
         # optimizer = torch.optim.Adam(nlinear_model.parameters())
         steps_per_epoch = int(len(train_set_idxs)/args.bs)  # number of steps in an epoch
-        warmup_period = steps_per_epoch * 2
+        warmup_period = steps_per_epoch * 5
         T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
         scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
         scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)

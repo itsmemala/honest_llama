@@ -99,7 +99,7 @@ python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file
 
 python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file_name trivia_qa_sampledplus_responses_train2000 --train_labels_file_name trivia_qa_sampledplus_responses_labels_train2000 --test_file_name trivia_qa_greedy_responses_validation1800 --test_labels_file_name trivia_qa_greedy_responses_labels_validation1800 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method transformer_supcon_hallu_pos --bs 275 --epochs 50 --lr 0.0005 --norm_input True --save_probes True --save_path ~/honest_llama_data --fast_mode True --num_samples 11 --no_batch_sampling True --use_pe True
 
-python plot_curves.py alpaca_7B trivia_qa --save_path ~/Desktop/honest_llama_data --probes_file_name T_alpaca_7B_trivia_qa_greedy_responses_train20000_20000_1_layer_answer_last_transformer_hallu_pos_bs128_epochs100_0.0005_False --using_act layer --token answer_last --method transformer --bs 128 --lr 0.0005 --norm_input True --tag always_norm_input
+python plot_curves.py alpaca_7B trivia_qa --save_path ~/Desktop/honest_llama_data --probes_file_name T_alpaca_7B_trivia_qa_greedy_responses_train20000_20000_1_layer_answer_last_transformer_hallu_pos_bs128_epochs30_0.0005_False --using_act layer --token answer_last --method transformer --bs 128 --lr 0.0005 --norm_input True --tag always_norm_input
 
 ####################
 
