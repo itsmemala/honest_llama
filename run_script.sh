@@ -6,7 +6,7 @@ source activate iti
 
 #Run your code
 
-cd honest_llama
+# cd honest_llama
 #python get_activations.py hl_llama_7B strqa --token answer_last --file_name strqa_baseline_responses_train  --device 0 --save_path ~/honest_llama_data
 #python get_activations.py hl_llama_7B strqa --token answer_last --file_name strqa_baseline_responses_test  --device 0 --save_path ~/honest_llama_data
 
