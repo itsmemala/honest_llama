@@ -473,7 +473,13 @@ def main():
                     {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
                     {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
                 ]
-                optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+                optimizer = torch.optim.AdamW(optimizer_grouped_parameters) # torch.optim.Adam(optimizer_grouped_parameters)
+                steps_per_epoch = int(len(train_set_idxs)/args.bs)  # number of steps in an epoch
+                warmup_period = steps_per_epoch * 5
+                T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
+                scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
+                scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
+                scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
                 for epoch in range(args.epochs):
                     epoch_supcon_loss, epoch_train_loss, epoch_spl_loss = 0, 0, 0
                     nlinear_model.train()
@@ -573,6 +579,7 @@ def main():
                         # for n,p in nlinear_model.named_parameters():
                         #     if layer==3 and p.grad is not None: print(step,n,torch.min(p.grad),torch.max(p.grad))
                         optimizer.step()
+                        scheduler.step()
                     if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
                     epoch_train_loss = epoch_train_loss/(step+1)
 
@@ -744,8 +751,12 @@ def main():
                 all_val_preds[i].append(val_preds)
                 all_y_true_val[i].append(y_val_true)
                 all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
-                print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
+                if layer==32:
+                    print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                    print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
+                    log_val_f1 = np.mean(f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                    log_val_recall = recall_score(y_val_true,y_val_pred)
+                    log_val_auc = roc_auc_score(y_val_true, val_preds)
                 pred_correct = 0
                 y_test_pred, y_test_true = [], []
                 test_preds = []
@@ -784,11 +795,15 @@ def main():
                     all_test_preds[i].append(test_preds)
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                    precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
-                    print('AuPR:',"%.3f" % auc(recall,precision))
-                    print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
-                    print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
-                    print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
+                    if layer==32:
+                        precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
+                        print('AuPR:',"%.3f" % auc(recall,precision))
+                        print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                        print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
+                        print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
+                        log_test_f1 = np.mean(f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                        log_test_recall = recall_score(y_test_true, y_test_pred)
+                        log_test_auc = roc_auc_score(y_test_true, test_preds)
                     all_test_logits[i].append(torch.cat(test_logits))
                 all_val_logits[i].append(torch.cat(val_logits))
                 
@@ -889,7 +904,14 @@ def main():
         },
         name=args.plot_name
         )
-        wandb.log({'chart': plt})
+        wandb.log({'chart': plt,
+                    'Val AUC': log_val_auc,
+                    'Val Recall': log_val_recall,
+                    'Val Macro-F1': log_val_f1,
+                    'Test AUC': log_test_auc,
+                    'Test Recall': log_test_recall,
+                    'Test Macro-F1': log_test_f1  
+        })
 
 if __name__ == '__main__':
     main()
