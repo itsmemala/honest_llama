@@ -904,14 +904,9 @@ def main():
         },
         name=args.plot_name
         )
-        wandb.log({'chart': plt,
-                    'Val AUC': log_val_auc,
-                    'Val Recall': log_val_recall,
-                    'Val Macro-F1': log_val_f1,
-                    'Test AUC': log_test_auc,
-                    'Test Recall': log_test_recall,
-                    'Test Macro-F1': log_test_f1  
-        })
+        wandb.log({'chart': plt})
+        wandb.Table(columns=['Val AUC', 'Val Recall', 'Val Macro-F1', 'Test AUC', 'Test Recall', 'Test Macro-F1']
+                    data=[log_val_auc, log_val_recall, log_val_f1, log_test_auc, log_test_recall, log_test_f1])
 
 if __name__ == '__main__':
     main()
