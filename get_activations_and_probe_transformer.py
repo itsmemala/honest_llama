@@ -571,6 +571,9 @@ def main():
         all_val_logits[i].append(torch.cat(val_logits))
         print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
         print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
+        log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0)])
+        log_val_recall = recall_score(y_val_true,y_val_pred)
+        log_val_auc = roc_auc_score(y_val_true, val_preds)
         pred_correct = 0
         y_test_pred, y_test_true = [], []
         test_preds = []
@@ -624,6 +627,9 @@ def main():
             print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
             print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
             print('Samples:',num_test_samples_used)
+            log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0)])
+            log_test_recall = recall_score(y_test_true, y_test_pred)
+            log_test_auc = roc_auc_score(y_test_true, test_preds)
             all_test_logits[i].append(torch.cat(test_logits))
 
             # # Get preds on all tokens
@@ -747,7 +753,11 @@ def main():
         },
         name=args.plot_name
         )
-        wandb.log({'chart': plt})
+        tbl = wandb.Table(columns=['Val AUC', 'Val Recall', 'Val Macro-F1', 'Test AUC', 'Test Recall', 'Test Macro-F1'],
+                    data=[[log_val_auc, log_val_recall, log_val_f1, log_test_auc, log_test_recall, log_test_f1]])
+        wandb.log({'chart': plt,
+                    'metrics': tbl
+        })
 
 if __name__ == '__main__':
     main()
