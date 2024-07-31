@@ -754,7 +754,7 @@ def main():
                 if layer==32:
                     print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
                     print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
-                    log_val_f1 = np.mean(f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                    log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0)])
                     log_val_recall = recall_score(y_val_true,y_val_pred)
                     log_val_auc = roc_auc_score(y_val_true, val_preds)
                 pred_correct = 0
@@ -801,7 +801,7 @@ def main():
                         print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
                         print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
                         print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
-                        log_test_f1 = np.mean(f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                        log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0)])
                         log_test_recall = recall_score(y_test_true, y_test_pred)
                         log_test_auc = roc_auc_score(y_test_true, test_preds)
                     all_test_logits[i].append(torch.cat(test_logits))
