@@ -747,7 +747,7 @@ def main():
         "lr": args.lr,
         "tag": args.tag, #'design_choices',
         "norm_inp": args.norm_input,
-        "with_pe": args.use_pe_pe,
+        "with_pe": args.use_pe,
         # "num_blocks": args.num_blocks,
         # "wd": args.wd
         },
