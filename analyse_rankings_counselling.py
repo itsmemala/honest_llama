@@ -20,6 +20,12 @@ def main():
     gpt_token_logprobs_df = pd.read_excel(f'{args.save_path}/features/token_logprobs.xlsx')
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
 
+    def my_isnan(val):
+        try:
+            return isnan(float(val))
+        except:
+            return False
+
     def f(x):
         try:
             return literal_eval(str(x))
