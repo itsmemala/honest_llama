@@ -37,6 +37,7 @@ def main():
         resp = sampled_responses[sampled_responses.index==context_id]['response'+str(i)][context_id]
         if my_isnan(resp)==False:
             resp = ' '+resp
+            k = len(resp_logprobs)
             for k in range(1,len(resp_logprobs)+1):
                 if ''.join(tokens[j][i-1][:k])==resp:
                     # print(j,i,k)
@@ -47,7 +48,7 @@ def main():
     
     for i in [1,2,3,4,5,6,7,8,9]:
         gpt_token_logprobs_df['Resp'+str(i)] = gpt_token_logprobs_df['Resp'+str(i)].apply(lambda x: f(x))
-        gpt_token_logprobs_df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs) for j,resp_logprobs in enumerate(gpt_token_logprobs_df['Resp'+str(i)].tolist())]
+        gpt_token_logprobs_df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs) for j,resp_logprobs in enumerate(gpt_token_logprobs_df['Resp'+str(i)].tolist())] # Since sometimes GPT continues the generation beyond the original response that we want probs for
 
     groundtruth = []
     for context_id in sampled_responses.index:
