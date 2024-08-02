@@ -35,6 +35,7 @@ def main():
     def get_token_logprobs(i,j,resp_logprobs):
         context_id = sampled_responses.index[j]
         resp = sampled_responses[sampled_responses.index==context_id]['response'+str(i)][context_id]
+        print(resp)
         if my_isnan(resp)==False:
             resp = ' '+resp
             k = len(resp_logprobs)
