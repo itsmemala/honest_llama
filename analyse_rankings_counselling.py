@@ -6,25 +6,6 @@ import torch
 from scipy.stats import rankdata
 import argparse
 
-def f(x):
-    try:
-        return literal_eval(str(x))
-    except Exception as e:
-        return []
-
-def get_token_logprobs(i,j,resp_logprobs):
-    context_id = sampled_responses.index[j]
-    resp = sampled_responses[sampled_responses.index==context_id]['response'+str(i)][context_id]
-    if my_isnan(resp)==False:
-        resp = ' '+resp
-        for k in range(1,len(resp_logprobs)+1):
-            if ''.join(tokens[j][i-1][:k])==resp:
-                print(j,i,k)
-                break
-        return resp_logprobs[:k]
-    else:
-        return resp_logprobs
-
 def main(): 
     """
     
@@ -39,6 +20,25 @@ def main():
     gpt_token_logprobs_df = pd.read_excel(f'{args.save_path}/features/token_logprobs.xlsx')
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
 
+    def f(x):
+        try:
+            return literal_eval(str(x))
+        except Exception as e:
+            return []
+
+    def get_token_logprobs(i,j,resp_logprobs):
+        context_id = sampled_responses.index[j]
+        resp = sampled_responses[sampled_responses.index==context_id]['response'+str(i)][context_id]
+        if my_isnan(resp)==False:
+            resp = ' '+resp
+            for k in range(1,len(resp_logprobs)+1):
+                if ''.join(tokens[j][i-1][:k])==resp:
+                    print(j,i,k)
+                    break
+            return resp_logprobs[:k]
+        else:
+            return resp_logprobs
+    
     for i in [1,2,3,4,5,6,7,8,9]:
         gpt_token_logprobs_df['Resp'+str(i)] = gpt_token_logprobs_df['Resp'+str(i)].apply(lambda x: f(x))
         gpt_token_logprobs_df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs) for j,resp_logprobs in enumerate(gpt_token_logprobs_df['Resp'+str(i)].tolist())]
