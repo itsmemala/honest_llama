@@ -33,17 +33,17 @@ def main():
                 context_truth.append('Resp'+str(resp_id))
         groundtruth.append(context_truth)
 
-    print(len(llama_token_logprobs))
+    # print(len(llama_token_logprobs)) # 78
 
     llama_rankings, gpt_rankings = [], []
+    llama_iterator = 0
     for i,row in gpt_token_logprobs_df.iterrows():
         llama_scores, gpt_scores = [], []
-        llama_iterator = 0
-        print(row,llama_token_logprobs[i])
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
+            print(row[resp_id])
             try:
                 gpt_scores.append(np.mean(row[resp_id]))
-                llama_scores.append(np.mean(llama_token_logprobs[i][llama_iterator]))
+                llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
                 llama_iterator += 1
             except TypeError: # Some prompts have fewer samples
                 continue
