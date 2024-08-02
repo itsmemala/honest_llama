@@ -25,6 +25,9 @@ def main():
     gpt_token_logprobs_df = pd.read_excel(f'{args.save_path}/features/token_logprobs.xlsx')
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
 
+    for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
+        df[resp_id] = df[resp_id].astype(float)
+
     groundtruth = []
     for context_id in sampled_responses.index:
         context_truth = []
@@ -40,9 +43,8 @@ def main():
     for i,row in gpt_token_logprobs_df.iterrows():
         llama_scores, gpt_scores = [], []
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
-            print(row[resp_id])
             # try:
-            gpt_scores.append(np.mean(row[resp_id].astype(float)))
+            gpt_scores.append(np.mean(row[resp_id]))
             llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
             llama_iterator += 1
             # except TypeError: # Some prompts have fewer samples
