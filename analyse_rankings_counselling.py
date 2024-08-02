@@ -74,8 +74,8 @@ def main():
         llama_scores, gpt_scores = [], []
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
             if len(row[resp_id])>0:
-                gpt_scores.append(np.mean(row[resp_id]))
-                llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
+                gpt_scores.append(np.sum(row[resp_id]))
+                llama_scores.append(np.sum(llama_token_logprobs[llama_iterator]))
                 llama_iterator += 1
             else: # Some prompts have fewer samples
                 continue
