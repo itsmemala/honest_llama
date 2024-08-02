@@ -13,11 +13,12 @@ def main():
     """
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('model_name',type=str, default='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
 
-    llama_token_logprobs = np.load(f'{args.save_path}/features/counselling_wudata_hl_llama_7B_token_logprobs.pkl',allow_pickle=True)
+    llama_token_logprobs = np.load(f'{args.save_path}/features/counselling_wudata_{args.model_name}_token_logprobs.pkl',allow_pickle=True)
     gpt_token_logprobs_df = pd.read_excel(f'{args.save_path}/features/token_logprobs.xlsx')
     tokens_df = pd.read_excel(f'{args.save_path}/features/tokens.xlsx')
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
