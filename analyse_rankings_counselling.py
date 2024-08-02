@@ -81,7 +81,7 @@ def main():
                 continue
         llama_rankings.append(rankdata(llama_scores, method='min'))
         gpt_rankings.append(rankdata(gpt_scores, method='min'))
-        corr.append(kendalltau(rankdata(llama_scores, method='min'), rankdata(gpt_scores, method='min')))
+        corr.append(kendalltau(rankdata(llama_scores, method='ordinal'), rankdata(gpt_scores, method='ordinal')))
     
     print('Avg rank correlation:',np.mean(corr))
     
