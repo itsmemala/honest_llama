@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import torch
 from ast import literal_eval
-from scipy.stats import rankdata
+from scipy.stats import rankdata, kendalltau
 import argparse
 
 def main(): 
@@ -68,21 +68,22 @@ def main():
 
     # print(len(llama_token_logprobs)) # 78
 
-    llama_rankings, gpt_rankings = [], []
+    llama_rankings, gpt_rankings, corr = [], [], []
     llama_iterator = 0
     for i,row in gpt_token_logprobs_df.iterrows():
         llama_scores, gpt_scores = [], []
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
-            # try:
-            # print(row[resp_id])
-            gpt_scores.append(np.mean(row[resp_id]))
-            llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
-            llama_iterator += 1
-            # except TypeError: # Some prompts have fewer samples
-            #     continue
-        print(llama_scores, rankdata(llama_scores))
-        print(gpt_scores, rankdata(gpt_scores))
-        break
+            try:
+                gpt_scores.append(np.mean(row[resp_id]))
+                llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
+                llama_iterator += 1
+            except TypeError: # Some prompts have fewer samples
+                continue
+        llama_rankings.append(rankdata(llama_scores))
+        gpt_rankings.append(rankdata(gpt_scores))
+        corr.append(kendalltau(rankdata(llama_scores), rankdata(gpt_scores)))
+    
+    print('Avg rank correlation:',np.mean(corr))
     
 
 
