@@ -44,9 +44,9 @@ def main():
                 llama_iterator += 1
             except TypeError: # Some prompts have fewer samples
                 continue
-        # rankdata(llama_scores)
-        # rankdata(gpt_scores)
-        # break
+        print(llama_scores, rankdata(llama_scores))
+        print(gpt_scores, rankdata(gpt_scores))
+        break
     
 
 
