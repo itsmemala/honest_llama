@@ -41,12 +41,12 @@ def main():
         llama_scores, gpt_scores = [], []
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
             print(row[resp_id])
-            try:
-                gpt_scores.append(np.mean(row[resp_id]))
-                llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
-                llama_iterator += 1
-            except TypeError: # Some prompts have fewer samples
-                continue
+            # try:
+            gpt_scores.append(np.mean(row[resp_id]))
+            llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
+            llama_iterator += 1
+            # except TypeError: # Some prompts have fewer samples
+            #     continue
         print(llama_scores, rankdata(llama_scores))
         print(gpt_scores, rankdata(gpt_scores))
         break
