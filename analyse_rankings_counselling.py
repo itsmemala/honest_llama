@@ -32,25 +32,22 @@ def main():
             if sampled_responses['annotation'+str(resp_id)][context_id]=='Good':
                 context_truth.append('Resp'+str(resp_id))
         groundtruth.append(context_truth)
-    
-    print(llama_token_logprobs.shape)
 
-    # llama_rankings, gpt_rankings = [], []
-    # for i,row in gpt_token_logprobs_df.iterrows():
-    #     llama_scores, gpt_scores = [], []
-    #     llama_iterator = 0
-    #     for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
-    #         try:
-    #             gpt_scores.append(np.mean(row[resp_id]))
-    #             llama_scores.append(llama_token_logprobs[i][llama_iterator])
-    #             llama_iterator += 1
-    #         except TypeError: # Some prompts have fewer samples
-    #             continue
-    #     # rankdata(llama_scores)
-    #     # rankdata(gpt_scores)
-    #     # break
+    llama_rankings, gpt_rankings = [], []
+    for i,row in gpt_token_logprobs_df.iterrows():
+        llama_scores, gpt_scores = [], []
+        llama_iterator = 0
+        for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
+            try:
+                gpt_scores.append(np.mean(row[resp_id]))
+                llama_scores.append(llama_token_logprobs[i][llama_iterator])
+                llama_iterator += 1
+            except TypeError: # Some prompts have fewer samples
+                continue
+        # rankdata(llama_scores)
+        # rankdata(gpt_scores)
+        # break
     
-    # assert len(llama_token_logprobs)==llama_iterator
 
 
 if __name__ == '__main__':
