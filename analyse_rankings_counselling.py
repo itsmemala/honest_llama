@@ -17,7 +17,7 @@ def main():
     args = parser.parse_args()
 
 
-    llama_token_logprobs = np.load(f'{args.save_path}/features/counselling_wudata_llama_7B_token_logprobs.pkl',allow_pickle=True)
+    llama_token_logprobs = np.load(f'{args.save_path}/features/counselling_wudata_hl_llama_7B_token_logprobs.pkl',allow_pickle=True)
     gpt_token_logprobs_df = pd.read_excel(f'{args.save_path}/features/token_logprobs.xlsx')
     tokens_df = pd.read_excel(f'{args.save_path}/features/tokens.xlsx')
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
@@ -74,8 +74,8 @@ def main():
         llama_scores, gpt_scores = [], []
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
             if len(row[resp_id])>0:
-                gpt_scores.append(np.min(row[resp_id]))
-                llama_scores.append(np.min(llama_token_logprobs[llama_iterator]))
+                gpt_scores.append(np.mean(row[resp_id]))
+                llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
                 llama_iterator += 1
             else: # Some prompts have fewer samples
                 continue
