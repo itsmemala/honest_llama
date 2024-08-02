@@ -39,7 +39,7 @@ def main():
             resp = ' '+resp
             for k in range(1,len(resp_logprobs)+1):
                 if ''.join(tokens[j][i-1][:k])==resp:
-                    print(j,i,k)
+                    # print(j,i,k)
                     break
             return resp_logprobs[:k]
         else:
