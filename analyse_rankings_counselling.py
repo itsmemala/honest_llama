@@ -73,11 +73,11 @@ def main():
     for i,row in gpt_token_logprobs_df.iterrows():
         llama_scores, gpt_scores = [], []
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
-            try:
+            if len(row[resp_id])>0:
                 gpt_scores.append(np.mean(row[resp_id]))
                 llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
                 llama_iterator += 1
-            except TypeError: # Some prompts have fewer samples
+            else: # Some prompts have fewer samples
                 continue
         llama_rankings.append(rankdata(llama_scores))
         gpt_rankings.append(rankdata(gpt_scores))
