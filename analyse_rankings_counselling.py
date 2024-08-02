@@ -79,9 +79,9 @@ def main():
                 llama_iterator += 1
             else: # Some prompts have fewer samples
                 continue
-        llama_rankings.append(rankdata(llama_scores))
-        gpt_rankings.append(rankdata(gpt_scores))
-        corr.append(kendalltau(rankdata(llama_scores), rankdata(gpt_scores)))
+        llama_rankings.append(rankdata(llama_scores, method='min'))
+        gpt_rankings.append(rankdata(gpt_scores, method='min'))
+        corr.append(kendalltau(rankdata(llama_scores, method='min'), rankdata(gpt_scores, method='min')))
     
     print('Avg rank correlation:',np.mean(corr))
     
