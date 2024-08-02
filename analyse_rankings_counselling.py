@@ -40,8 +40,8 @@ def main():
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
 
     for i in [1,2,3,4,5,6,7,8,9]:
-        df['Resp'+str(i)] = df['Resp'+str(i)].apply(lambda x: f(x))
-        df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs) for j,resp_logprobs in enumerate(df['Resp'+str(i)].tolist())]
+        gpt_token_logprobs_df['Resp'+str(i)] = gpt_token_logprobs_df['Resp'+str(i)].apply(lambda x: f(x))
+        gpt_token_logprobs_df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs) for j,resp_logprobs in enumerate(gpt_token_logprobs_df['Resp'+str(i)].tolist())]
 
     groundtruth = []
     for context_id in sampled_responses.index:
