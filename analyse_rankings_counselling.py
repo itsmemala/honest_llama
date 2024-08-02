@@ -82,7 +82,7 @@ def main():
         llama_rankings.append(rankdata(llama_scores))
         gpt_rankings.append(rankdata(gpt_scores))
         corr1.append(kendalltau(rankdata(llama_scores), rankdata(gpt_scores)))
-        corr1.append(spearmanr(rankdata(llama_scores), rankdata(gpt_scores)))
+        corr2.append(spearmanr(rankdata(llama_scores), rankdata(gpt_scores)))
     
     print('Avg rank correlation:',np.mean(corr1), np.mean(corr2))
     
