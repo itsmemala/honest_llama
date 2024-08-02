@@ -48,6 +48,7 @@ def main():
     
     for i in [1,2,3,4,5,6,7,8,9]:
         print(gpt_token_logprobs_df['Resp'+str(i)])
+        literal_eval(str(gpt_token_logprobs_df['Resp'+str(i)][0]))
         gpt_token_logprobs_df['Resp'+str(i)] = gpt_token_logprobs_df['Resp'+str(i)].apply(lambda x: f(x))
         print(gpt_token_logprobs_df['Resp'+str(i)])
         gpt_token_logprobs_df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs) for j,resp_logprobs in enumerate(gpt_token_logprobs_df['Resp'+str(i)].tolist())] # Since sometimes GPT continues the generation beyond the original response that we want probs for
