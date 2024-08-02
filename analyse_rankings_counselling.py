@@ -21,7 +21,7 @@ def main():
     args = parser.parse_args()
 
 
-    llama_token_logprobs = torch.from_numpy(np.load(f'{args.save_path}/features/counselling_wudata_token_logprobs.pkl',allow_pickle=True))
+    llama_token_logprobs = torch.from_numpy(np.load(f'{args.save_path}/features/counselling_wudata_llama_7B_token_logprobs.pkl',allow_pickle=True))
     gpt_token_logprobs_df = pd.read_excel(f'{args.save_path}/features/token_logprobs.xlsx')
     sampled_responses = pd.read_excel(file_path+'annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
 
