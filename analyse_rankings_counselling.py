@@ -42,7 +42,7 @@ def main():
         for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
             print(row[resp_id])
             # try:
-            gpt_scores.append(np.mean(row[resp_id]))
+            gpt_scores.append(np.mean(row[resp_id].astype(float)))
             llama_scores.append(np.mean(llama_token_logprobs[llama_iterator]))
             llama_iterator += 1
             # except TypeError: # Some prompts have fewer samples
