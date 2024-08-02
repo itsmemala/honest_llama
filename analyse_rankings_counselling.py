@@ -33,6 +33,8 @@ def main():
                 context_truth.append('Resp'+str(resp_id))
         groundtruth.append(context_truth)
 
+    print(llama_token_logprobs)
+
     llama_rankings, gpt_rankings = [], []
     for i,row in gpt_token_logprobs_df.iterrows():
         llama_scores, gpt_scores = [], []
