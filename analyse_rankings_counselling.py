@@ -19,6 +19,7 @@ def main():
 
     llama_token_logprobs = np.load(f'{args.save_path}/features/counselling_wudata_llama_7B_token_logprobs.pkl',allow_pickle=True)
     gpt_token_logprobs_df = pd.read_excel(f'{args.save_path}/features/token_logprobs.xlsx')
+    tokens_df = pd.read_excel(f'{args.save_path}/features/tokens.xlsx')
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
 
     def my_isnan(val):
@@ -33,7 +34,7 @@ def main():
         except Exception as e:
             return []
 
-    def get_token_logprobs(i,j,resp_logprobs):
+    def get_token_logprobs(i,j,resp_logprobs,tokens):
         context_id = sampled_responses.index[j]
         resp = sampled_responses[sampled_responses.index==context_id]['response'+str(i)][context_id]
         if my_isnan(resp)==False:
@@ -47,12 +48,18 @@ def main():
         else:
             return resp_logprobs
     
+    tokens = [[] for j in range(len(tokens_df['Resp1']))]
+    for i in [1,2,3,4,5,6,7,8,9]:
+        tokens_df['Resp'+str(i)] = tokens_df['Resp'+str(i)].apply(lambda x: f(x))
+        for j,t in enumerate(tokens_df['Resp'+str(i)].tolist()):
+            tokens[j].append(t)
+
     for i in [1,2,3,4,5,6,7,8,9]:
         # print(gpt_token_logprobs_df['Resp'+str(i)])
         # print(literal_eval(str(gpt_token_logprobs_df['Resp'+str(i)][0])))
         gpt_token_logprobs_df['Resp'+str(i)] = gpt_token_logprobs_df['Resp'+str(i)].apply(lambda x: f(x))
         # print(gpt_token_logprobs_df['Resp'+str(i)])
-        gpt_token_logprobs_df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs) for j,resp_logprobs in enumerate(gpt_token_logprobs_df['Resp'+str(i)].tolist())] # Since sometimes GPT continues the generation beyond the original response that we want probs for
+        gpt_token_logprobs_df['Resp'+str(i)] = [get_token_logprobs(i,j,resp_logprobs,tokens) for j,resp_logprobs in enumerate(gpt_token_logprobs_df['Resp'+str(i)].tolist())] # Since sometimes GPT continues the generation beyond the original response that we want probs for
         break
 
     groundtruth = []
