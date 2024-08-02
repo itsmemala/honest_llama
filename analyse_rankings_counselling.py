@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import torch
 from ast import literal_eval
-from scipy.stats import rankdata, kendalltau
+from scipy.stats import rankdata, kendalltau, spearmanr
 import argparse
 
 def main(): 
@@ -68,7 +68,7 @@ def main():
 
     # print(len(llama_token_logprobs)) # 78
 
-    llama_rankings, gpt_rankings, corr = [], [], []
+    llama_rankings, gpt_rankings, corr1, corr2 = [], [], [], []
     llama_iterator = 0
     for i,row in gpt_token_logprobs_df.iterrows():
         llama_scores, gpt_scores = [], []
@@ -79,11 +79,12 @@ def main():
                 llama_iterator += 1
             else: # Some prompts have fewer samples
                 continue
-        llama_rankings.append(rankdata(llama_scores, method='min'))
-        gpt_rankings.append(rankdata(gpt_scores, method='min'))
-        corr.append(kendalltau(rankdata(llama_scores, method='ordinal'), rankdata(gpt_scores, method='ordinal')))
+        llama_rankings.append(rankdata(llama_scores))
+        gpt_rankings.append(rankdata(gpt_scores))
+        corr1.append(kendalltau(rankdata(llama_scores), rankdata(gpt_scores)))
+        corr1.append(spearmanr(rankdata(llama_scores), rankdata(gpt_scores)))
     
-    print('Avg rank correlation:',np.mean(corr))
+    print('Avg rank correlation:',np.mean(corr1), np.mean(corr2))
     
 
 
