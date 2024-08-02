@@ -26,7 +26,7 @@ def main():
     sampled_responses = pd.read_excel(f'{args.save_path}/responses/annotations_filtered.xlsx', index_col=0, sheet_name='Sheet2')
 
     for resp_id in ['Resp1','Resp2','Resp3','Resp4','Resp5','Resp6','Resp7','Resp8','Resp9']:
-        df[resp_id] = df[resp_id].astype(float)
+        gpt_token_logprobs_df[resp_id] = gpt_token_logprobs_df[resp_id].astype(float)
 
     groundtruth = []
     for context_id in sampled_responses.index:
