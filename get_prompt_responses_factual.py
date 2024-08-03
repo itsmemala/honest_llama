@@ -384,7 +384,7 @@ def main():
             if args.dataset_name=='strqa':
                 is_cor, model_answer, model_completion, input_text = [], [], [], []
                 for j in range(args.num_ret_seq):
-                    cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
+                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True)
                     for check_gen in checkgens: # Fix generation stopping errors
                         cur_response = cur_response.split(check_gen)[0]
                     model_completion.append(cur_response)
