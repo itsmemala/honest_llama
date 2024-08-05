@@ -380,7 +380,7 @@ def main():
                 cur_model_answer = clean_answer(cur_response)
                 model_answer = cur_model_answer
                 is_cor = is_correct(cur_model_answer, all_gt_answers[i])
-                input_text.append(all_input_texts[i])
+                input_text = all_input_texts[i]
                 correct_rate += is_cor
                 print('\n# Correct answers:',correct_rate,'\n')
                 result_dict['is_correct'].append(is_cor)
