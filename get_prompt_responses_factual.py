@@ -349,20 +349,20 @@ def main():
     for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
         tokenized_prompt = tokenized_prompt.to(device)
         try:
-            # response = model.generate(tokenized_prompt, max_new_tokens=512,
-            #                             # num_beams=1,
-            #                             temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
-            #                             eos_token_id=period_token_id,
-            #                             bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-            #                             )[:, tokenized_prompt.shape[-1]:]
-            response = []
-            for j in range(args.num_ret_seq):
-                response.append(model.generate(tokenized_prompt, max_new_tokens=512,
+            response = model.generate(tokenized_prompt, max_new_tokens=512,
                                         # num_beams=1,
-                                        temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
+                                        temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
                                         eos_token_id=period_token_id,
                                         bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-                                        )[:, tokenized_prompt.shape[-1]:])
+                                        )[:, tokenized_prompt.shape[-1]:]
+            # response = []
+            # for j in range(args.num_ret_seq):
+            #     response.append(model.generate(tokenized_prompt, max_new_tokens=512,
+            #                             # num_beams=1,
+            #                             temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
+            #                             eos_token_id=period_token_id,
+            #                             bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+            #                             )[:, tokenized_prompt.shape[-1]:])
         except torch.cuda.OutOfMemoryError: # This is for strqa sampling: Skip samples that don't fit on gpu
             is_cor, model_answer, model_completion, input_text = [], [], [], []
             result_dict['is_correct'].append(is_cor)
@@ -384,7 +384,7 @@ def main():
             if args.dataset_name=='strqa':
                 is_cor, model_answer, model_completion, input_text = [], [], [], []
                 for j in range(args.num_ret_seq):
-                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True)
+                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to look through num_ret_seq
                     for check_gen in checkgens: # Fix generation stopping errors
                         cur_response = cur_response.split(check_gen)[0]
                     model_completion.append(cur_response)
@@ -401,7 +401,7 @@ def main():
             else:
                 resp_dict = {'prompt':prompts[i]}
                 for j in range(args.num_ret_seq):
-                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True)
+                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to look through num_ret_seq
                     for check_gen in checkgens: # Fix generation stopping errors
                         cur_response = cur_response.split(check_gen)[0]
                     resp_dict['response'+str(j+1)] = cur_response
