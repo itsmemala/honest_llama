@@ -372,19 +372,35 @@ def main():
             oom_err_idxs.append(i)
             continue
         if args.num_ret_seq==1:
-            response = tokenizer.decode(response[0], skip_special_tokens=True)
-            for check_gen in checkgens: # Fix generation stopping errors
-                # before_trunc = response
-                response = response.split(check_gen)[0]
-                # if before_trunc=="":
-                #     print(i)
-            responses.append({'prompt':prompts[i],
-                                'response1':response})
+            if args.dataset_name=='strqa':
+                cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                for check_gen in checkgens: # Fix generation stopping errors
+                    cur_response = cur_response.split(check_gen)[0]
+                model_completion = cur_response
+                cur_model_answer = clean_answer(cur_response)
+                model_answer = cur_model_answer
+                is_cor = is_correct(cur_model_answer, all_gt_answers[i])
+                input_text.append(all_input_texts[i])
+                correct_rate += is_cor
+                print('\n# Correct answers:',correct_rate,'\n')
+                result_dict['is_correct'].append(is_cor)
+                result_dict['model_answer'].append(model_answer)
+                result_dict['model_completion'].append(model_completion)
+                result_dict['full_input_text'].append(input_text)
+            else:
+                response = tokenizer.decode(response[0], skip_special_tokens=True)
+                for check_gen in checkgens: # Fix generation stopping errors
+                    # before_trunc = response
+                    response = response.split(check_gen)[0]
+                    # if before_trunc=="":
+                    #     print(i)
+                responses.append({'prompt':prompts[i],
+                                    'response1':response})
         else:
             if args.dataset_name=='strqa':
                 is_cor, model_answer, model_completion, input_text = [], [], [], []
                 for j in range(args.num_ret_seq):
-                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to look through num_ret_seq
+                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
                     for check_gen in checkgens: # Fix generation stopping errors
                         cur_response = cur_response.split(check_gen)[0]
                     model_completion.append(cur_response)
@@ -401,7 +417,7 @@ def main():
             else:
                 resp_dict = {'prompt':prompts[i]}
                 for j in range(args.num_ret_seq):
-                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to look through num_ret_seq
+                    cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
                     for check_gen in checkgens: # Fix generation stopping errors
                         cur_response = cur_response.split(check_gen)[0]
                     resp_dict['response'+str(j+1)] = cur_response
