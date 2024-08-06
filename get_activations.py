@@ -201,7 +201,7 @@ def main():
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
     # load_ranges = [(0,len(prompts))]
-    load_ranges = [(16450,16500)]
+    # load_ranges = [(16450,16500)]
     
     for start, end in load_ranges:
         all_layer_wise_activations = []
