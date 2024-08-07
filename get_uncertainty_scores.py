@@ -99,7 +99,7 @@ def main():
         # prompt = sample['prompt']
         # response = sample['response1']
     for prompt,response in tqdm(zip(prompts,responses)):
-        if 'greedy' in args.file_name:
+        if 'greedy' or 'baseline' in args.file_name:
             tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
             # tokenized_input = tokenized_input[tokenized_input != tokenizer.pad_token_id]
             tokenized_prompt = tokenizer([prompt], return_tensors = 'pt').input_ids
