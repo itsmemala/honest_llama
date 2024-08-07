@@ -71,13 +71,17 @@ def main():
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
-        tot = len(test_idxs)
         class_1_perc = sum([test_labels[i] for i in test_idxs])/tot
-        print('majority class:',1 if class_1_perc>0.5 else 0,'(',class_1_perc,')')
-        print('baseline accuracy:',max(sum([test_labels[i] for i in test_idxs])
+        # print('majority class:',1 if class_1_perc>0.5 else 0,'(',class_1_perc,')')
+        tot = len(train_idxs)
+        print('train accuracy:',max(sum([train_labels[i] for i in train_idxs])
+                                  ,tot-sum([train_labels[i] for i in train_idxs])
+                                  )/tot)
+        tot = len(test_idxs)
+        print('test accuracy:',max(sum([test_labels[i] for i in test_idxs])
                                   ,tot-sum([test_labels[i] for i in test_idxs])
                                   )/tot)
-        print('baseline f1:',f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs]),f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs],pos_label=0))
+        # print('baseline f1:',f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs]),f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs],pos_label=0))
 
         print('\nUncertainty Baselines:')
         train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_uncertainty_scores.npy')
