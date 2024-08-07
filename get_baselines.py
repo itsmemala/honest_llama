@@ -151,7 +151,7 @@ def main():
                 recall, pr = [r0 for r0,r1 in recall], [p0 for p0,p1 in pr]
                 print('AUPR for cls0 (=hallu class):',auc(recall,pr))
                 print(sum(np.isnan(test_probs[test_idxs,use_entropy_idx])))
-                print('AuROC for cls0 (=hallu class):',roc_auc_score([test_labels[i] for i in test_idxs][~np.isnan(test_probs[test_idxs,use_entropy_idx])]
+                print('AuROC for cls0 (=hallu class):',roc_auc_score(np.array([test_labels[i] for i in test_idxs])[~np.isnan(test_probs[test_idxs,use_entropy_idx])]
                                                                     ,test_probs[test_idxs,use_entropy_idx][~np.isnan(test_probs[test_idxs,use_entropy_idx])]))
                 print('NANs in test:',sum(np.isnan(test_probs[test_idxs,use_entropy_idx])))
             
