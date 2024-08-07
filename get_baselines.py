@@ -114,9 +114,9 @@ def main():
         print('\nUncertainty Baselines:')
         train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_uncertainty_scores.npy')
         if 'sampled' in args.train_uncertainty_values_file_name:
-            train_probs_unravel = []
+            train_probs_unravel = np.array([])
             for val in train_probs:
-                train_probs_unravel += val
+                train_probs_unravel = np.concatenate((train_probs_unravel,val),axis=0)
             train_probs = train_probs_unravel
             assert len(train_probs)==args.len_dataset
         test_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.test_uncertainty_values_file_name}_uncertainty_scores.npy')
