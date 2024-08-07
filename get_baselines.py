@@ -113,6 +113,12 @@ def main():
 
         print('\nUncertainty Baselines:')
         train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_uncertainty_scores.npy')
+        if 'sampled' in args.train_uncertainty_values_file_name:
+            train_probs_unravel = []
+            for val in train_probs:
+                train_probs_unravel += val
+            train_probs = train_probs_unravel
+            assert len(train_probs)==args.len_dataset
         test_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.test_uncertainty_values_file_name}_uncertainty_scores.npy')
         compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
         for sample_set,use_samples in compute_entropy_with:
