@@ -388,7 +388,7 @@ def main():
                 result_dict['model_completion'].append(model_completion)
                 result_dict['full_input_text'].append(input_text)
             else:
-                response = tokenizer.decode(response[0], skip_special_tokens=True)
+                response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
                 for check_gen in checkgens: # Fix generation stopping errors
                     # before_trunc = response
                     response = response.split(check_gen)[0]
