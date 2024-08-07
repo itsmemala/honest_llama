@@ -35,7 +35,7 @@ def main():
     train_labels, test_labels = [], []
     num_samples_with_no_var = 0
     all_hallu_prompts, all_nh_prompts, hetero_prompts_sum = [], [], []
-    if 'baseline' in args.train_labels_file_name:
+    if 'strqa' in args.dataset_name or 'gsm8k' in args.dataset_name:
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
