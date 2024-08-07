@@ -71,7 +71,7 @@ def main():
         train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
         val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
 
-        class_1_perc = sum([test_labels[i] for i in test_idxs])/tot
+        # class_1_perc = sum([test_labels[i] for i in test_idxs])/tot
         # print('majority class:',1 if class_1_perc>0.5 else 0,'(',class_1_perc,')')
         tot = len(train_idxs)
         print('train accuracy:',max(sum([train_labels[i] for i in train_idxs])
