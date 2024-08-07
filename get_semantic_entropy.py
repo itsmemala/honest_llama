@@ -59,7 +59,7 @@ def main():
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
-            prompts.append(data['full_input_text'][i])
+            prompts.append(data['full_input_text'][i][0])
             samples = []
             for j in range(args.num_samples):
                 response = data['model_completion'][i][j] if 'strqa' in args.dataset_name else data['model_answer'][i][j] # For strqa, we want full COT response
