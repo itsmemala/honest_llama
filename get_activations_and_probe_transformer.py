@@ -415,11 +415,11 @@ def main():
         scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
         scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
         scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
-        if 'supcon' in args.method:
-            T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
-            scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
-            scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=10,total_iters=steps_per_epoch*0.1*args.epochs)
-            scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
+        # if 'supcon' in args.method:
+        #     T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
+        #     scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
+        #     scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=10,total_iters=steps_per_epoch*0.1*args.epochs)
+        #     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
         # for epoch in tqdm(range(args.epochs)):
         for epoch in range(args.epochs):
             num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss = 0, 0, 0, 0
