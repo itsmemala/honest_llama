@@ -55,13 +55,16 @@ def main():
 
     print('Loading model responses..')
     prompts, responses = [], []
-    if 'baseline' in args.file_name:
+    if 'strqa' in args.dataset_name or 'gsm8k' in args.dataset_name:
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             prompts.append(data['full_input_text'][i])
-            response = data['model_completion'][i] if 'strqa' in args.dataset_name else data['model_answer'][i] # For strqa, we want full COT response
-            responses.append(response)
+            samples = []
+            for j in range(args.num_samples):
+                response = data['model_completion'][i][j] if 'strqa' in args.dataset_name else data['model_answer'][i][j] # For strqa, we want full COT response
+                samples.append(response)
+            responses.append(samples)
     else:
         # data = []
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
