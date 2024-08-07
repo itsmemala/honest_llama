@@ -41,15 +41,15 @@ def main():
         for i in range(len(data['full_input_text'])):
             sum_over_samples = 0
             if 'sampled' in args.train_labels_file_name:
-                for j in range(num_samples):
+                for j in range(args.num_samples):
                     train_labels.append(1 if data['is_correct'][i][j]==True else 0)
                     sum_over_samples += 1 if data['is_correct'][i][j]==True else 0
-                    if sum_over_samples==0 or sum_over_samples==num_samples: 
+                    if sum_over_samples==0 or sum_over_samples==args.num_samples: 
                         num_samples_with_no_var += 1
-                        if sum_over_samples==num_samples: all_nh_prompts.append(i) # Note: In this file, 1 denotes non-hallu
+                        if sum_over_samples==args.num_samples: all_nh_prompts.append(i) # Note: In this file, 1 denotes non-hallu
                         if sum_over_samples==0: all_hallu_prompts.append(i)
                     else:
-                        hetero_prompts_sum.append(num_samples-sum_over_samples) # Note: In this file, 1 denotes non-hallu
+                        hetero_prompts_sum.append(args.num_samples-sum_over_samples) # Note: In this file, 1 denotes non-hallu
             else:
                 train_labels.append(1 if data['is_correct'][i]==True else 0)
         if args.train_se_labels_file_name is not None:
@@ -66,7 +66,7 @@ def main():
                 if 'greedy' in args.train_labels_file_name:
                     train_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
                 else:
-                    for j in range(1,num_samples+1,1):
+                    for j in range(1,args.num_samples+1,1):
                         train_labels.append(1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0)
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.test_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
@@ -76,7 +76,7 @@ def main():
     
     print(num_samples_with_no_var)
     print(len(all_hallu_prompts),len(all_nh_prompts))
-    if len(hetero_prompts_sum)>0: print(np.histogram(hetero_prompts_sum, bins=num_samples-1))
+    if len(hetero_prompts_sum)>0: print(np.histogram(hetero_prompts_sum, bins=args.num_samples-1))
 
     # Set seed
     np.random.seed(42)
