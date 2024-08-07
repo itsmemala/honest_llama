@@ -184,7 +184,10 @@ def main():
                 sum_over_samples = 0
                 for j in range(1,num_samples+1,1):
                     if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
-                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    try:
+                        if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    except IndexError:
+                        print(i,data['is_correct'][i],j)
                     labels.append(label)
                     sum_over_samples += label
                 if sum_over_samples==0 or sum_over_samples==num_samples: 
