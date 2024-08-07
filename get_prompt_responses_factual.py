@@ -502,7 +502,10 @@ def main():
                 reference_answers = [batch['highlights']]
             for answer in reference_answers:
                 for j in range(args.num_ret_seq):
-                    resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
+                    try:
+                        resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
+                    except IndexError:
+                        print(j)
                     # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
                     # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
                     predictions = [responses[i]['response'+str(j+1)].lstrip()]
