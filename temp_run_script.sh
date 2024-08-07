@@ -1,3 +1,5 @@
+python get_semantic_entropy.py alpaca_7B strqa --num_samples 9 --file_name sampledplus_responses_train --save_path ~/Desktop/honest_llama_data
+
 python get_semantic_entropy.py alpaca_7B trivia_qa --num_samples 11 --file_name sampledplus_responses_train2000 --save_path ~/Desktop/honest_llama_data
 
 # python get_uncertainty_scores.py alpaca_7B nq_open --file_name sampledplus_responses_train2000 --save_path ~/Desktop/honest_llama_data --num_samples 11
