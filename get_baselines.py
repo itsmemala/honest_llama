@@ -77,7 +77,7 @@ def main():
     print(num_samples_with_no_var)
     print(len(all_hallu_prompts),len(all_nh_prompts))
     if len(hetero_prompts_sum)>0: print(np.histogram(hetero_prompts_sum, bins=args.num_samples-1))
-    if args.train_se_labels_file_name is not None: sum([train_se_labels[i] for i in all_hallu_prompts+all_nh_prompts])
+    if args.train_se_labels_file_name is not None: print(sum([train_se_labels[i] for i in all_hallu_prompts+all_nh_prompts]))
 
     # Set seed
     np.random.seed(42)
