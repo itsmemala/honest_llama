@@ -72,7 +72,7 @@ def main():
             for i in range(len(data['full_input_text'])):
                 prompts.append(data['full_input_text'][i][0])
                 samples = []
-                for j in range(1,args.num_samples+1,1):
+                for j in range(args.num_samples):
                     response = data['model_completion'][i][j] if 'strqa' in args.dataset_name else data['model_answer'][i][j] # For strqa, we want full COT response
                     samples.append(response)
                 responses.append(samples)
