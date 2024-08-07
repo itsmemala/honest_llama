@@ -418,7 +418,7 @@ def main():
         if 'supcon' in args.method:
             T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
             scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
-            scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=1)
+            scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=10,total_iters=steps_per_epoch*0.1*args.epochs)
             scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
         # for epoch in tqdm(range(args.epochs)):
         for epoch in range(args.epochs):
