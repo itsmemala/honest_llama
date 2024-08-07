@@ -508,7 +508,7 @@ def main():
                     try:
                         predictions = [responses[i]['response'+str(j+1)].lstrip()]
                     except IndexError:
-                        print(j)
+                        print(responses[i])
                     references = [answer]
                     results = exact_match_metric.compute(predictions=predictions,
                                                             references=references,
