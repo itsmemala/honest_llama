@@ -151,7 +151,7 @@ def main():
                 recall, pr = [r0 for r0,r1 in recall], [p0 for p0,p1 in pr]
                 print('AUPR for cls0 (=hallu class):',auc(recall,pr))
                 print(sum(np.isnan(test_probs[test_idxs,use_entropy_idx])))
-                print('AuROC for cls0 (=hallu class):',roc_auc_score([test_labels[i] for i in test_idxs],test_probs[test_idxs,use_entropy_idx]))
+                print('AuROC for cls0 (=hallu class):',roc_auc_score([test_labels[i] for i in test_idxs],test_probs[test_idxs,use_entropy_idx][~np.isnan(test_probs[test_idxs,use_entropy_idx])]))
             
         # Semantic Entropy
         # train_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
