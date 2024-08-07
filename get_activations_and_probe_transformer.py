@@ -182,12 +182,9 @@ def main():
                 labels.append(label)
             else:
                 sum_over_samples = 0
-                for j in range(1,num_samples+1,1):
+                for j in range(num_samples):
                     if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
-                    try:
-                        if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
-                    except IndexError:
-                        print(i,data['is_correct'][i],j)
+                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
                     labels.append(label)
                     sum_over_samples += label
                 if sum_over_samples==0 or sum_over_samples==num_samples: 
@@ -252,9 +249,9 @@ def main():
                     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                     test_labels.append(label)
     
-    # print(num_samples_with_no_var)
-    # print(len(all_hallu_prompts),len(all_nh_prompts))
-    # print(np.histogram(hetero_prompts_sum, bins=num_samples-1))
+    print(num_samples_with_no_var)
+    print(len(all_hallu_prompts),len(all_nh_prompts))
+    print(np.histogram(hetero_prompts_sum, bins=num_samples-1))
     
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
 
