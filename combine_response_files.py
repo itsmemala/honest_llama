@@ -172,48 +172,48 @@ def main():
     #     response_data = json.load(read_file)
     # print(sum(response_data['is_correct'])/len(response_data['is_correct']))
 
-    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'r') as read_file:
-        train_data = json.load(read_file)
-    train_data_pd = pd.DataFrame.from_dict(train_data)
-    # print(len(train_data_pd))
-    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'r') as read_file:
-        test_data = json.load(read_file)
-    test_data_pd = pd.DataFrame.from_dict(test_data)
-    # print(len(test_data_pd))
-    # print(train_data_pd[:2])
-    with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses.json', 'r') as read_file:
-        response_data = json.load(read_file)
-    response_data_pd = pd.DataFrame.from_dict(response_data)
-    response_data_pd['index'] = response_data_pd.index
-    # print(len(response_data_pd))
-    train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
-    test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
-    # print(train[:2])
-    # print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()),len(response_data_pd['index']))
-    print(len(train),len(test))
-    with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses_train.json', 'w') as outfile:
-        json.dump(train.to_dict(orient='list'), outfile)
-    with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses_test.json', 'w') as outfile:
-        json.dump(test.to_dict(orient='list'), outfile)
-
     # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'r') as read_file:
-    #     greedy_train_data = json.load(read_file)
-    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train.json', 'r') as read_file:
-    #     sampled_train_data = json.load(read_file)
-    # # print(len(sampled_train_data['is_correct']))
-    # # print(sampled_train_data.keys())
-    # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
-    # for i in range(len(sampled_train_data['is_correct'])):
-    #     if len(sampled_train_data['is_correct'][i])>0:
-    #         # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
-    #         result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]])
-    #         result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][i]])
-    #         result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
-    #         result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
+    #     train_data = json.load(read_file)
+    # train_data_pd = pd.DataFrame.from_dict(train_data)
+    # # print(len(train_data_pd))
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'r') as read_file:
+    #     test_data = json.load(read_file)
+    # test_data_pd = pd.DataFrame.from_dict(test_data)
+    # # print(len(test_data_pd))
+    # # print(train_data_pd[:2])
+    # with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses.json', 'r') as read_file:
+    #     response_data = json.load(read_file)
+    # response_data_pd = pd.DataFrame.from_dict(response_data)
+    # response_data_pd['index'] = response_data_pd.index
+    # # print(len(response_data_pd))
+    # train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
+    # test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
+    # # print(train[:2])
+    # # print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()),len(response_data_pd['index']))
+    # print(len(train),len(test))
+    # with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses_train.json', 'w') as outfile:
+    #     json.dump(train.to_dict(orient='list'), outfile)
+    # with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses_test.json', 'w') as outfile:
+    #     json.dump(test.to_dict(orient='list'), outfile)
+
+    with open(f'{args.save_path}/responses/alpaca_7B_strqa_baseline_responses_train.json', 'r') as read_file:
+        greedy_train_data = json.load(read_file)
+    with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses_train.json', 'r') as read_file:
+        sampled_train_data = json.load(read_file)
+    # print(len(sampled_train_data['is_correct']))
+    # print(sampled_train_data.keys())
+    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
+    for i in range(len(sampled_train_data['is_correct'])):
+        if len(sampled_train_data['is_correct'][i])>0:
+            # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
+            result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]])
+            result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][i]])
+            result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
+            result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
     
-    # print(len(result_dict['is_correct'])) # 1831
-    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplus_responses_train.json', 'w') as f:
-    #         json.dump(result_dict, f)
+    print(len(result_dict['is_correct'])) # 1831
+    with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampledplus_responses_train.json', 'w') as f:
+            json.dump(result_dict, f)
     ##
 
     ## tqa_gen
