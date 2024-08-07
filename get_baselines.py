@@ -44,12 +44,12 @@ def main():
                 for j in range(args.num_samples):
                     train_labels.append(1 if data['is_correct'][i][j]==True else 0)
                     sum_over_samples += 1 if data['is_correct'][i][j]==True else 0
-                    if sum_over_samples==0 or sum_over_samples==args.num_samples: 
-                        num_samples_with_no_var += 1
-                        if sum_over_samples==args.num_samples: all_nh_prompts.append(i) # Note: In this file, 1 denotes non-hallu
-                        if sum_over_samples==0: all_hallu_prompts.append(i)
-                    else:
-                        hetero_prompts_sum.append(args.num_samples-sum_over_samples) # Note: In this file, 1 denotes non-hallu
+                if sum_over_samples==0 or sum_over_samples==args.num_samples: 
+                    num_samples_with_no_var += 1
+                    if sum_over_samples==args.num_samples: all_nh_prompts.append(i) # Note: In this file, 1 denotes non-hallu
+                    if sum_over_samples==0: all_hallu_prompts.append(i)
+                else:
+                    hetero_prompts_sum.append(args.num_samples-sum_over_samples) # Note: In this file, 1 denotes non-hallu
             else:
                 train_labels.append(1 if data['is_correct'][i]==True else 0)
         if args.train_se_labels_file_name is not None:
