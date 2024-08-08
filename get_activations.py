@@ -200,7 +200,7 @@ def main():
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(1400/20))] # all responses
 
-    # load_ranges = [(0,len(prompts))]
+    load_ranges = [(0,len(prompts))]
     # load_ranges = [(16450,16500)]
     
     for start, end in load_ranges:
@@ -211,127 +211,127 @@ def main():
 
         print("Getting activations for "+str(start)+" to "+str(end))
         for prompt,token_idx,tagged_idxs in tqdm(zip(tokenized_prompts[start:end],answer_token_idxes[start:end],tagged_token_idxs[start:end])):
-            if args.mlp_l1=='Yes':
-                mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
-                if args.token=='answer_last': #last
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
-                elif args.token=='prompt_last':
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
-                elif args.token=='maxpool_all':
-                    all_mlp_wise_activations.append(np.max(mlp_wise_activations,axis=1))
-                elif 'answer_all' in args.token:
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
-                elif args.token=='all':
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
-                elif args.token=='prompt_last_onwards':
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
-            else:
-                if args.model_name=='flan_33B':
-                    layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
-                else:
-                    layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
-                if args.token=='answer_last': #last
-                    all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
-                    all_head_wise_activations.append(head_wise_activations[:,-1,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
-                elif args.token=='slt': #last
-                    all_layer_wise_activations.append(layer_wise_activations[:,-2,:])
-                    all_head_wise_activations.append(head_wise_activations[:,-2,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,-2,:])
-                elif args.token=='prompt_last':
-                    all_layer_wise_activations.append(layer_wise_activations[:,token_idx-1,:])
-                    all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
-                elif args.token=='least_likely':
-                    # print(print(tokenizer.decode(prompt[0], skip_special_tokens=True)))
-                    # print(tokenizer.decode(prompt[0], skip_special_tokens=True))
-                    least_likely_nll, least_likely_token_idx = 0, token_idx-1
-                    for next_token_idx in range(len(prompt[0][token_idx:])):
-                        predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
-                        predicted_token_id = prompt[0][token_idx+next_token_idx]
-                        part_prompt = prompt[:,:predicting_token_idx]
-                        # print(tokenizer.decode(part_prompt, skip_special_tokens=True))
-                        nll = get_token_nll(model, part_prompt, device, predicted_token_id)
-                        if nll > least_likely_nll:
-                            least_likely_nll = nll
-                            least_likely_token_idx = predicting_token_idx
-                    act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, least_likely_token_idx)
-                    all_layer_wise_activations.append(act.numpy())
-                elif args.token=='random':
-                    # if len(prompt[0][token_idx:])==0: print(tokenizer.decode(prompt[0], skip_special_tokens=True))
-                    random_token_idx = token_idx-1 + np.random.choice(len(prompt[0][token_idx-1:]), 1)
-                    act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, random_token_idx)
-                    all_layer_wise_activations.append(act.numpy())
-                elif args.token=='prompt_last_and_answer_last':
-                    all_layer_wise_activations.append(np.stack((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1))
-                    all_head_wise_activations.append(np.stack((head_wise_activations[:,token_idx-1,:],head_wise_activations[:,-1,:]),axis=1))
-                    all_mlp_wise_activations.append(np.stack((mlp_wise_activations[:,token_idx-1,:],mlp_wise_activations[:,-1,:]),axis=1))
-                elif args.token=='maxpool_all':
-                    all_layer_wise_activations.append(np.max(layer_wise_activations,axis=1))
-                    all_head_wise_activations.append(np.max(head_wise_activations,axis=1))
-                    all_mlp_wise_activations.append(np.max(mlp_wise_activations,axis=1))
-                elif 'answer_first' in args.token:
-                    all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
-                    all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx,:])
-                elif 'answer_all' in args.token:
-                    all_layer_wise_activations.append(layer_wise_activations[:,token_idx:,:])
-                    all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
-                elif args.token=='all':
-                    all_layer_wise_activations.append(layer_wise_activations[:,:,:])
-                    all_head_wise_activations.append(head_wise_activations[:,:,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
-                elif args.token=='prompt_last_onwards':
-                    # all_layer_wise_activations.append(layer_wise_activations[:,:,:])
-                    all_head_wise_activations.append(head_wise_activations[:,token_idx-1:,:])
-                    all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
-                elif args.token=='tagged_tokens' or args.token=='tagged_tokens_and_last':
-                    acts = []
-                    for layer in range(num_layers):
-                        act = get_llama_activations_bau_custom(model, prompt, device, 'layer', layer, args.token, token_idx, tagged_idxs)
-                        acts.append(act)
-                    # print(len(acts),acts[0].shape)
-                    acts = torch.stack(acts)
-                    all_layer_wise_activations.append(acts)
-            # token_logprobs = []
-            # for next_token_idx in range(len(prompt[0][token_idx:])):
-            #     predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
-            #     predicted_token_id = prompt[0][token_idx+next_token_idx]
-            #     part_prompt = prompt[:,:predicting_token_idx]
-            #     # print(tokenizer.decode(part_prompt, skip_special_tokens=True))
-            #     token_logprobs.append(-get_token_nll(model, part_prompt, device, predicted_token_id)) # apply neg to match sign returned by openai API for token logprobs
-            # all_token_logprobs.append(token_logprobs)
+            # if args.mlp_l1=='Yes':
+            #     mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
+            #     if args.token=='answer_last': #last
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+            #     elif args.token=='prompt_last':
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
+            #     elif args.token=='maxpool_all':
+            #         all_mlp_wise_activations.append(np.max(mlp_wise_activations,axis=1))
+            #     elif 'answer_all' in args.token:
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
+            #     elif args.token=='all':
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
+            #     elif args.token=='prompt_last_onwards':
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
+            # else:
+            #     if args.model_name=='flan_33B':
+            #         layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(base_model, prompt, device)
+            #     else:
+            #         layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device)
+            #     if args.token=='answer_last': #last
+            #         all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
+            #         all_head_wise_activations.append(head_wise_activations[:,-1,:])
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+            #     elif args.token=='slt': #last
+            #         all_layer_wise_activations.append(layer_wise_activations[:,-2,:])
+            #         all_head_wise_activations.append(head_wise_activations[:,-2,:])
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,-2,:])
+            #     elif args.token=='prompt_last':
+            #         all_layer_wise_activations.append(layer_wise_activations[:,token_idx-1,:])
+            #         all_head_wise_activations.append(head_wise_activations[:,token_idx-1,:])
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1,:])
+            #     elif args.token=='least_likely':
+            #         # print(print(tokenizer.decode(prompt[0], skip_special_tokens=True)))
+            #         # print(tokenizer.decode(prompt[0], skip_special_tokens=True))
+            #         least_likely_nll, least_likely_token_idx = 0, token_idx-1
+            #         for next_token_idx in range(len(prompt[0][token_idx:])):
+            #             predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
+            #             predicted_token_id = prompt[0][token_idx+next_token_idx]
+            #             part_prompt = prompt[:,:predicting_token_idx]
+            #             # print(tokenizer.decode(part_prompt, skip_special_tokens=True))
+            #             nll = get_token_nll(model, part_prompt, device, predicted_token_id)
+            #             if nll > least_likely_nll:
+            #                 least_likely_nll = nll
+            #                 least_likely_token_idx = predicting_token_idx
+            #         act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, least_likely_token_idx)
+            #         all_layer_wise_activations.append(act.numpy())
+            #     elif args.token=='random':
+            #         # if len(prompt[0][token_idx:])==0: print(tokenizer.decode(prompt[0], skip_special_tokens=True))
+            #         random_token_idx = token_idx-1 + np.random.choice(len(prompt[0][token_idx-1:]), 1)
+            #         act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, random_token_idx)
+            #         all_layer_wise_activations.append(act.numpy())
+            #     elif args.token=='prompt_last_and_answer_last':
+            #         all_layer_wise_activations.append(np.stack((layer_wise_activations[:,token_idx-1,:],layer_wise_activations[:,-1,:]),axis=1))
+            #         all_head_wise_activations.append(np.stack((head_wise_activations[:,token_idx-1,:],head_wise_activations[:,-1,:]),axis=1))
+            #         all_mlp_wise_activations.append(np.stack((mlp_wise_activations[:,token_idx-1,:],mlp_wise_activations[:,-1,:]),axis=1))
+            #     elif args.token=='maxpool_all':
+            #         all_layer_wise_activations.append(np.max(layer_wise_activations,axis=1))
+            #         all_head_wise_activations.append(np.max(head_wise_activations,axis=1))
+            #         all_mlp_wise_activations.append(np.max(mlp_wise_activations,axis=1))
+            #     elif 'answer_first' in args.token:
+            #         all_layer_wise_activations.append(layer_wise_activations[:,token_idx,:])
+            #         all_head_wise_activations.append(head_wise_activations[:,token_idx,:])
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx,:])
+            #     elif 'answer_all' in args.token:
+            #         all_layer_wise_activations.append(layer_wise_activations[:,token_idx:,:])
+            #         all_head_wise_activations.append(head_wise_activations[:,token_idx:,:])
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx:,:])
+            #     elif args.token=='all':
+            #         all_layer_wise_activations.append(layer_wise_activations[:,:,:])
+            #         all_head_wise_activations.append(head_wise_activations[:,:,:])
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,:,:])
+            #     elif args.token=='prompt_last_onwards':
+            #         # all_layer_wise_activations.append(layer_wise_activations[:,:,:])
+            #         all_head_wise_activations.append(head_wise_activations[:,token_idx-1:,:])
+            #         all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
+            #     elif args.token=='tagged_tokens' or args.token=='tagged_tokens_and_last':
+            #         acts = []
+            #         for layer in range(num_layers):
+            #             act = get_llama_activations_bau_custom(model, prompt, device, 'layer', layer, args.token, token_idx, tagged_idxs)
+            #             acts.append(act)
+            #         # print(len(acts),acts[0].shape)
+            #         acts = torch.stack(acts)
+            #         all_layer_wise_activations.append(acts)
+            token_logprobs = []
+            for next_token_idx in range(len(prompt[0][token_idx:])):
+                predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
+                predicted_token_id = prompt[0][token_idx+next_token_idx]
+                part_prompt = prompt[:,:predicting_token_idx]
+                # print(tokenizer.decode(part_prompt, skip_special_tokens=True))
+                token_logprobs.append(-get_token_nll(model, part_prompt, device, predicted_token_id)) # apply neg to match sign returned by openai API for token logprobs
+            all_token_logprobs.append(token_logprobs)
         
         #     break
         # break
 
-        if args.mlp_l1=='Yes':
-            print("Saving mlp l1 activations")
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_l1_{end}.pkl', 'wb') as outfile:
-                pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
-        else:
-            print("Saving layer wise activations")
-            if 'tagged_tokens' in args.token:
-                with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
-                    torch.save(all_layer_wise_activations, outfile, pickle_protocol=pickle.HIGHEST_PROTOCOL)
-            else:
-                # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
-                with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
-                    pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        # if args.mlp_l1=='Yes':
+        #     print("Saving mlp l1 activations")
+        #     with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_l1_{end}.pkl', 'wb') as outfile:
+        #         pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        # else:
+        #     print("Saving layer wise activations")
+        #     if 'tagged_tokens' in args.token:
+        #         with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+        #             torch.save(all_layer_wise_activations, outfile, pickle_protocol=pickle.HIGHEST_PROTOCOL)
+        #     else:
+        #         # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_layer_wise_{end}.npy', all_layer_wise_activations)
+        #         with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_layer_wise_{end}.pkl', 'wb') as outfile:
+        #             pickle.dump(all_layer_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
             
-            print("Saving head wise activations")
-            # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
-                pickle.dump(all_head_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        #     print("Saving head wise activations")
+        #     # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_head_wise_{end}.npy', all_head_wise_activations)
+        #     with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_head_wise_{end}.pkl', 'wb') as outfile:
+        #         pickle.dump(all_head_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-            print("Saving mlp wise activations")
-            # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
-            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
-                pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+        #     print("Saving mlp wise activations")
+        #     # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
+        #     with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
+        #         pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
-        # with open(f'{args.save_path}/features/counselling_wudata_{args.model_name}_token_logprobs.pkl', 'wb') as outfile:
-        #     pickle.dump(all_token_logprobs, outfile, pickle.HIGHEST_PROTOCOL)
+        with open(f'{args.save_path}/features/counselling_wudata_{args.model_name}_token_logprobs.pkl', 'wb') as outfile:
+            pickle.dump(all_token_logprobs, outfile, pickle.HIGHEST_PROTOCOL)
 
     # if 'counselling' not in args.dataset_name and args.dataset_name!='nq_open' and args.dataset_name!='cnn_dailymail' and args.dataset_name!='trivia_qa' and args.dataset_name!='strqa' and args.dataset_name!='gsm8k' and args.mlp_l1=='No':
     #     print("Saving labels")
