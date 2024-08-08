@@ -63,11 +63,19 @@ def main():
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
+                sum_over_samples = 0
                 if 'greedy' in args.train_labels_file_name:
                     train_labels.append(1 if data['rouge1_to_target']>0.3 else 0)
                 else:
                     for j in range(1,args.num_samples+1,1):
                         train_labels.append(1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0)
+                        sum_over_samples += 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0
+                    if sum_over_samples==0 or sum_over_samples==args.num_samples: 
+                        num_samples_with_no_var += 1
+                        if sum_over_samples==args.num_samples: all_nh_prompts.append(i) # Note: In this file, 1 denotes non-hallu
+                        if sum_over_samples==0: all_hallu_prompts.append(i)
+                    else:
+                        hetero_prompts_sum.append(args.num_samples-sum_over_samples) # Note: In this file, 1 denotes non-hallu
         if args.train_se_labels_file_name is not None:
             file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_se_labels_file_name}.npy'
             train_se_labels = np.load(file_path)
