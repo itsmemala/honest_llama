@@ -61,7 +61,9 @@ def main():
             test_labels.append(1 if data['is_correct'][i]==True else 0)
     else:
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.train_labels_file_name}.json', 'r') as read_file:
+            i=-1
             for line in read_file:
+                i += 1
                 data = json.loads(line)
                 sum_over_samples = 0
                 if 'greedy' in args.train_labels_file_name:
