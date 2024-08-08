@@ -68,6 +68,9 @@ def main():
                 else:
                     for j in range(1,args.num_samples+1,1):
                         train_labels.append(1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0)
+        if args.train_se_labels_file_name is not None:
+            file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_se_labels_file_name}.npy'
+            train_se_labels = np.load(file_path)
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.test_labels_file_name}.json', 'r') as read_file:
             for line in read_file:
                 data = json.loads(line)
