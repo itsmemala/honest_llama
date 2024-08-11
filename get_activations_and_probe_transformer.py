@@ -523,6 +523,8 @@ def main():
                 val_preds_batch = torch.sigmoid(outputs.data)
                 val_preds += val_preds_batch.tolist()
                 val_true += targets.tolist()
+                print(inputs,outputs)
+                break
             epoch_val_loss = epoch_val_loss/(step+1)
             supcon_train_loss.append(epoch_supcon_loss)
             train_loss.append(epoch_train_loss)
