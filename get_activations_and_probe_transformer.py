@@ -249,9 +249,9 @@ def main():
                     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                     test_labels.append(label)
     
-    print(num_samples_with_no_var)
-    print(len(all_hallu_prompts),len(all_nh_prompts))
-    print(np.histogram(hetero_prompts_sum, bins=num_samples-1))
+    # print(num_samples_with_no_var)
+    # print(len(all_hallu_prompts),len(all_nh_prompts))
+    # print(np.histogram(hetero_prompts_sum, bins=num_samples-1))
     
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
 
