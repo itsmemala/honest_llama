@@ -481,7 +481,6 @@ def main():
                 scheduler.step()
                 epoch_train_loss += loss.item()
                 # train_loss.append(loss.item())
-                break
             # scheduler.step()
             if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
             epoch_train_loss = epoch_train_loss/(step+1)
@@ -524,16 +523,11 @@ def main():
                 val_preds_batch = torch.sigmoid(outputs.data)
                 val_preds += val_preds_batch.tolist()
                 val_true += targets.tolist()
-                print(inputs,outputs)
-                break
             epoch_val_loss = epoch_val_loss/(step+1)
             supcon_train_loss.append(epoch_supcon_loss)
             train_loss.append(epoch_train_loss)
             val_loss.append(epoch_val_loss)
-            try:
-                val_auc.append(roc_auc_score(val_true, val_preds))
-            except ValueError:
-                print(val_true, val_preds)
+            val_auc.append(roc_auc_score(val_true, val_preds))
             # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
             # print('Samples:',num_samples_used, num_val_samples_used)
             # Choose best model
