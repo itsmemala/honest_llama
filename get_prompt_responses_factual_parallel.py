@@ -252,7 +252,8 @@ def main():
     # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
-    device = "cuda"
+    # device = "cuda"
+    device = accelerator.device
     # device = 'cpu' # for debugging
     # model = model.cpu()
 
@@ -407,7 +408,7 @@ def main():
                         #     print(i)
                     responses.append({'prompt':prompts[i],
                                         'response1':response})
-                    results=[responses]
+                    # results=[responses]
             else:
                 if args.dataset_name=='strqa':
                     is_cor, model_answer, model_completion, input_text = [], [], [], []
@@ -436,7 +437,7 @@ def main():
                         resp_dict['response'+str(j+1)] = cur_response
                         # print(i,j,'Response:',cur_response,'\n')
                     responses.append(resp_dict)
-                    results=[responses]
+                    # results=[responses]
     # collect results from all the GPUs
     results_gathered=gather_object(results)
     print(results_gathered)
