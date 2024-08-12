@@ -95,7 +95,7 @@ def main():
     if args.train_se_labels_file_name is not None: print(sum([train_se_labels[i] for i in all_hallu_prompts+all_nh_prompts]))
     se_scores = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
     hetero_se_scores = se_scores[np.array(hetero_prompts)]
-    print(hetero_se_scores.shape, hetero_prompts_sum.shape)
+    print(hetero_se_scores.shape, len(hetero_prompts_sum.shape))
 
 
     # Set seed
