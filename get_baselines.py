@@ -93,9 +93,13 @@ def main():
     print(len(all_hallu_prompts),len(all_nh_prompts))
     if len(hetero_prompts_sum)>0: print(np.histogram(hetero_prompts_sum, bins=args.num_samples-1))
     if args.train_se_labels_file_name is not None: print(sum([train_se_labels[i] for i in all_hallu_prompts+all_nh_prompts]))
-    se_scores = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
-    hetero_se_scores = se_scores[np.array(hetero_prompts)]
-    print(hetero_se_scores.shape, len(hetero_prompts_sum))
+    try:
+        se_scores = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
+        hetero_se_scores = se_scores[np.array(hetero_prompts)]
+        plt.scatter_plot(hetero_prompts_sum,hetero_se_scores)
+        plt.savefig(f'{args.save_path}/.png')
+    except FileNotFoundError:
+        pass
 
 
     # Set seed
