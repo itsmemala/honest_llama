@@ -253,6 +253,7 @@ def main():
     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
     # device = "cuda"
+    accelerator = Accelerator()
     device = accelerator.device
     # device = 'cpu' # for debugging
     # model = model.cpu()
@@ -352,7 +353,6 @@ def main():
     question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
     # print('Bad word ids:',question_framing_ids)
     # sync GPUs and start the timer
-    accelerator = Accelerator()
     accelerator.wait_for_everyone()
     start=time.time()
     # divide the prompt list onto the available GPUs 
