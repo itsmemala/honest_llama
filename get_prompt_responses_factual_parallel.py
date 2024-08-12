@@ -351,6 +351,7 @@ def main():
     question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
     # print('Bad word ids:',question_framing_ids)
     # sync GPUs and start the timer
+    accelerator = Accelerator()
     accelerator.wait_for_everyone()
     start=time.time()
     # divide the prompt list onto the available GPUs 
