@@ -96,7 +96,7 @@ def main():
     try:
         se_scores = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
         hetero_se_scores = se_scores[np.array(hetero_prompts)]
-        plt.scatter_plot(hetero_prompts_sum,hetero_se_scores)
+        plt.scatter(hetero_prompts_sum,hetero_se_scores)
         plt.savefig(f'{args.save_path}/figures/{args.model_name}_{args.dataset_name}_se_hetero_corr.png')
     except FileNotFoundError:
         pass
