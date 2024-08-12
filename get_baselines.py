@@ -34,7 +34,7 @@ def main():
     
     train_labels, test_labels = [], []
     num_samples_with_no_var = 0
-    all_hallu_prompts, all_nh_prompts, hetero_prompts_sum = [], [], []
+    all_hallu_prompts, all_nh_prompts, hetero_prompts, hetero_prompts_sum = [], [], [], []
     if 'strqa' in args.dataset_name or 'gsm8k' in args.dataset_name:
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.train_labels_file_name}.json', 'r') as read_file:
             data = json.load(read_file)
@@ -49,6 +49,7 @@ def main():
                     if sum_over_samples==args.num_samples: all_nh_prompts.append(i) # Note: In this file, 1 denotes non-hallu
                     if sum_over_samples==0: all_hallu_prompts.append(i)
                 else:
+                    hetero_prompts.append(i)
                     hetero_prompts_sum.append(args.num_samples-sum_over_samples) # Note: In this file, 1 denotes non-hallu
             else:
                 train_labels.append(1 if data['is_correct'][i]==True else 0)
@@ -77,6 +78,7 @@ def main():
                         if sum_over_samples==args.num_samples: all_nh_prompts.append(i) # Note: In this file, 1 denotes non-hallu
                         if sum_over_samples==0: all_hallu_prompts.append(i)
                     else:
+                        hetero_prompts.append(i)
                         hetero_prompts_sum.append(args.num_samples-sum_over_samples) # Note: In this file, 1 denotes non-hallu
         if args.train_se_labels_file_name is not None:
             file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_se_labels_file_name}.npy'
@@ -92,8 +94,8 @@ def main():
     if len(hetero_prompts_sum)>0: print(np.histogram(hetero_prompts_sum, bins=args.num_samples-1))
     if args.train_se_labels_file_name is not None: print(sum([train_se_labels[i] for i in all_hallu_prompts+all_nh_prompts]))
     se_scores = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.train_uncertainty_values_file_name}_semantic_entropy_scores.npy')
-    hetero_se_scores = se_scores[np.array(all_hallu_prompts+all_nh_prompts)]
-    print(hetero_se_scores.shape)
+    hetero_se_scores = se_scores[np.array(hetero_prompts)]
+    print(hetero_se_scores.shape, hetero_prompts_sum.shape)
 
 
     # Set seed
