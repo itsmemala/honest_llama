@@ -316,6 +316,7 @@ def main():
                 except torch.cuda.OutOfMemoryError:
                     device_id += 1
                     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+                    print('Loading on device',device_id)
                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             my_train_acts.append(act)
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
@@ -340,6 +341,7 @@ def main():
     if args.multi_gpu:
         device_id += 1
         device = 'cuda:'+str(device_id) # move to next empty gpu for model processing
+        print('Loading on device',device_id)
 
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
     method_concat = args.method + '_no_bias' if args.no_bias else method_concat
