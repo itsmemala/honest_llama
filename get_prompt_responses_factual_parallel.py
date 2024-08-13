@@ -610,9 +610,10 @@ def main():
     # collect results from all the GPUs
     results_gathered=gather_object(results)
     # print('\n\n',results_gathered)
-    responses=results_gathered
+    result_dict=responses=results_gathered
     
     if accelerator.is_main_process:
+        print('\n\n',results_gathered)
         print('Saving model responses..')
         if args.hallu_check_prompt is None:
             gen_type = 'sampled' if args.do_sample else 'greedy'
