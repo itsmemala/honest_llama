@@ -409,7 +409,7 @@ def main():
                         #     print(i)
                     responses.append({'prompt':prompts[i],
                                         'response1':response})
-                    # results=[responses]
+                    results=responses
             else:
                 if args.dataset_name=='strqa':
                     is_cor, model_answer, model_completion, input_text = [], [], [], []
@@ -438,7 +438,7 @@ def main():
                         resp_dict['response'+str(j+1)] = cur_response
                         # print(i,j,'Response:',cur_response,'\n')
                     responses.append(resp_dict)
-                    # results=[responses]
+                    results=responses
     # collect results from all the GPUs
     results_gathered=gather_object(results)
     print(results_gathered)
