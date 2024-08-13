@@ -429,7 +429,7 @@ def main():
                 +'grade_school_math/data/'+args.use_split+'.jsonl'
         if not os.path.exists(fp):
             download_url(download_path, args.save_path)
-            os.rename(download_path, fp)
+            os.rename(args.save_path+'/'+download_path, fp)
         list_data_dict = load_jsonl_gsm8k(fp, instruction='question', output='answer')
         for sample in list_data_dict[:args.len_dataset]:
             all_gt_answers.append(sample['answer'])
