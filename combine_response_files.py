@@ -71,7 +71,7 @@ def main():
             # outfile.write('\n')
     
     greedy_labels_data = []
-    with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_greedy_responses_labels_train5000.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_greedy_responses_labels_train2000.json', 'r') as read_file:
         for line in read_file:
             greedy_labels_data.append(json.loads(line))
     greedy_labels_data = greedy_labels_data[:2000]
@@ -88,7 +88,7 @@ def main():
             outfile.write('\n')
 
     greedy_resp_data = []
-    with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_greedy_responses_train5000.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_greedy_responses_train2000.json', 'r') as read_file:
         for line in read_file:
             greedy_resp_data.append(json.loads(line))
     greedy_resp_data = greedy_resp_data[:2000]
