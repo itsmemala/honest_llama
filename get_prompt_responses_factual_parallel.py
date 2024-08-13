@@ -249,6 +249,7 @@ def main():
 
     os.environ["CUDA_VISIBILE_DEVICES"] = "0,1,2,3"
     accelerator = Accelerator()
+    accelerator.num_processes=4
 
     print('Loading model..')
     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
