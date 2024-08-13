@@ -359,7 +359,7 @@ def main():
     start=time.time()
     # divide the prompt list onto the available GPUs 
     with accelerator.split_between_processes(tokenized_prompts) as tokenized_prompts_split:
-        for i,tokenized_prompt in enumerate(tokenized_prompts_split):
+        for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts_split)):
             tokenized_prompt = tokenized_prompt.to("cuda")#.to(device)
             try:
                 # response = model.generate(tokenized_prompt, max_new_tokens=512,
