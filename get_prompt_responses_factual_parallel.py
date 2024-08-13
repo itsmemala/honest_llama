@@ -439,6 +439,12 @@ def main():
                         # print(i,j,'Response:',cur_response,'\n')
                     responses.append(resp_dict)
                     results=responses
+        timediff=time.time()-start
+        print("GPU {}: {} prompts received, generated in {} seconds".format(
+            accelerator.process_index,
+            len(prompts),
+            timediff,
+            ))
     # collect results from all the GPUs
     results_gathered=gather_object(results)
     print(results_gathered)
