@@ -557,7 +557,7 @@ def main():
                     result_dict['model_answer'].append(model_answer)
                     result_dict['model_completion'].append(model_completion)
                     result_dict['full_input_text'].append(input_text)
-                    results=[result_dict]
+                    results=result_dict
                 else:
                     response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
                     for check_gen in checkgens: # Fix generation stopping errors
@@ -586,7 +586,7 @@ def main():
                     result_dict['model_answer'].append(model_answer)
                     result_dict['model_completion'].append(model_completion)
                     result_dict['full_input_text'].append(input_text)
-                    results=[result_dict]
+                    results=result_dict
                 else:
                     resp_dict = {'prompt':prompts[i]}
                     for j in range(args.num_ret_seq):
