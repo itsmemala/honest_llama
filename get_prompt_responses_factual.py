@@ -415,13 +415,13 @@ def main():
             tokenized_prompt = tokenizer(input_text, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
     elif args.dataset_name=='gsm8k':
-        fp = os.path.join(args.save_path, 'strategyqa_train.json')
+        fp = os.path.join(args.save_path, 'gsm8k_'+args.use_split+'.json')
         if not os.path.exists(fp):
             download_url(
                 'https://raw.githubusercontent.com/openai/'
                 'grade-school-math/2909d34ef28520753df82a2234c357259d254aa8/'
-                'grade_school_math/data/test.jsonl', args.data_path)
-            os.rename(os.path.join(args.data_path, 'test.jsonl'), fp)
+                'grade_school_math/data/'+args.use_split+'.jsonl', args.save_path)
+            os.rename(os.path.join(args.save_path, 'gsm8k_'+args.use_split+'.jsonl'), fp)
         list_data_dict = load_jsonl_gsm8k(fp, instruction='question', output='answer')
         for sample in list_data_dict[:args.len_dataset]:
             all_gt_answers.append(sample['answer'])
