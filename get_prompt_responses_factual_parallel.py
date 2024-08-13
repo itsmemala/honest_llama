@@ -247,6 +247,7 @@ def main():
     np.random.seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
+    os.environ["CUDA_VISIBILE_DEVICES"] = "0,1,2,3"
     accelerator = Accelerator()
 
     print('Loading model..')
@@ -447,7 +448,7 @@ def main():
             ))
     # collect results from all the GPUs
     results_gathered=gather_object(results)
-    print(results_gathered)
+    print('\n\n',results_gathered)
     
     # batches = [(0,10)]
     # for batch_start,batch_end in batches:
