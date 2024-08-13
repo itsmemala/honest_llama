@@ -443,7 +443,7 @@ def main():
         timediff=time.time()-start
         print("GPU {}: {} prompts received, generated in {} seconds".format(
             accelerator.process_index,
-            len(prompts),
+            len(tokenized_prompts_split),
             timediff,
             ))
     # collect results from all the GPUs
