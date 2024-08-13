@@ -431,6 +431,7 @@ def main():
             download_url(download_path, args.save_path)
             os.rename(args.save_path+'/'+args.use_split+'.jsonl', fp)
         list_data_dict = load_jsonl_gsm8k(fp, instruction='question', output='answer')
+        all_input_texts, all_gt_answers, tokenized_prompts = [], [], []
         for sample in list_data_dict[:args.len_dataset]:
             all_gt_answers.append(sample['answer'])
             input_text = build_prompt(sample['question'], N_SHOT, COT_FLAG, args.do_shuffle, args.dataset_name)
