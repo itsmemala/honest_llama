@@ -428,7 +428,7 @@ def main():
                 'grade_school_math/data/test.jsonl', args.data_path)
             os.rename(os.path.join(args.data_path, 'test.jsonl'), fp)
         list_data_dict = load_jsonl_gsm8k(fp, instruction='question', output='answer')
-        for sample in list_data_dict:
+        for sample in list_data_dict[:args.len_dataset]:
             all_gt_answers.append(sample['answer'])
             input_text = build_prompt(sample['question'], N_SHOT, COT_FLAG, args.do_shuffle, args.dataset_name)
             all_input_texts.append(input_text)
