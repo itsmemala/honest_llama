@@ -416,7 +416,7 @@ def main():
             tokenized_prompts.append(tokenized_prompt)
     elif args.dataset_name=='gsm8k':
         if not '.jsonl' in args.data_path:
-            fp = os.path.join(args.data_path, 'gsm8k_'+str(args.use_split)'.jsonl')
+            fp = os.path.join(args.data_path, 'gsm8k_'+str(args.use_split)+'.jsonl')
         elif os.path.exists(args.data_path):
             fp = args.data_path
         else:
