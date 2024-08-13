@@ -162,6 +162,7 @@ def main():
     device = "cuda"
 
     print("Loading prompts and model responses..")
+    test_labels = []
     if args.dataset_name == 'counselling':
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
