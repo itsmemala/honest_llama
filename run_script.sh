@@ -8,14 +8,22 @@
 
 ## Ablations - transformer probes##
 
-
+##########################################################################
 
 ## HL-Llama-7B NQ ##
 ## Ablations - baseline probes##
 
 ## Ablations - transformer probes##
 
+## Additional - tokens ##
 
+## Main ##
+# python get_activations_and_probe_non_linear_supcon_bce.py hl_llama_7B nq_open --train_file_name nq_open_greedy_responses_train5000 --test_file_name nq_open_greedy_responses_validation1800 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 2000 --num_folds 1 --using_act layer --token answer_last --method individual_linear_hallu_pos --bs 128 --epochs 50 --lr 0.05 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --plot_name linear-n-0.05 --tag main
+# python get_activations_and_probe_non_linear_supcon_bce.py hl_llama_7B nq_open --train_file_name nq_open_sampledplus_responses_train2000 --test_file_name nq_open_greedy_responses_validation1800 --train_labels_file_name nq_open_sampledplus_responses_labels_train2000 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method individual_linear_hallu_pos --bs 128 --epochs 50 --lr 0.05 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --plot_name linear-n*aug-0.05 --tag main --num_samples 11
+# python get_activations_and_probe_transformer.py alpaca_7B hl_llama_7B --train_file_name nq_open_greedy_responses_train5000 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_file_name nq_open_greedy_responses_validation1800 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 2000 --num_folds 1 --using_act layer --token answer_last --method transformer2_hallu_pos --bs 128 --epochs 50 --lr 0.00005 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer-n-0.00005 --tag main
+# python get_activations_and_probe_transformer.py alpaca_7B hl_llama_7B --train_file_name nq_open_sampledplus_responses_train5000 --train_labels_file_name nq_open_sampledplus_responses_labels_train5000 --test_file_name nq_open_greedy_responses_validation1800 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method transformer2_hallu_pos --bs 128 --epochs 50 --lr 0.00005 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer-n*aug-0.00005 --tag main --num_samples 11
+
+##########################################################################
 
 ## Hl-Llama-7B StrQA ##
 ## Ablations - baseline probes##
@@ -43,7 +51,7 @@ python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_n
 # python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_baseline_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 1832 --num_folds 1 --using_act layer --token answer_last --method transformer_supcon_hallu_pos --bs 128 --epochs 300 --lr 0.0005 --norm_input True --use_pe True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer_supcon-n --tag always_norm_input
 python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 16479 --num_folds 1 --using_act layer --token answer_last --method transformer2_supcon_hallu_pos --bs 270 --epochs 300 --lr 0.00005 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer_supcon-n*aug-0.00005 --tag main --num_samples 9 --no_batch_sampling True #--multi_gpu True
 
-
+##########################################################################
 
 ## Alpaca-7B Trivia QA ##
 ## Ablations - baseline probes##
@@ -61,7 +69,7 @@ python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file
 python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file_name trivia_qa_greedy_responses_train5000 --train_labels_file_name trivia_qa_greedy_responses_labels_train5000 --test_file_name trivia_qa_greedy_responses_validation1800 --test_labels_file_name trivia_qa_greedy_responses_labels_validation1800 --len_dataset 2000 --num_folds 1 --using_act layer --token answer_last --method transformer_hallu_pos --bs 128 --epochs 50 --lr 0.0005 --norm_input True --use_pe True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer-n-norm-rawemb-pe-0.0005 --tag ablation
 python get_activations_and_probe_transformer.py alpaca_7B trivia_qa --train_file_name trivia_qa_greedy_responses_train5000 --train_labels_file_name trivia_qa_greedy_responses_labels_train5000 --test_file_name trivia_qa_greedy_responses_validation1800 --test_labels_file_name trivia_qa_greedy_responses_labels_validation1800 --len_dataset 2000 --num_folds 1 --using_act layer --token answer_last --method transformer2_hallu_pos --bs 128 --epochs 50 --lr 0.00005 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer2-n-norm-rawemb-0.00005 --tag ablation
 
-
+##########################################################################
 
 ## Alpaca-7B NQ ##
 ## Ablations - baseline probes##
@@ -85,4 +93,6 @@ python get_activations_and_probe_transformer.py alpaca_7B nq_open --train_file_n
 ## Main ##
 # python get_activations_and_probe_non_linear_supcon_bce.py alpaca_7B nq_open --train_file_name nq_open_greedy_responses_train5000 --test_file_name nq_open_greedy_responses_validation1800 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 2000 --num_folds 1 --using_act layer --token answer_last --method individual_linear_hallu_pos --bs 128 --epochs 50 --lr 0.05 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --plot_name linear-n-0.05 --tag main
 # python get_activations_and_probe_non_linear_supcon_bce.py alpaca_7B nq_open --train_file_name nq_open_sampledplus_responses_train2000 --test_file_name nq_open_greedy_responses_validation1800 --train_labels_file_name nq_open_sampledplus_responses_labels_train2000 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 22000 --num_folds 1 --using_act layer --token answer_last --method individual_linear_hallu_pos --bs 128 --epochs 50 --lr 0.05 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --plot_name linear-n*aug-0.05 --tag main --num_samples 11
-# python get_activations_and_probe_transformer.py alpaca_7B nq_open --train_file_name nq_open_greedy_responses_train5000 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_file_name nq_open_greedy_responses_validation1800 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 2000 --num_folds 1 --using_act layer --token answer_last --method transformer_hallu_pos --bs 128 --epochs 50 --lr 0.00005 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer-n-0.00005 --tag main
+# python get_activations_and_probe_transformer.py alpaca_7B nq_open --train_file_name nq_open_greedy_responses_train5000 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_file_name nq_open_greedy_responses_validation1800 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 2000 --num_folds 1 --using_act layer --token answer_last --method transformer2_hallu_pos --bs 128 --epochs 50 --lr 0.00005 --norm_input True --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True --plot_name transformer-n-0.00005 --tag main
+
+##########################################################################
