@@ -433,8 +433,8 @@ def main():
         list_data_dict = load_jsonl_gsm8k(fp, instruction='question', output='answer')
         all_input_texts, all_gt_answers, tokenized_prompts = [], [], []
         for sample in list_data_dict[:args.len_dataset]:
-            all_gt_answers.append(sample['answer'])
-            input_text = build_prompt(sample['question'], N_SHOT, COT_FLAG, args.do_shuffle, args.dataset_name)
+            all_gt_answers.append(sample['output'])
+            input_text = build_prompt(sample['instruction'], N_SHOT, COT_FLAG, args.do_shuffle, args.dataset_name)
             all_input_texts.append(input_text)
             tokenized_prompt = tokenizer(input_text, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
