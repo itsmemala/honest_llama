@@ -415,12 +415,7 @@ def main():
             tokenized_prompt = tokenizer(input_text, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
     elif args.dataset_name=='gsm8k':
-        if not '.jsonl' in args.data_path:
-            fp = os.path.join(args.data_path, 'gsm8k_'+str(args.use_split)+'.jsonl')
-        elif os.path.exists(args.data_path):
-            fp = args.data_path
-        else:
-            raise ValueError(f"Invalid data path: {args.data_path}")
+        fp = os.path.join(args.save_path, 'strategyqa_train.json')
         if not os.path.exists(fp):
             download_url(
                 'https://raw.githubusercontent.com/openai/'
