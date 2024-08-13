@@ -170,11 +170,12 @@ def main():
             # load_ranges = [(a*20,(a*20)+20) for a in range(int(1800/20)+1) if (a*20)+20>1700] # mlp_l1
             load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # alpaca7B
         else:
-            if '5000' in args.file_name:
-                load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
-            else:
-                load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
+            # if '5000' in args.file_name:
+            #     load_ranges = [(a*100,(a*100)+100) for a in range(int(5000/100))] # train file
+            # else:
+            #     load_ranges = [(a*100,(a*100)+100) for a in range(int(1800/100))] # test file
                 # load_ranges = [(a*50,(a*50)+50) for a in range(int(1800/50))] # test file (only for hallucheck3)
+            load_ranges = [(a*100,(a*100)+100) for a in range(int(len(prompts)/100))]
     elif args.dataset_name=='cnn_dailymail':
         if args.token=='prompt_last_onwards':
             load_ranges = [(a*20,(a*20)+20) for a in range(int(1000/20)+1) if (a*20)+20>520]
