@@ -424,9 +424,9 @@ def main():
             tokenized_prompts.append(tokenized_prompt)
     elif args.dataset_name=='gsm8k':
         fp = os.path.join(args.save_path, 'gsm8k_'+args.use_split+'.json')
-        download_path = 'https://raw.githubusercontent.com/openai/'
-                'grade-school-math/2909d34ef28520753df82a2234c357259d254aa8/'
-                'grade_school_math/data/'+args.use_split+'.jsonl'
+        download_path = 'https://raw.githubusercontent.com/openai/'\
+                +'grade-school-math/2909d34ef28520753df82a2234c357259d254aa8/'\
+                +'grade_school_math/data/'+args.use_split+'.jsonl'
         if not os.path.exists(fp):
             download_url(download_path, args.save_path)
             os.rename(download_path, fp)
