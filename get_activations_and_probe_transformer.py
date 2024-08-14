@@ -398,7 +398,7 @@ def main():
         supcon = True if 'supcon' in args.method else False
         nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, supcon=supcon).to(device)
         if args.retrain_model_path is not None:
-            retrain_model_path = f'{save_path}/probes/models/{args.retrain_model_path}_model{i}'
+            retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
             retrain_model = torch.load(retrain_model_path)
             for n,p in nlinear_model.named_parameters():
                 if 'classifier' not in n:
