@@ -92,6 +92,7 @@ def main():
     parser.add_argument('--no_sep',type=bool, default=False)
     parser.add_argument('--use_pe',type=bool, default=False)
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
+    parser.add_argument('--retrain_model_path',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--norm_input',type=bool, default=False)
@@ -396,6 +397,12 @@ def main():
         n_blocks = 2 if 'transformer2' in args.method else 1
         supcon = True if 'supcon' in args.method else False
         nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, supcon=supcon).to(device)
+        if args.retrain_model_path is not None:
+            retrain_model_path = f'{save_path}/probes/models/{args.retrain_model_path}_model{i}'
+            retrain_model = torch.load(retrain_model_path)
+            for n,p in nlinear_model.named_parameters():
+                if 'classifier' not in n:
+                    nlinear_model[n] = retrain_model[n]
         wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
         criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
         criterion_supcon = NTXentLoss()
