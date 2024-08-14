@@ -399,10 +399,11 @@ def main():
         nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, supcon=supcon).to(device)
         if args.retrain_model_path is not None:
             retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
-            retrain_model = torch.load(retrain_model_path)
-            for n,p in nlinear_model.named_parameters():
-                if 'classifier' not in n:
-                    nlinear_model[n] = retrain_model[n]
+            retrain_model_state_dict = torch.load(retrain_model_path).state_dict()
+            with torch.no_grad():
+                for n,param in nlinear_model.named_parameters():
+                    if 'classifier' not in n:
+                        param.copy_(retrain_model_state_dict[n])
         wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
         criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
         criterion_supcon = NTXentLoss()
