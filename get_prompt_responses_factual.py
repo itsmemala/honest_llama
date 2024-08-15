@@ -530,7 +530,7 @@ def main():
         #     continue
         if args.num_ret_seq==1:
             if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
-                cur_response = tokenizer.decode(response[0], skip_special_tokens=True)
+                cur_response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
                 for check_gen in checkgens: # Fix generation stopping errors
                     cur_response = cur_response.split(check_gen)[0]
                 model_completion = cur_response
