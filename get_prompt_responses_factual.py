@@ -508,7 +508,7 @@ def main():
     question_framing_ids = [tokenizer(eos_token, add_special_tokens=False)['input_ids'] for eos_token in eos_tokens]
     # print('Bad word ids:',question_framing_ids)
     for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts[:1])):
-        print(prompt[i])
+        print(prompts[i])
         tokenized_prompt = tokenized_prompt.to(device)
         # try:
             # response = model.generate(tokenized_prompt, max_new_tokens=512,
