@@ -610,10 +610,9 @@ def main():
     # collect results from all the GPUs
     results_gathered=gather_object(results)
     # print('\n\n',results_gathered)
-    result_dict=responses=results_gathered
     
     if accelerator.is_main_process:
-        print('\n\n',results_gathered)
+        # print('\n\n',results_gathered)
         print('Saving model responses..')
         if args.hallu_check_prompt is None:
             gen_type = 'sampled' if args.do_sample else 'greedy'
@@ -622,10 +621,17 @@ def main():
             save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
         
         if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
+            result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []} #, 'raw_model_generation': []}
+            for k in range(len(results_gathered)): # k = num of gpus/processes
+                result_dict['is_correct'] += results_gathered[k]['is_correct']
+                result_dict['model_answer'] += results_gathered[k]['model_answer']
+                result_dict['model_completion'] += results_gathered[k]['model_completion']
+                result_dict['full_input_text'] += results_gathered[k]['full_input_text']
             with open(save_fname, 'w') as f:
                 json.dump(result_dict, f)
             np.save(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}_oom_idxs.npy',oom_err_idxs)
         else:
+            responses=results_gathered
             with open(save_fname, 'w') as outfile:
                 for entry in responses:
                     json.dump(entry, outfile)
