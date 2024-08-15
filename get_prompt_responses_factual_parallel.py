@@ -491,11 +491,15 @@ def main():
     result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []} #, 'raw_model_generation': []}
     correct_rate = 0
     oom_err_idxs = []
-    if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
+    if args.dataset_name=='strqa':
         # period_token_id = tokenizer("\n\n##")['input_ids'] # is this ok?
         period_token_id = tokenizer("\n")['input_ids'] # is this ok?
         eos_tokens = ["Q:", "\n\n##"]
         checkgens = ["Q:", "\n\n##"]
+    if args.dataset_name=='gsm8k':
+        period_token_id = tokenizer(".")['input_ids']
+        eos_tokens = ["Q:", "\end{code}"]
+        checkgens = ["Q:", "\end{code}"]
     elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
         # period_token_id = tokenizer('. ')['input_ids'][1]
         period_token_id = tokenizer('.')['input_ids']
