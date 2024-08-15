@@ -483,7 +483,7 @@ def main():
     result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []} #, 'raw_model_generation': []}
     correct_rate = 0
     oom_err_idxs = []
-    if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
+    if args.dataset_name=='strqa': # or args.dataset_name=='gsm8k':
         # period_token_id = tokenizer("\n\n##")['input_ids'] # is this ok?
         period_token_id = tokenizer("\n")['input_ids'] # is this ok?
         eos_tokens = ["Q:", "\n\n##"]
