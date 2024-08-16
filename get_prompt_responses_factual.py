@@ -510,29 +510,29 @@ def main():
     for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts)):
         # print(all_input_texts[i])
         tokenized_prompt = tokenized_prompt.to(device)
-        # try:
+        try:
             # response = model.generate(tokenized_prompt, max_new_tokens=512,
             #                             # num_beams=1,
             #                             temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
             #                             eos_token_id=period_token_id,
             #                             bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
             #                             )[:, tokenized_prompt.shape[-1]:]
-        response = []
-        for j in range(args.num_ret_seq):
-            response.append(model.generate(tokenized_prompt, max_new_tokens=512,
-                                    # num_beams=1,
-                                    temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
-                                    eos_token_id=period_token_id,
-                                    bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-                                    )[:, tokenized_prompt.shape[-1]:])
-        # except torch.cuda.OutOfMemoryError: # This is for strqa sampling: Skip samples that don't fit on gpu
-        #     is_cor, model_answer, model_completion, input_text = [], [], [], []
-        #     result_dict['is_correct'].append(is_cor)
-        #     result_dict['model_answer'].append(model_answer)
-        #     result_dict['model_completion'].append(model_completion)
-        #     result_dict['full_input_text'].append(input_text)
-        #     oom_err_idxs.append(i)
-        #     continue
+            response = []
+            for j in range(args.num_ret_seq):
+                response.append(model.generate(tokenized_prompt, max_new_tokens=512,
+                                        # num_beams=1,
+                                        temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
+                                        eos_token_id=period_token_id,
+                                        bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+                                        )[:, tokenized_prompt.shape[-1]:])
+        except torch.cuda.OutOfMemoryError: # This is for strqa sampling: Skip samples that don't fit on gpu
+            is_cor, model_answer, model_completion, input_text = [], [], [], []
+            result_dict['is_correct'].append(is_cor)
+            result_dict['model_answer'].append(model_answer)
+            result_dict['model_completion'].append(model_completion)
+            result_dict['full_input_text'].append(input_text)
+            oom_err_idxs.append(i)
+            continue
         if args.num_ret_seq==1:
             if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
                 cur_response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
