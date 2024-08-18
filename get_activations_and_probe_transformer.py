@@ -550,7 +550,7 @@ def main():
             supcon_train_loss.append(epoch_supcon_loss)
             train_loss.append(epoch_train_loss)
             val_loss.append(epoch_val_loss)
-            val_auc.append()
+            val_auc.append(epoch_val_auc)
             # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
             # print('Samples:',num_samples_used, num_val_samples_used)
             # Choose best model
