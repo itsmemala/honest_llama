@@ -103,7 +103,8 @@ def main():
     parser.add_argument('--bs',type=int, default=4)
     parser.add_argument('--epochs',type=int, default=3)
     parser.add_argument('--lr',type=float, default=0.05)
-    parser.add_argument('--optimizer',type=str, default='Adam')
+    # parser.add_argument('--optimizer',type=str, default='Adam')
+    parser.add_argument('--scheduler',type=str, default='warmup_cosanneal')
     parser.add_argument('--use_class_wgt',type=bool, default=False)
     parser.add_argument('--no_batch_sampling',type=bool, default=False)
     parser.add_argument('--acts_per_file',type=int, default=100)
@@ -434,7 +435,7 @@ def main():
         T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
         scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
         scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
-        scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
+        scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1) if args.scheduler=='static' else torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
         # if 'supcon' in args.method:
         #     T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
         #     scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
