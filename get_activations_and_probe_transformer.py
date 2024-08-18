@@ -105,6 +105,7 @@ def main():
     parser.add_argument('--lr',type=float, default=0.05)
     # parser.add_argument('--optimizer',type=str, default='Adam')
     parser.add_argument('--scheduler',type=str, default='warmup_cosanneal')
+    parser.add_argument('--best_using_auc',type=bool, default=False)
     parser.add_argument('--use_class_wgt',type=bool, default=False)
     parser.add_argument('--no_batch_sampling',type=bool, default=False)
     parser.add_argument('--acts_per_file',type=int, default=100)
@@ -420,7 +421,7 @@ def main():
         
         # Training
         supcon_train_loss, train_loss, val_loss, val_auc = [], [], [], []
-        best_val_loss = torch.inf
+        best_val_loss, best_val_auc = torch.inf, 0
         best_model_state = deepcopy(nlinear_model.state_dict())
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         named_params = list(nlinear_model.named_parameters())
@@ -545,16 +546,22 @@ def main():
                 val_preds += val_preds_batch.tolist()
                 val_true += targets.tolist()
             epoch_val_loss = epoch_val_loss/(step+1)
+            epoch_val_auc = roc_auc_score(val_true, val_preds)
             supcon_train_loss.append(epoch_supcon_loss)
             train_loss.append(epoch_train_loss)
             val_loss.append(epoch_val_loss)
-            val_auc.append(roc_auc_score(val_true, val_preds))
+            val_auc.append()
             # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
             # print('Samples:',num_samples_used, num_val_samples_used)
             # Choose best model
-            if epoch_val_loss < best_val_loss:
-                best_val_loss = epoch_val_loss
-                best_model_state = deepcopy(nlinear_model.state_dict())
+            if args.best_using_auc:
+                if epoch_val_auc > best_val_auc:
+                    best_val_auc = epoch_val_auc
+                    best_model_state = deepcopy(nlinear_model.state_dict())
+            else:
+                if epoch_val_loss < best_val_loss:
+                    best_val_loss = epoch_val_loss
+                    best_model_state = deepcopy(nlinear_model.state_dict())
             # Early stopping
             # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
             # if len(val_loss)>=patience:
