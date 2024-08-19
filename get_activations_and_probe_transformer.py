@@ -75,6 +75,19 @@ def combine_acts(idx,file_name,args):
         act = torch.concatenate([act1[:,None,:],act2[:,None,:],act3[:,None,:]],dim=1)
     return act
 
+def get_best_threshold(val_true, val_preds):
+    best_val_perf, best_t = 0, 0.5
+    for t in [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]:
+        val_pred_at_thres = deepcopy(val_preds) # Deep copy so as to not touch orig values
+        val_pred_at_thres[val_pred_at_thres>t] = 1
+        val_pred_at_thres[val_pred_at_thres<=t] = 0
+        cls1_f1 = f1_score(val_true,val_pred_at_thres)
+        cls0_f1 = f1_score(val_true,val_pred_at_thres,pos_label=0)
+        perf = np.mean((cls1_f1,cls0_f1))
+        if perf>best_val_perf:
+            best_val_perf, best_t = perf, t
+    return best_t
+
 def main(): 
     """
     Specify dataset name as the first command line argument. Current options are 
@@ -106,6 +119,7 @@ def main():
     # parser.add_argument('--optimizer',type=str, default='Adam')
     parser.add_argument('--scheduler',type=str, default='warmup_cosanneal')
     parser.add_argument('--best_using_auc',type=bool, default=False)
+    parser.add_argument('--use_best_val_t',type=bool, default=False)
     parser.add_argument('--use_class_wgt',type=bool, default=False)
     parser.add_argument('--no_batch_sampling',type=bool, default=False)
     parser.add_argument('--acts_per_file',type=int, default=100)
@@ -628,8 +642,10 @@ def main():
         all_val_logits[i].append(torch.cat(val_logits))
         print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
         print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
-        log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0)])
-        log_val_recall = recall_score(y_val_true,y_val_pred)
+        best_val_t = get_best_threshold(y_val_true, val_preds)
+        y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else val_preds
+        log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
+        log_val_recall = recall_score(y_val_true,y_val_pred_opt)
         log_val_auc = roc_auc_score(y_val_true, val_preds)
         pred_correct = 0
         y_test_pred, y_test_true = [], []
@@ -685,8 +701,9 @@ def main():
             print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
             print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
             print('Samples:',num_test_samples_used)
-            log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0)])
-            log_test_recall = recall_score(y_test_true, y_test_pred)
+            y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else test_preds
+            log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
+            log_test_recall = recall_score(y_test_true, y_test_pred_opt)
             log_test_auc = roc_auc_score(y_test_true, test_preds)
             all_test_logits[i].append(torch.cat(test_logits))
 
