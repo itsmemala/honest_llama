@@ -20,6 +20,7 @@ import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from matplotlib import pyplot as plt
 import wandb
@@ -344,11 +345,12 @@ def main():
         if 'sampled' in args.train_file_name:
             num_samples = args.num_samples if args.num_samples is not None else 10
             num_prompts = len(train_idxs)/num_samples
-            train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples]
+            train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
             val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
         else:
-            train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
-            val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+            # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
+            # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+            train_set_idxs, val_set_idxs, _, _ = train_test_split(X, labels, stratify=labels,test_size=0.2)
 
         y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
