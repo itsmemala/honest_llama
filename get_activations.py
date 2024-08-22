@@ -199,7 +199,7 @@ def main():
         # load_ranges = [(16450,16500)]
         # print(load_ranges[-1])
     elif args.dataset_name == 'gsm8k':
-        load_ranges = [(a*20,(a*20)+20) for a in range(int(len(prompts)/20)+1) if (a*20)+20>1400] # all responses
+        load_ranges = [(a*20,(a*20)+20) for a in range(int(len(prompts)/20)+1)] # all responses
 
     # load_ranges = [(0,len(prompts))]
     # load_ranges = [(16450,16500)]
