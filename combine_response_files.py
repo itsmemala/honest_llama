@@ -228,8 +228,8 @@ def main():
         if len(sampled_train_data['is_correct'][i])>0:
             # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
             greedy_i = ''
-            for j,row in enumerate(greedy_train_data):
-                if row['full_input_text']==sampled_train_data['full_input_text'][i]: greedy_i=j # needed to match rows when generated using parallel gpus
+            for j in range(len(greedy_train_data)):
+                if greedy_train_data['full_input_text'][j]==sampled_train_data['full_input_text'][i]: greedy_i=j # needed to match rows when generated using parallel gpus
             result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][greedy_i]])
             result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][greedy_i]])
             result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][greedy_i]])
