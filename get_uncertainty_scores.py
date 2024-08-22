@@ -38,7 +38,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='nq_open', help='dataset for querying the model')
-    parser.add_argument('--num_samples', type=int, default=10)
+    parser.add_argument('--num_samples', type=int, default=1)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -63,7 +63,7 @@ def main():
     if 'strqa' in args.dataset_name or 'gsm8k' in args.dataset_name:
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
             data = json.load(read_file)
-        if 'baseline' in args.file_name:
+        if 'baseline' in args.file_name or args.num_samples==1:
             for i in range(len(data['full_input_text'])):
                 prompts.append(data['full_input_text'][i])
                 response = data['model_completion'][i] if 'strqa' in args.dataset_name else data['model_answer'][i] # For strqa, we want full COT response
