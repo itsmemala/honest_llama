@@ -65,6 +65,7 @@ def main():
             data = json.load(read_file)
         if 'baseline' in args.file_name or args.num_samples==1:
             for i in range(len(data['full_input_text'])):
+                if data['full_input_text'][i]==[]: continue # skip empty lines (i.e. lines that caused oom during generation)
                 prompts.append(data['full_input_text'][i])
                 response = data['model_completion'][i] if 'strqa' in args.dataset_name else data['model_answer'][i] # For strqa, we want full COT response
                 responses.append(response)
