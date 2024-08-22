@@ -385,8 +385,9 @@ def main():
             # train_set_idxs = train_idxs[-int(num_prompts*(1-0.2))*num_samples:] # Last 80%
             val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
         else:
-            train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
-            val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+            # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
+            # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+            train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
 
         y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
         y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
