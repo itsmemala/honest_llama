@@ -454,11 +454,9 @@ def tokenized_from_file_v2(file_path, tokenizer, num_samples=1):
             # answer = data['model_completion'][i]
             answer = data['model_completion'][i] if 'strqa' in file_path else data['model_answer'][i] # For strqa, we want full COT response
             prompt = question + answer
+            if prompt==[]: continue # skip empty lines (i.e. lines that caused oom during generation)
             all_prompts.append(prompt)
-            try:
-                tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
-            except ValueError:
-                print(prompt)
+            tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids
             all_tokenized_prompts.append(tokenized_prompt)
             resp_tokenized.append([tokenizer.decode(input_tokid) for input_tokid in tokenized_prompt[0]])
             answer_token_idxes.append(len(tokenizer(question, return_tensors = 'pt').input_ids[0]))
