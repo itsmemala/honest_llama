@@ -488,8 +488,8 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
-                if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
+                # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 if 'supcon' in args.method:
                     # SupCon backward
@@ -553,8 +553,8 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
-                if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
+                # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                 outputs = nlinear_model(inputs)
                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -629,8 +629,8 @@ def main():
                     inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                 else:
                     inputs = torch.stack(activations,axis=0)
-                if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
+                # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                 y_val_pred += predicted
                 y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
@@ -685,8 +685,8 @@ def main():
                         inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                     else:
                         inputs = torch.stack(activations,axis=0)
-                    if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                    # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
+                    # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                    if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                     predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                     y_test_pred += predicted
                     y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
