@@ -167,6 +167,7 @@ class LogisticRegression_Torch(torch.nn.Module):
 class My_SupCon_NonLinear_Classifier4(nn.Module):
     def __init__(self, input_size, output_size=2, bias=True, use_dropout=False, path=None):
         super().__init__()
+        self.use_dropout = use_dropout
         self.dropout = nn.Dropout(0.2)
         self.linear1 = nn.Linear(input_size, 256)
         self.relu1 = nn.ReLU()
