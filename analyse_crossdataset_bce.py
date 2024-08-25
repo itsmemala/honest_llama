@@ -140,7 +140,7 @@ def main():
         if args.lr_list is not None:
             probes_file_name_list, auc_by_lr = [], []
             for lr in args.lr_list:
-                probes_file_name = args.probes_file_name + lr + '_False'
+                probes_file_name = args.probes_file_name + str(lr) + '_False'
                 probes_file_name_list.append(probes_file_name)
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                 auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model,:,:])))
