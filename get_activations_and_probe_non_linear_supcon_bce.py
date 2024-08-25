@@ -781,7 +781,7 @@ def main():
                 all_val_preds[i].append(val_preds)
                 all_y_true_val[i].append(y_val_true)
                 all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                if layer==32:
+                if layer==num_layers-1:
                     print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
                     print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
                     best_val_t = get_best_threshold(y_val_true, val_preds)
@@ -828,7 +828,7 @@ def main():
                     all_test_preds[i].append(test_preds)
                     all_y_true_test[i].append(y_test_true)
                     all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                    if layer==32:
+                    if layer==num_layers-1:
                         precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
                         print('AuPR:',"%.3f" % auc(recall,precision))
                         print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
