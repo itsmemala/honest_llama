@@ -212,7 +212,7 @@ def main():
     # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
     # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
     # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
-    if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean(np.mean(test_f1_cls0),np.mean(test_f1_cls1)),'\n') # NH, H
+    if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]),'\n') # NH, H
     if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),'\n') # H
     print('Avg AUPR:',np.mean(aupr_by_layer))
     print('Avg AUROC:',np.mean(auroc_by_layer))
