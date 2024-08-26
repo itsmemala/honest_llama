@@ -517,7 +517,7 @@ def main():
                                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                            if arg.using_act=='ah': act = act[head*128:(head*128)+128]
+                            if args.using_act=='ah': act = act[head*128:(head*128)+128]
                             print(act.shape)
                             activations.append(act)
                         inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
@@ -656,7 +656,7 @@ def main():
                                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                            if arg.using_act=='ah': act = act[head*128:(head*128)+128]
+                            if args.using_act=='ah': act = act[head*128:(head*128)+128]
                             activations.append(act)
                         inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
                         if args.token in single_token_types:
@@ -769,7 +769,7 @@ def main():
                                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                            if arg.using_act=='ah': act = act[head*128:(head*128)+128]
+                            if args.using_act=='ah': act = act[head*128:(head*128)+128]
                             activations.append(act)
                         inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                         if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
@@ -817,7 +817,7 @@ def main():
                                         act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                                 else:
                                     act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
-                                if arg.using_act=='ah': act = act[head*128:(head*128)+128]
+                                if args.using_act=='ah': act = act[head*128:(head*128)+128]
                                 activations.append(act)
                             inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                             if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
