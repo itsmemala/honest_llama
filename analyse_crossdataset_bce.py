@@ -220,7 +220,7 @@ def main():
     all_preds = np.stack(all_preds, axis=0)
 
 
-    # print('\n')
+    print('\n')
     if len(labels)>0:
         # print('\nValidating probe performance...')
         # Last layer probe
