@@ -212,27 +212,29 @@ def main():
     # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
     # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
     # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
-    if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]),'\n') # NH, H
-    if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),'\n') # H
-    print('Avg AUPR:',np.mean(aupr_by_layer))
-    print('Avg AUROC:',np.mean(auroc_by_layer))
+    print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+    print(np.mean(test_recall_cls1)) # H
+    print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
+    print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
     print(auroc_by_layer)
     all_preds = np.stack(all_preds, axis=0)
 
 
     print('\n')
     if len(labels)>0:
-        print('\nValidating probe performance...')
+        # print('\nValidating probe performance...')
         # Last layer probe
         confident_sample_pred = []
         for i in range(all_preds.shape[1]):
             sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
             confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
         # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
+        # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
+        print(np.mean(f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)))
+        print(recall_score(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1,:,:]))
-        print('AUPR:',auc(recall,precision))
-        print('AUROC:',roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
+        print(auc(recall,precision))
+        print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
 
         # Best probe from validation data
         confident_sample_pred = []
@@ -240,10 +242,12 @@ def main():
             sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
             confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[np.argmax(val_f1_avg)] else 0)
         # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
+        # print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
+        print(np.mean(f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)))
+        print(recall_score(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[np.argmax(val_f1_avg),:,:]))
-        print('AUPR:',auc(recall,precision))
-        print('AUROC:',roc_auc_score(labels,np.squeeze(all_preds[np.argmax(val_f1_avg),:,:])))
+        print(auc(recall,precision))
+        print(roc_auc_score(labels,np.squeeze(all_preds[np.argmax(val_f1_avg),:,:])))
 
         #####################################################################################################################################
         # Probe selection - a
@@ -288,10 +292,12 @@ def main():
             confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
             confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
         # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
+        # print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
+        print(np.mean(f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)))
+        print(recall_score(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUPR:',auc(recall,precision))
-        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+        print(auc(recall,precision))
+        print(roc_auc_score(labels,confident_sample_probs))
 
         #####################################################################################################################################
         # Probe selection - a
@@ -389,10 +395,12 @@ def main():
             confident_sample_pred.append(maj_vote)
             confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
         # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
+        # print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
+        print(np.mean(f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)))
+        print(recall_score(labels,confident_sample_pred))
         precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print('AUPR:',auc(recall,precision))
-        print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+        print(auc(recall,precision))
+        print(roc_auc_score(labels,confident_sample_probs))
 
         # MC5 Statistics
         # confident_sample_pred = []
