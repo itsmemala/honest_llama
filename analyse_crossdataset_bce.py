@@ -216,11 +216,11 @@ def main():
     print(np.mean(test_recall_cls1)) # H
     print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
     print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-    print(auroc_by_layer)
+    # print(auroc_by_layer)
     all_preds = np.stack(all_preds, axis=0)
 
 
-    print('\n')
+    # print('\n')
     if len(labels)>0:
         # print('\nValidating probe performance...')
         # Last layer probe
