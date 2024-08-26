@@ -518,7 +518,6 @@ def main():
                             else:
                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
                             if args.using_act=='ah': act = act[head*128:(head*128)+128]
-                            print(act.shape)
                             activations.append(act)
                         inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
                         if args.token in single_token_types:
