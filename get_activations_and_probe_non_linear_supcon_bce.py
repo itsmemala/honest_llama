@@ -271,7 +271,7 @@ def main():
     else:
         args.acts_per_file = 100
 
-    single_token_types = ['answer_last','prompt_last','maxpool_all','slt']
+    single_token_types = ['answer_last','prompt_last','maxpool_all','slt','least_likely']
 
 
     # Probe training
