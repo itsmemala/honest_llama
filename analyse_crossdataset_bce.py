@@ -171,6 +171,7 @@ def main():
     excl_layers, incl_layers = [], []
     aupr_by_layer, auroc_by_layer = [], []
     num_models = 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+    print(num_models)
     all_preds = []
     for model in range(num_models):
         best_probes_file_name, all_val_pred, all_val_true, best_t = results_at_best_lr(model)
