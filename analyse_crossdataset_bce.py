@@ -173,7 +173,7 @@ def main():
     num_models = 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
     print(num_models)
     all_preds = []
-    for model in range(num_models):
+    for model in tqdm(range(num_models)):
         best_probes_file_name, all_val_pred, all_val_true, best_t = results_at_best_lr(model)
         best_probes_per_model.append(best_probes_file_name)
         layer_pred_thresholds.append(best_t)
