@@ -128,12 +128,12 @@ def main():
         file_path = f'{args.save_path}/responses/'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_mi_v2(file_path, tokenizer)
     elif args.dataset_name == 'strqa' or args.dataset_name == 'gsm8k' or ('baseline' in args.file_name or 'dola' in args.file_name):
-        num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 8 if 'sampled' in args.file_name else 1
+        num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 9 if 'sampled' in args.file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
-        num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 10 if 'sampled' in args.file_name else 1
+        num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 11 if 'sampled' in args.file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
