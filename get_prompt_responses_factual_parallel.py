@@ -19,7 +19,7 @@ import argparse
 # from peft.tuners.lora import LoraLayer
 import evaluate
 
-from accelerate import Accelerator
+from accelerate import Accelerator, InitProcessGroupKwargs
 from accelerate.utils import gather_object
 import time
 
