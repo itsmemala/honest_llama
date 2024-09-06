@@ -2,6 +2,7 @@ import os
 import torch
 import datasets
 from datasets import load_dataset
+import datetime
 from tqdm import tqdm
 from collections import Counter
 import numpy as np
@@ -389,7 +390,9 @@ def main():
     torch.cuda.manual_seed_all(args.seed)
 
     os.environ["CUDA_VISIBILE_DEVICES"] = "0,1,2,3"
-    accelerator = Accelerator()
+    kwargs = InitProcessGroupKwargs()
+    kwargs.timeout = datetime.timedelta(seconds=7200)
+    accelerator = Accelerator(kwargs_handlers=[kwargs])
 
     print('Loading model..')
     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
@@ -523,20 +526,20 @@ def main():
         for i,tokenized_prompt in enumerate(tqdm(tokenized_prompts_split)):
             tokenized_prompt = tokenized_prompt.to("cuda")#.to(device)
             try:
-                # response = model.generate(tokenized_prompt, max_new_tokens=512,
-                #                             # num_beams=1,
-                #                             temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
-                #                             eos_token_id=period_token_id,
-                #                             bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-                #                             )[:, tokenized_prompt.shape[-1]:]
-                response = []
-                for j in range(args.num_ret_seq):
-                    response.append(model.generate(tokenized_prompt, max_new_tokens=512,
+                response = model.generate(tokenized_prompt, max_new_tokens=512,
                                             # num_beams=1,
-                                            temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
+                                            temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=args.num_ret_seq,
                                             eos_token_id=period_token_id,
                                             bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
-                                            )[:, tokenized_prompt.shape[-1]:])
+                                            )[:, tokenized_prompt.shape[-1]:]
+                # response = []
+                # for j in range(args.num_ret_seq):
+                #     response.append(model.generate(tokenized_prompt, max_new_tokens=512,
+                #                             # num_beams=1,
+                #                             temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
+                #                             eos_token_id=period_token_id,
+                #                             bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+                #                             )[:, tokenized_prompt.shape[-1]:])
             except torch.cuda.OutOfMemoryError: # This is for strqa sampling: Skip samples that don't fit on gpu
                 is_cor, model_answer, model_completion, input_text = [], [], [], []
                 result_dict['is_correct'].append(is_cor)
@@ -546,37 +549,39 @@ def main():
                 oom_err_idxs.append(i)
                 continue
             if args.num_ret_seq==1:
-                if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
-                    cur_response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
-                    for check_gen in checkgens: # Fix generation stopping errors
-                        cur_response = cur_response.split(check_gen)[0]
-                    model_completion = cur_response
-                    cur_model_answer = clean_answer(cur_response) if args.dataset_name=='strqa' else clean_answer_gsm8k(cur_response)
-                    model_answer = cur_model_answer
-                    is_cor = is_correct(cur_model_answer, all_gt_answers[i]) if args.dataset_name=='strqa' else is_correct_gsm8k(cur_model_answer, all_gt_answers[i])
-                    input_text = all_input_texts[i]
-                    correct_rate += is_cor
-                    print('\n# Correct answers:',correct_rate,'\n')
-                    result_dict['is_correct'].append(is_cor)
-                    result_dict['model_answer'].append(model_answer)
-                    result_dict['model_completion'].append(model_completion)
-                    result_dict['full_input_text'].append(input_text)
-                    results=[result_dict]
-                else:
-                    response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
-                    for check_gen in checkgens: # Fix generation stopping errors
-                        # before_trunc = response
-                        response = response.split(check_gen)[0]
-                        # if before_trunc=="":
-                        #     print(i)
-                    responses.append({'prompt':prompts[i],
-                                        'response1':response})
-                    results=responses
+                raise ValueError("num_ret_seq is set to 1.")
+                # if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
+                #     cur_response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                #     for check_gen in checkgens: # Fix generation stopping errors
+                #         cur_response = cur_response.split(check_gen)[0]
+                #     model_completion = cur_response
+                #     cur_model_answer = clean_answer(cur_response) if args.dataset_name=='strqa' else clean_answer_gsm8k(cur_response)
+                #     model_answer = cur_model_answer
+                #     is_cor = is_correct(cur_model_answer, all_gt_answers[i]) if args.dataset_name=='strqa' else is_correct_gsm8k(cur_model_answer, all_gt_answers[i])
+                #     input_text = all_input_texts[i]
+                #     correct_rate += is_cor
+                #     print('\n# Correct answers:',correct_rate,'\n')
+                #     result_dict['is_correct'].append(is_cor)
+                #     result_dict['model_answer'].append(model_answer)
+                #     result_dict['model_completion'].append(model_completion)
+                #     result_dict['full_input_text'].append(input_text)
+                #     results=[result_dict]
+                # else:
+                #     response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                #     for check_gen in checkgens: # Fix generation stopping errors
+                #         # before_trunc = response
+                #         response = response.split(check_gen)[0]
+                #         # if before_trunc=="":
+                #         #     print(i)
+                #     responses.append({'prompt':prompts[i],
+                #                         'response1':response})
+                #     results=responses
             else:
                 if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
                     is_cor, model_answer, model_completion, input_text = [], [], [], []
                     for j in range(args.num_ret_seq):
-                        cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                        # cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                        cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
                         for check_gen in checkgens: # Fix generation stopping errors
                             cur_response = cur_response.split(check_gen)[0]
                         model_completion.append(cur_response)
@@ -594,7 +599,8 @@ def main():
                 else:
                     resp_dict = {'prompt':prompts[i]}
                     for j in range(args.num_ret_seq):
-                        cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                        # cur_response = tokenizer.decode(response[j][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                        cur_response = tokenizer.decode(response[j], skip_special_tokens=True)
                         for check_gen in checkgens: # Fix generation stopping errors
                             cur_response = cur_response.split(check_gen)[0]
                         resp_dict['response'+str(j+1)] = cur_response

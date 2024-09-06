@@ -214,7 +214,7 @@ def main():
                     hetero_prompts_sum.append(sum_over_samples)
         labels = labels[:args.len_dataset]
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
-        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 10 if 'sampled' in args.train_file_name else 1
+        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
         file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
@@ -379,11 +379,11 @@ def main():
         train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
         test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
         if 'sampled' in args.train_file_name:
-            num_samples = args.num_samples if args.num_samples is not None else 10
             num_prompts = len(train_idxs)/num_samples
-            train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
+            # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
             # train_set_idxs = train_idxs[-int(num_prompts*(1-0.2))*num_samples:] # Last 80%
-            val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+            # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+            train_set_prompt_idxs, val_set_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels, stratify=labels,test_size=0.2)
         else:
             # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
             # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])

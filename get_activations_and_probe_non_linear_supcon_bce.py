@@ -158,7 +158,7 @@ def main():
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts = tokenized_mi(file_path, tokenizer)
     elif args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa' or ('baseline' in args.train_file_name or 'dola' in args.train_file_name):
-        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 8 if 'sampled' in args.train_file_name else 1
+        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 9 if 'sampled' in args.train_file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
@@ -189,7 +189,7 @@ def main():
                 if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
                 test_labels.append(label)
     elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
-        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 10 if 'sampled' in args.train_file_name else 1
+        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
         file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
@@ -223,7 +223,7 @@ def main():
                             sum_over_samples += label
                         if sum_over_samples==0 or sum_over_samples==num_samples: num_samples_with_no_var += 1
         labels = labels[:args.len_dataset]
-        num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 10 if 'sampled' in args.test_file_name else 1
+        num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 11 if 'sampled' in args.test_file_name else 1
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
         test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,num_samples)
         if 'se_labels' in args.test_labels_file_name:
@@ -343,10 +343,10 @@ def main():
         test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
         cur_probe_train_idxs = train_idxs
         if 'sampled' in args.train_file_name:
-            num_samples = args.num_samples if args.num_samples is not None else 10
             num_prompts = len(train_idxs)/num_samples
-            train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
-            val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+            # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
+            # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+
         else:
             # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
             # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
