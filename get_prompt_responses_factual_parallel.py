@@ -673,24 +673,40 @@ def main():
                     reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases']
                 elif args.dataset_name=='cnn_dailymail':
                     reference_answers = [batch['highlights']]
-                for answer in reference_answers:
-                    for j in range(args.num_ret_seq):
-                        resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
-                        # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
-                        # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
-                        predictions = [responses[i]['response'+str(j+1)].lstrip()]
-                        references = [answer]
-                        results = exact_match_metric.compute(predictions=predictions,
-                                                                references=references,
-                                                                ignore_case=True,
-                                                                ignore_punctuation=True)
-                        labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
-                        rouge_results = rouge.compute(predictions=predictions, references=references)
-                        for rouge_type in ['rouge1','rouge2','rougeL']:
-                            labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
-                                                                            labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
-                        squad_f1 = my_squad_f1_score(predictions[0],references[0])
-                        labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
+                # for answer in reference_answers:
+                #     for j in range(args.num_ret_seq):
+                #         resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
+                #         # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
+                #         # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
+                #         predictions = [responses[i]['response'+str(j+1)].lstrip()]
+                #         references = [answer]
+                #         results = exact_match_metric.compute(predictions=predictions,
+                #                                                 references=references,
+                #                                                 ignore_case=True,
+                #                                                 ignore_punctuation=True)
+                #         labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
+                #         rouge_results = rouge.compute(predictions=predictions, references=references)
+                #         for rouge_type in ['rouge1','rouge2','rougeL']:
+                #             labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
+                #                                                             labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
+                #         squad_f1 = my_squad_f1_score(predictions[0],references[0])
+                #         labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
+                predictions = [responses[i]['response'+str(j+1)].lstrip() for j in range(args.num_ret_seq) for answer in reference_answers]
+                references = [answer for j in range(args.num_ret_seq) for answer in reference_answers]
+                results = exact_match_metric.compute(predictions=predictions,
+                                                        references=references,
+                                                        ignore_case=True,
+                                                        ignore_punctuation=True)
+                rouge_results = rouge.compute(predictions=predictions, references=references)
+                print(results['exact_match'])
+                for j in range(args.num_ret_seq):
+                    resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
+                    labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
+                    for rouge_type in ['rouge1','rouge2','rougeL']:
+                        labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
+                                                                        labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
+                        # squad_f1 = my_squad_f1_score(predictions[0],references[0])
+                        # labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
 
                 labels.append(labels_dict)
 
