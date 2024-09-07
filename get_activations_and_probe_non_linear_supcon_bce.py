@@ -551,7 +551,7 @@ def main():
                             emb_projection = nlinear_model.projection(norm_emb)
                             emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
                             if 'supconv2' in args.method:
-                                supcon_loss = criterion_supcon(emb_projection,torch.squeeze(targets).to(device))
+                                supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
                             else:
                                 logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
                                 supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
