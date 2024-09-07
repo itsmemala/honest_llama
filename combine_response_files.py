@@ -83,7 +83,7 @@ def main():
         greedy_i = ''
         for k,g_row in enumerate(greedy_resp_data):
             if g_row['prompt']==s_row['prompt']: greedy_i = k
-        sampled_resp_data[i]['response11'] = greedy_labels_data[greedy_i]['response1']
+        sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
         
     with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampledplus_responses_train2000.json', 'w') as outfile:
         for entry in sampled_resp_data:
