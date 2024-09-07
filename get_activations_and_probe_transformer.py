@@ -14,7 +14,7 @@ import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
 from utils import My_Transformer_Layer
-from losses import SupConLoss
+from .losses import SupConLoss
 from copy import deepcopy
 import llama
 import argparse
