@@ -381,9 +381,20 @@ def main():
         if 'sampled' in args.train_file_name:
             num_prompts = len(train_idxs)/num_samples
             # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
-            # train_set_idxs = train_idxs[-int(num_prompts*(1-0.2))*num_samples:] # Last 80%
             # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
-            train_set_prompt_idxs, val_set_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels, stratify=labels,test_size=0.2)
+            labels_sample_dist = []
+            for k in range(num_prompts):
+                sample_dist = sum(labels[(k*num_samples):(k*num_samples)+num_samples])
+                if sample_dist==num_samples or sample_dist==0:
+                    labels_sample_dist.append(0)
+                elif sample_dist <= int(num_samples/3) or sample_dist > int(2*num_samples/3):
+                    labels_sample_dist.append(1)
+                else:
+                    labels_sample_dist.append(2)
+            train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
+            train_set_idxs = np.concatenate([np.arange(k,k+num_samples,1) for k in train_prompt_idxs], axis=0)
+            val_set_idxs = np.concatenate([np.arange(k,k+num_samples,1) for k in val_prompt_idxs], axis=0)
+            assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
         else:
             # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
             # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
