@@ -97,7 +97,6 @@ def main():
         for line in read_file:
             sampled_resp_data.append(json.loads(line))
     for i,g_row in enumerate(greedy_resp_data):
-        print(i)
         sampled_resp_data[i]['response11'] = g_row['response1']
         
     with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampledplus_responses_train2000.json', 'w') as outfile:
