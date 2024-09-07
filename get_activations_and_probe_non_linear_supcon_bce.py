@@ -343,7 +343,7 @@ def main():
         test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
         cur_probe_train_idxs = train_idxs
         if 'sampled' in args.train_file_name:
-            num_prompts = len(train_idxs)/num_samples
+            num_prompts = int(len(train_idxs)/num_samples)
             # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
             # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
             labels_sample_dist = []
