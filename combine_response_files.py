@@ -70,23 +70,6 @@ def main():
     #         json.dump(entry, outfile)
             # outfile.write('\n')
     
-    greedy_labels_data = []
-    with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_labels_data.append(json.loads(line))
-    greedy_labels_data = greedy_labels_data[:2000]
-    sampled_labels_data = []
-    with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_labels_data.append(json.loads(line))
-    for i,g_row in enumerate(greedy_labels_data):
-        sampled_labels_data[i]['rouge1_to_target_response11'] = g_row['rouge1_to_target']
-        
-    with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'w') as outfile:
-        for entry in sampled_labels_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
-
     greedy_resp_data = []
     with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_greedy_responses_train5000.json', 'r') as read_file:
         for line in read_file:
@@ -96,11 +79,34 @@ def main():
     with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampled_responses_train2000.json', 'r') as read_file:
         for line in read_file:
             sampled_resp_data.append(json.loads(line))
-    for i,g_row in enumerate(greedy_resp_data):
-        sampled_resp_data[i]['response11'] = g_row['response1']
+    for i,s_row in enumerate(sampled_resp_data):
+        greedy_i = ''
+        for k,g_row in enumerate(greedy_resp_data):
+            if g_row['prompt']==s_row['prompt']==: greedy_i = k
+        sampled_resp_data[i]['response11'] = greedy_labels_data[greedy_i]['response1']
         
     with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampledplus_responses_train2000.json', 'w') as outfile:
         for entry in sampled_resp_data:
+            json.dump(entry, outfile)
+            outfile.write('\n')
+    
+    greedy_labels_data = []
+    with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
+        for line in read_file:
+            greedy_labels_data.append(json.loads(line))
+    greedy_labels_data = greedy_labels_data[:2000]
+    sampled_labels_data = []
+    with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
+        for line in read_file:
+            sampled_labels_data.append(json.loads(line))
+    for i,s_row in enumerate(sampled_resp_data):
+        greedy_i = ''
+        for k,g_row in enumerate(greedy_resp_data):
+            if g_row['prompt']==s_row['prompt']==: greedy_i = k
+        sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
+        
+    with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampledplus_responses_labels_train2000.json', 'w') as outfile:
+        for entry in sampled_labels_data:
             json.dump(entry, outfile)
             outfile.write('\n')
 
