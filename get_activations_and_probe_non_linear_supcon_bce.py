@@ -14,6 +14,7 @@ import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
 from utils import My_SupCon_NonLinear_Classifier4, LogisticRegression_Torch # , My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier_wProj
+from losses import SupConLoss
 from copy import deepcopy
 import llama
 import argparse
@@ -410,12 +411,12 @@ def main():
                 act_dims = {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                 supcon = True if 'supcon' in args.method else False
-                nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
+                nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                 wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
-                criterion_supcon = NTXentLoss()
+                criterion_supcon = SupConLoss(temperature=args.supcon_temp) if 'supconv2' in args.method else NTXentLoss()
 
                 # Sup-Con training
                 if 'supcon' in args.method:
@@ -545,17 +546,20 @@ def main():
                         # print(torch.mean(inputs, dim=-1).sum())
                         if 'supcon' in args.method:
                             # SupCon backward
-                            emb = nlinear_model.relu1(nlinear_model.linear1(inputs))
+                            emb = nlinear_model.forward_upto_classifier(inputs)
                             norm_emb = F.normalize(emb, p=2, dim=-1)
                             emb_projection = nlinear_model.projection(norm_emb)
                             emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
-                            logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
-                            supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
+                            if 'supconv2' in args.method:
+                                supcon_loss = criterion_supcon(emb_projection,torch.squeeze(targets).to(device))
+                            else:
+                                logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
+                                supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
                             epoch_supcon_loss += supcon_loss.item()
                             supcon_loss.backward()
                             # supcon_train_loss.append(supcon_loss.item())
                             # CE backward
-                            emb = nlinear_model.relu1(nlinear_model.linear1(inputs)).detach()
+                            emb = nlinear_model.forward_upto_classifier(inputs).detach()
                             norm_emb = F.normalize(emb, p=2, dim=-1)
                             outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
                             loss = criterion(outputs, targets.to(device).float())

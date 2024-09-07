@@ -14,6 +14,7 @@ import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
 from utils import My_Transformer_Layer
+from losses import SupConLoss
 from copy import deepcopy
 import llama
 import argparse
@@ -444,7 +445,7 @@ def main():
                         param.copy_(retrain_model_state_dict[n])
         wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
         criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
-        criterion_supcon = NTXentLoss()
+        criterion_supcon = SupConLoss(temperature=args.supcon_temp) if 'supconv2' in args.method else NTXentLoss()
         
         # Training
         supcon_train_loss, train_loss, val_loss, val_auc = [], [], [], []
@@ -508,8 +509,11 @@ def main():
                     norm_emb = F.normalize(emb, p=2, dim=-1)
                     emb_projection = nlinear_model.projection(norm_emb)
                     emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
-                    logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
-                    supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
+                    if 'supconv2' in args.method:
+                        supcon_loss = criterion_supcon(emb_projection,torch.squeeze(targets).to(device))
+                    else:
+                        logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
+                        supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
                     epoch_supcon_loss += supcon_loss.item()
                     supcon_loss.backward()
                     # supcon_train_loss.append(supcon_loss.item())
