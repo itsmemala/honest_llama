@@ -9,6 +9,7 @@ import datasets
 from datasets import load_dataset, Dataset
 from tqdm import tqdm
 import numpy as np
+from collections import Counter
 import statistics
 import pickle
 import json
@@ -396,6 +397,7 @@ def main():
                     labels_sample_dist.append(3)
                 else:
                     labels_sample_dist.append(4)
+            print(Counter(labels_sample_dist))
             if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist==0] = 3
             if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist==1] = 2
             if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist==2] = 1
