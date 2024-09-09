@@ -301,15 +301,6 @@ def main():
     else:
         args.test_acts_per_file = 100
 
-    # Individual probes
-    all_supcon_train_loss = {}
-    all_train_loss, all_val_loss, all_val_auc = {}, {}, {}
-    all_val_accs, all_val_f1s = {}, {}
-    all_test_accs, all_test_f1s = {}, {}
-    all_val_preds, all_test_preds = {}, {}
-    all_y_true_val, all_y_true_test = {}, {}
-    all_val_logits, all_test_logits = {}, {}
-    all_val_sim, all_test_sim = {}, {}
     if args.num_folds==1: # Use static test data
         if args.len_dataset==1800:
             sampled_idxs = np.random.choice(np.arange(1800), size=int(1800*(1-0.2)), replace=False) 
@@ -380,6 +371,16 @@ def main():
         torch.manual_seed(save_seed)
         if torch.cuda.is_available(): torch.cuda.manual_seed(save_seed)
         save_seed = save_seed if save_seed!=42 else '' # for backward compat
+
+        # Individual probes
+        all_supcon_train_loss = {}
+        all_train_loss, all_val_loss, all_val_auc = {}, {}, {}
+        all_val_accs, all_val_f1s = {}, {}
+        all_test_accs, all_test_f1s = {}, {}
+        all_val_preds, all_test_preds = {}, {}
+        all_y_true_val, all_y_true_test = {}, {}
+        all_val_logits, all_test_logits = {}, {}
+        all_val_sim, all_test_sim = {}, {}
 
         for i in range(args.num_folds):
             print('Training FOLD',i)
