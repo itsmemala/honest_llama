@@ -246,17 +246,22 @@ def main():
     # with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_sampledplus_responses_train2000.json', 'w') as f:
     #         json.dump(result_dict, f)
 
-    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
-    for end in [2000,5000]:
-        with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_greedy_responses_train{end}.json', 'r') as read_file:
-            train_data = json.load(read_file)
-            result_dict['is_correct'] += train_data['is_correct']
-            result_dict['model_answer'] += train_data['model_answer']
-            result_dict['model_completion'] += train_data['model_completion']
-            result_dict['full_input_text'] += train_data['full_input_text']
-    print(len(result_dict['is_correct']))
-    with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_greedy_responses_train5000.json', 'w') as f:
-            json.dump(result_dict, f)
+    ## this was not needed since start_at doesn't apply to gsm8k in get_prompt_responses_factual.py
+    # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
+    # for end in [2000,5000]:
+    #     with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_greedy_responses_train{end}.json', 'r') as read_file:
+    #         train_data = json.load(read_file)
+    #         result_dict['is_correct'] += train_data['is_correct']
+    #         result_dict['model_answer'] += train_data['model_answer']
+    #         result_dict['model_completion'] += train_data['model_completion']
+    #         result_dict['full_input_text'] += train_data['full_input_text']
+    # print(len(result_dict['is_correct']))
+    # with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_greedy_responses_train5000.json', 'w') as f:
+    #         json.dump(result_dict, f)
+
+    with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
+        train_data = json.load(read_file)
+    print(len(train_data['is_correct']))
     ##
 
     ## tqa_gen
