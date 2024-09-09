@@ -42,6 +42,11 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b'
 }
 
+def list_of_ints(arg):
+    return list(map(int, arg.split(',')))
+def list_of_floats(arg):
+    return list(map(float, arg.split(',')))
+
 def boolean_string(s):
     if s not in {'False', 'True'}:
         raise ValueError('Not a valid boolean string')
