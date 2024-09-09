@@ -407,7 +407,7 @@ def main():
             train_set_idxs = np.concatenate([np.arange(k,k+num_samples,1) for k in train_prompt_idxs], axis=0)
             val_set_idxs = np.concatenate([np.arange(k,k+num_samples,1) for k in val_prompt_idxs], axis=0)
             assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
-            print('Hallu in val:',sum([labels[i] for i in val_set_idxs]),'Hallu in train:',sum([labels[i] for i in train_set_idxs]))
+            print('Hallu in val:',sum([labels[i] for i in val_set_idxs])/len(val_set_idxs),'Hallu in train:',sum([labels[i] for i in train_set_idxs])/len(train_set_idxs))
         else:
             # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
             # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
