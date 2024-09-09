@@ -372,11 +372,12 @@ def main():
 
         for save_seed in args.seed_list:
 
+            print('Training SEED',save_seed)
             # Probe training
             np.random.seed(save_seed)
             torch.manual_seed(save_seed)
             if torch.cuda.is_available(): torch.cuda.manual_seed(save_seed)
-            save_seed = save_seed if save_seed!=42 else '' # for backward compat
+            # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
             # Individual probes
             all_supcon_train_loss = {}
