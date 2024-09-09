@@ -879,6 +879,7 @@ def main():
                 wandb.log({'chart': plt,
                             'metrics': tbl
                 })
+                wandb.finish()
 
 if __name__ == '__main__':
     main()
