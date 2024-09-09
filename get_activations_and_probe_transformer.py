@@ -368,6 +368,7 @@ def main():
     method_concat = args.method + '_no_bias' if args.no_bias else method_concat
 
     for lr in in args.lr_list:
+        print('Training lr',lr)
         args.lr=lr
 
         for save_seed in args.seed_list:
