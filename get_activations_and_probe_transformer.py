@@ -367,7 +367,7 @@ def main():
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
     method_concat = args.method + '_no_bias' if args.no_bias else method_concat
 
-    for lr in in args.lr_list:
+    for lr in args.lr_list:
         print('Training lr',lr)
         args.lr=lr
 
