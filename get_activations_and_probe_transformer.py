@@ -471,7 +471,8 @@ def main():
                                 param.copy_(retrain_model_state_dict[n])
                 wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
-                criterion_supcon = SupConLoss(temperature=args.supcon_temp) if 'supconv2' in args.method else NTXentLoss()
+                use_supcon_pos = True if 'supconv2_pos' in args.method else False
+                criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos) if 'supconv2' in args.method else NTXentLoss()
                 
                 # Training
                 supcon_train_loss, train_loss, val_loss, val_auc = [], [], [], []
