@@ -92,9 +92,9 @@ class SupConLoss(nn.Module):
         # compute log_prob
         exp_logits = torch.exp(logits) * logits_mask
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
-        if self.num_samples is not None:
-            mask = 
-            log_prob = 
+        # if self.num_samples is not None:
+        #     mask = 
+        #     log_prob = 
 
         # compute mean of log-likelihood over positive
         # modified to handle edge cases when there is no positive pair
