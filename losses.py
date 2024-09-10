@@ -77,20 +77,16 @@ class SupConLoss(nn.Module):
         logits = anchor_dot_contrast - logits_max.detach()
 
         # tile mask
-        print(mask)
-        mask = mask.repeat(anchor_count, contrast_count)
-        print(mask)
+        mask = mask.repeat(anchor_count, contrast_count) # this does nothing when contrast_count=1
         # mask-out self-contrast cases
-        logits_mask = torch.scatter(
+        logits_mask = torch.scatter( # this is 1 everywhere except diagonal
             torch.ones_like(mask),
             1,
             torch.arange(batch_size * anchor_count).view(-1, 1).to(device),
             0
         )
-        mask = mask * logits_mask
-        print(mask)
-        print(logits_mask)
-
+        mask = mask * logits_mask # this sets the diagonal elements to 0
+        
         # compute log_prob
         exp_logits = torch.exp(logits) * logits_mask
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
@@ -102,14 +98,19 @@ class SupConLoss(nn.Module):
         # features of shape: [4,1,...]
         # labels:            [0,1,1,2]
         # loss before mean:  [nan, ..., ..., nan] 
-        mask_pos_pairs = mask.sum(1)
+        mask_pos_pairs = mask.sum(1) # this gives the number of positives for each sample
         mask_pos_pairs = torch.where(mask_pos_pairs < 1e-6, 1, mask_pos_pairs)
-        print(mask_pos_pairs)
-        mean_log_prob_pos = (mask * log_prob).sum(1) / mask_pos_pairs
-        # if self.use_supcon_pos: mean_log_prob_pos = 
+        mean_log_prob_pos = (mask * log_prob).sum(1) / mask_pos_pairs # this computes the loss for each sample as the average over all positive pairs for that sample
+        print(mean_log_prob_pos)
+        if self.use_supcon_pos: mean_log_prob_pos = mean_log_prob_pos[labels==1,:] # select only positive samples (i.e we do not want to pull together negative samples)
+        print(mean_log_prob_pos)
 
         # loss
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos
-        loss = loss.view(anchor_count, batch_size).mean()
+        if self.use_supcon_pos:
+            loss = loss.view(anchor_count, sum(labels)).mean()
+            print(loss)
+        else:
+            loss = loss.view(anchor_count, batch_size).mean()
 
         return loss
