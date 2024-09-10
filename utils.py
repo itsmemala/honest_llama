@@ -176,7 +176,7 @@ class My_SupCon_NonLinear_Classifier4(nn.Module):
         self.linear3 = nn.Linear(128, 64)
         self.relu3 = nn.ReLU()
         self.supcon=supcon
-        self.projection = torch.nn.Linear(64,i32,bias=False)
+        self.projection = torch.nn.Linear(64,32,bias=False)
         self.classifier = nn.Linear(64, output_size, bias=bias)
     def forward(self,x):
         if self.use_dropout: x = self.dropout(x)
