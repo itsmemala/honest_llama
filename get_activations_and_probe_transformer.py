@@ -133,7 +133,7 @@ def main():
     parser.add_argument('--no_batch_sampling',type=bool, default=False)
     parser.add_argument('--acts_per_file',type=int, default=100)
     parser.add_argument('--save_probes',type=bool, default=False)
-    parser.add_argument('--device', type=int, default=0)
+    parser.add_argument('--device', type=int, default=None)
     parser.add_argument('--multi_gpu', type=bool, default=False)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
@@ -186,7 +186,7 @@ def main():
         #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
         num_heads = 32
-    device = "cuda"
+    device = "cuda" if args.device is None else args.device
 
     print("Loading prompts and model responses..")
     test_labels = []
@@ -472,7 +472,8 @@ def main():
                 wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                 use_supcon_pos = True if 'supconv2_pos' in args.method else False
-                criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos) if 'supconv2' in args.method else NTXentLoss()
+                sc_num_samples = num_samples if 'wp' in args.method else None
+                criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
                 
                 # Training
                 supcon_train_loss, train_loss, val_loss, val_auc = [], [], [], []

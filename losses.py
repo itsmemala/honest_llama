@@ -14,12 +14,14 @@ class SupConLoss(nn.Module):
     It also supports the unsupervised contrastive loss in SimCLR"""
     def __init__(self, temperature=0.07, contrast_mode='all',
                  base_temperature=0.07,
-                 use_supcon_pos=False):
+                 use_supcon_pos=False,
+                 num_samples=None):
         super(SupConLoss, self).__init__()
         self.temperature = temperature
         self.contrast_mode = contrast_mode
         self.base_temperature = base_temperature
         self.use_supcon_pos = use_supcon_pos
+        self.num_samples = num_samples
 
     def forward(self, features, labels=None, mask=None):
         """Compute loss for model. If both `labels` and `mask` are None,
@@ -90,6 +92,9 @@ class SupConLoss(nn.Module):
         # compute log_prob
         exp_logits = torch.exp(logits) * logits_mask
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
+        if self.num_samples is not None:
+            mask = 
+            log_prob = 
 
         # compute mean of log-likelihood over positive
         # modified to handle edge cases when there is no positive pair
@@ -101,16 +106,12 @@ class SupConLoss(nn.Module):
         mask_pos_pairs = mask.sum(1) # this gives the number of positives for each sample
         mask_pos_pairs = torch.where(mask_pos_pairs < 1e-6, 1, mask_pos_pairs)
         mean_log_prob_pos = (mask * log_prob).sum(1) / mask_pos_pairs # this computes the loss for each sample as the average over all positive pairs for that sample
-        print(mean_log_prob_pos)
-        print(labels)
         if self.use_supcon_pos: mean_log_prob_pos = mean_log_prob_pos[(torch.squeeze(labels)==1).nonzero()] # select only positive class samples (i.e we do not want to pull together negative class samples)
-        print(mean_log_prob_pos)
-
+        
         # loss
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos
         if self.use_supcon_pos:
             loss = loss.view(anchor_count, sum(labels)).mean()
-            print(loss)
         else:
             loss = loss.view(anchor_count, batch_size).mean()
 
