@@ -105,6 +105,9 @@ class SupConLoss(nn.Module):
                 wp_mask.append(sample_wp_mask)
             mask = torch.stack(wp_mask)
             log_prob = logits - torch.log((mask*exp_logits).sum(1, keepdim=True))
+            print(mask)
+            print(log_prob)
+            print(mean_log_prob_pos)
 
         # compute mean of log-likelihood over positive
         # modified to handle edge cases when there is no positive pair
