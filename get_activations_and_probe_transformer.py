@@ -600,12 +600,16 @@ def main():
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                         targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                         outputs = nlinear_model(inputs)
+                        nlinear_model
                         epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
                         val_preds_batch = torch.sigmoid(outputs.data)
                         val_preds += val_preds_batch.tolist()
                         val_true += targets.tolist()
                     epoch_val_loss = epoch_val_loss/(step+1)
-                    epoch_val_auc = roc_auc_score(val_true, val_preds)
+                    try:
+                        epoch_val_auc = roc_auc_score(val_true, val_preds)
+                    except ValueError:
+                        print(val_preds)
                     supcon_train_loss.append(epoch_supcon_loss)
                     train_loss.append(epoch_train_loss)
                     val_loss.append(epoch_val_loss)
