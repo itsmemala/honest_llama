@@ -128,6 +128,7 @@ def main():
     # parser.add_argument('--optimizer',type=str, default='Adam')
     parser.add_argument('--scheduler',type=str, default='warmup_cosanneal')
     parser.add_argument('--best_using_auc',type=bool, default=False)
+    parser.add_argument('--best_as_last',type=bool, default=False)
     parser.add_argument('--use_best_val_t',type=bool, default=False)
     parser.add_argument('--use_class_wgt',type=bool, default=False)
     parser.add_argument('--no_batch_sampling',type=bool, default=False)
@@ -621,6 +622,8 @@ def main():
                         if epoch_val_auc > best_val_auc:
                             best_val_auc = epoch_val_auc
                             best_model_state = deepcopy(nlinear_model.state_dict())
+                    elif args.best_as_last:
+                        best_model_state = deepcopy(nlinear_model.state_dict())
                     else:
                         if epoch_val_loss < best_val_loss:
                             best_val_loss = epoch_val_loss
@@ -860,6 +863,7 @@ def main():
 
                 plot_name_concat = 'b' if args.use_best_val_t else ''
                 plot_name_concat += 'a' if args.best_using_auc else ''
+                plot_name_concat += 'l' if args.best_as_last else ''
 
                 wandb.init(
                 project="LLM-Hallu-Detection",
