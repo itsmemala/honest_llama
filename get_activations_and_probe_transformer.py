@@ -566,6 +566,7 @@ def main():
                     # scheduler.step()
                     if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
                     epoch_train_loss = epoch_train_loss/(step+1)
+                    print(epoch_supcon_loss)
 
                     # Get val loss
                     nlinear_model.eval()
