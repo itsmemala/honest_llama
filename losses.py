@@ -107,7 +107,7 @@ class SupConLoss(nn.Module):
                 wp_mask.append(sample_wp_mask)
             wp_samples = torch.tensor(wp_samples)
             mask = torch.stack(wp_mask)
-            log_prob = logits[wp_samples,:] - torch.log((wp_mask*exp_logits[wp_samples,:]).sum(1, keepdim=True))
+            log_prob = logits[wp_samples] - torch.log((wp_mask*exp_logits[wp_samples]).sum(1, keepdim=True))
             print(mask)
             print(log_prob)
 
