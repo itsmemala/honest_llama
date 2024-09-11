@@ -107,12 +107,9 @@ class SupConLoss(nn.Module):
                 wp_mask.append(sample_wp_mask)
             # wp_samples = torch.tensor(wp_samples,dtype=torch.int).to('cuda')
             mask = torch.stack(wp_mask)
-            # print(logits.shape,wp_samples.shape,exp_logits.shape)
-            print(wp_samples)
-            print(logits[wp_samples])
-            log_prob = torch.index_select(logits, 0, wp_samples) - torch.log((wp_mask*torch.index_select(exp_logits, 0, wp_samples)).sum(1, keepdim=True))
-            print(mask)
-            print(log_prob)
+            log_prob = logits[wp_samples] - torch.log((mask*exp_logits[wp_samples]).sum(1, keepdim=True))
+            # print(mask)
+            # print(log_prob)
 
         # compute mean of log-likelihood over positive
         # modified to handle edge cases when there is no positive pair
@@ -125,10 +122,10 @@ class SupConLoss(nn.Module):
         mask_pos_pairs = torch.where(mask_pos_pairs < 1e-6, 1, mask_pos_pairs)
         mean_log_prob_pos = (mask * log_prob).sum(1) / mask_pos_pairs # this computes the loss for each sample as the average over all positive pairs for that sample
         if self.use_supcon_pos: mean_log_prob_pos = mean_log_prob_pos[(torch.squeeze(labels)==1).nonzero()] # select only positive class samples (i.e we do not want to pull together negative class samples)
-        print(mean_log_prob_pos)
-        print(mask[11])
-        print(log_prob[11])
-        print(mean_log_prob_pos[11])
+        # print(mean_log_prob_pos)
+        # print(mask[11])
+        # print(log_prob[11])
+        # print(mean_log_prob_pos[11])
         
         # loss
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos
