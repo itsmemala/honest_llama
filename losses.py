@@ -102,7 +102,7 @@ class SupConLoss(nn.Module):
                 end_idx = prompt_idx*self.num_samples + self.num_samples
                 prompt_mask[start_idx:end_idx] = 1
                 sample_wp_mask = mask[k].detach().clone()*prompt_mask # keep only samples from same prompt
-                if sample_wp_mask.sum(1)==0: continue # skip samples with no within-prompt positive pairs
+                if sample_wp_mask.sum()==0: continue # skip samples with no within-prompt positive pairs
                 wp_samples.append(k)
                 wp_mask.append(sample_wp_mask)
             mask = torch.stack(wp_mask)
