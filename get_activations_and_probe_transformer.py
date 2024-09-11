@@ -382,7 +382,7 @@ def main():
             # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
             # Individual probes
-            all_supcon_train_loss = {}
+            all_supcon_train_loss,all_supcon1_train_loss,all_supcon2_train_loss = {}, {}, {}
             all_train_loss, all_val_loss, all_val_auc = {}, {}, {}
             all_val_accs, all_val_f1s = {}, {}
             all_test_accs, all_test_f1s = {}, {}
@@ -433,7 +433,7 @@ def main():
                 y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
                 if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
                 
-                all_supcon_train_loss[i], all_train_loss[i], all_val_loss[i], all_val_auc[i] = [], [], [], []
+                all_supcon_train_loss[i], all_supcon1_train_loss[i], all_supcon2_train_loss[i], all_train_loss[i], all_val_loss[i], all_val_auc[i] = [], [], [], [], [], []
                 all_val_accs[i], all_val_f1s[i] = [], []
                 all_test_accs[i], all_test_f1s[i] = [], []
                 all_val_preds[i], all_test_preds[i] = [], []
@@ -474,10 +474,14 @@ def main():
                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                 use_supcon_pos = True if 'supconv2_pos' in args.method else False
                 sc_num_samples = num_samples if 'wp' in args.method else None
-                criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
+                if (use_supcon_pos) and (sc_num_samples is not None):
+                    criterion_supcon1 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=None) # operates on greedy samples only
+                    criterion_supcon2 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=sc_num_samples) # operates within prompt only
+                else:
+                    criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
                 
                 # Training
-                supcon_train_loss, train_loss, val_loss, val_auc = [], [], [], []
+                supcon_train_loss, supcon1_train_loss, supcon2_train_loss, train_loss, val_loss, val_auc = [], [], [], [], [], []
                 best_val_loss, best_val_auc = torch.inf, 0
                 best_model_state = deepcopy(nlinear_model.state_dict())
                 no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
@@ -501,7 +505,7 @@ def main():
                 #     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
                 # for epoch in tqdm(range(args.epochs)):
                 for epoch in range(args.epochs):
-                    num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss = 0, 0, 0, 0
+                    num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss, epoch_supcon1_loss, epoch_supcon2_loss = 0, 0, 0, 0, 0, 0
                     nlinear_model.train()
                     for step,batch in enumerate(ds_train):
                         optimizer.zero_grad()
@@ -539,11 +543,21 @@ def main():
                             emb_projection = nlinear_model.projection(norm_emb)
                             emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
                             if 'supconv2' in args.method:
-                                supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
+                                if (use_supcon_pos) and (sc_num_samples is not None):
+                                    sc1_wgt, sc2_wgt = 1, 1
+                                    greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
+                                    supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets).to(device)) # operates on greedy samples only
+                                    supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
+                                    supcon_loss = sc1_wgt*supcon1_loss + sc2_wgt*supcon2_loss
+                                else:
+                                    supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
                             else:
                                 logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
                                 supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
                             epoch_supcon_loss += supcon_loss.item()
+                            if (use_supcon_pos) and (sc_num_samples is not None):
+                                epoch_supcon1_loss += supcon1_loss.item()
+                                epoch_supcon2_loss += supcon2_loss.item()
                             supcon_loss.backward()
                             # supcon_train_loss.append(supcon_loss.item())
                             # CE backward
@@ -566,6 +580,8 @@ def main():
                         # break
                     # scheduler.step()
                     if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
+                    epoch_supcon1_loss = epoch_supcon1_loss/(step+1)
+                    epoch_supcon2_loss = epoch_supcon2_loss/(step+1)
                     epoch_train_loss = epoch_train_loss/(step+1)
 
                     # Get val loss
@@ -610,6 +626,8 @@ def main():
                     epoch_val_loss = epoch_val_loss/(step+1)
                     epoch_val_auc = roc_auc_score(val_true, val_preds)
                     supcon_train_loss.append(epoch_supcon_loss)
+                    supcon1_train_loss.append(epoch_supcon1_loss)
+                    supcon2_train_loss.append(epoch_supcon2_loss)
                     train_loss.append(epoch_train_loss)
                     val_loss.append(epoch_val_loss)
                     val_auc.append(epoch_val_auc)
@@ -634,6 +652,8 @@ def main():
                     #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
                     #     if is_not_decreasing==patience-1: break
                 all_supcon_train_loss[i].append(np.array(supcon_train_loss))
+                all_supcon1_train_loss[i].append(np.array(supcon1_train_loss))
+                all_supcon2_train_loss[i].append(np.array(supcon2_train_loss))
                 all_train_loss[i].append(np.array(train_loss))
                 all_val_loss[i].append(np.array(val_loss))
                 all_val_auc[i].append(np.array(val_auc))
@@ -790,6 +810,8 @@ def main():
             # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
             np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_train_loss.npy', all_train_loss)
             np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon_train_loss.npy', all_supcon_train_loss)
+            np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon1_train_loss.npy', all_supcon1_train_loss)
+            np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon2_train_loss.npy', all_supcon2_train_loss)
             all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
             np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_pred.npy', all_val_preds)
             all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
@@ -823,6 +845,9 @@ def main():
                     supcon_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0]
                 except (FileNotFoundError,KeyError):
                     supcon_train_loss = []
+                if (use_supcon_pos) and (sc_num_samples is not None):
+                    supcon1_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()[0]
+                    supcon2_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()[0]
                 
 
                 # val_loss = val_loss[-1] # Last layer only
@@ -853,6 +878,9 @@ def main():
                 plt.plot(val_loss, label='val_ce_loss')
                 plt.plot(train_loss, label='train_ce_loss')
                 plt.plot(supcon_train_loss, label='train_supcon_loss')
+                if (use_supcon_pos) and (sc_num_samples is not None):
+                    plt.plot(supcon1_train_loss, label='train_supcon1_loss')
+                    plt.plot(supcon2_train_loss, label='train_supcon2_loss')
                 plt.legend(loc="upper left")
                 plt.subplot(1, 2, 2)
                 plt.plot(val_auc, label='val_auc')
