@@ -563,7 +563,7 @@ def main():
                         scheduler.step()
                         epoch_train_loss += loss.item()
                         # train_loss.append(loss.item())
-                        break
+                        # break
                     # scheduler.step()
                     if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
                     epoch_train_loss = epoch_train_loss/(step+1)
