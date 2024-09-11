@@ -94,7 +94,7 @@ class SupConLoss(nn.Module):
         exp_logits = torch.exp(logits) * logits_mask
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
         if self.num_samples is not None:
-            wp_mask = []
+            wp_mask, wp_samples = [], []
             for k in range(len(mask)):
                 prompt_mask = torch.zeros_like(mask[k])
                 prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
@@ -102,9 +102,11 @@ class SupConLoss(nn.Module):
                 end_idx = prompt_idx*self.num_samples + self.num_samples
                 prompt_mask[start_idx:end_idx] = 1
                 sample_wp_mask = mask[k].detach().clone()*prompt_mask # keep only samples from same prompt
+                if sample_wp_mask.sum(1)==0: continue # skip samples with no within-prompt positive pairs
+                wp_samples.append(k)
                 wp_mask.append(sample_wp_mask)
             mask = torch.stack(wp_mask)
-            log_prob = logits - torch.log((mask*exp_logits).sum(1, keepdim=True))
+            log_prob = logits[wp_samples,:] - torch.log((wp_mask*exp_logits[wp_samples,:]).sum(1, keepdim=True))
             print(mask)
             print(log_prob)
 
@@ -126,9 +128,7 @@ class SupConLoss(nn.Module):
         
         # loss
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos
-        if self.use_supcon_pos:
-            loss = loss.view(anchor_count, sum(labels)).mean()
-        else:
-            loss = loss.view(anchor_count, batch_size).mean()
+        # loss = loss.view(anchor_count, batch_size).mean()
+        loss = loss.view(anchor_count, mean_log_prob_pos.shape[0]).mean()
 
         return loss
