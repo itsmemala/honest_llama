@@ -94,7 +94,6 @@ class SupConLoss(nn.Module):
         exp_logits = torch.exp(logits) * logits_mask
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
         if self.num_samples is not None:
-            print(mask)
             wp_mask = []
             for k in range(len(mask)):
                 prompt_mask = torch.zeros_like(mask[k])
@@ -105,7 +104,6 @@ class SupConLoss(nn.Module):
                 sample_wp_mask = mask[k].detach().clone()*prompt_mask # keep only samples from same prompt
                 wp_mask.append(sample_wp_mask)
             mask = torch.stack(wp_mask)
-            print(mask)
             log_prob = logits - torch.log((mask*exp_logits).sum(1, keepdim=True))
 
         # compute mean of log-likelihood over positive
