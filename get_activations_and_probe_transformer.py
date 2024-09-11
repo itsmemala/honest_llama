@@ -546,7 +546,7 @@ def main():
                                 if (use_supcon_pos) and (sc_num_samples is not None):
                                     sc1_wgt, sc2_wgt = 1, 1
                                     greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
-                                    supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets).to(device)) # operates on greedy samples only
+                                    supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
                                     supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
                                     supcon_loss = sc1_wgt*supcon1_loss + sc2_wgt*supcon2_loss
                                 else:
