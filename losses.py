@@ -105,9 +105,11 @@ class SupConLoss(nn.Module):
                 if sample_wp_mask.sum()==0: continue # skip samples with no within-prompt positive pairs
                 wp_samples.append(k)
                 wp_mask.append(sample_wp_mask)
-            wp_samples = torch.tensor(wp_samples,dtype=torch.int).to('cuda')
+            # wp_samples = torch.tensor(wp_samples,dtype=torch.int).to('cuda')
             mask = torch.stack(wp_mask)
-            print(logits.shape,wp_samples.shape,exp_logits.shape)
+            # print(logits.shape,wp_samples.shape,exp_logits.shape)
+            print(wp_samples)
+            print(logits[wp_samples])
             log_prob = torch.index_select(logits, 0, wp_samples) - torch.log((wp_mask*torch.index_select(exp_logits, 0, wp_samples)).sum(1, keepdim=True))
             print(mask)
             print(log_prob)
