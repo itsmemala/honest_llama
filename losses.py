@@ -104,7 +104,7 @@ class SupConLoss(nn.Module):
                 prompt_mask[start_idx:end_idx] = 1
                 sample_wp_mask = mask[k].detach().clone()*prompt_mask # keep only samples from same prompt
                 wp_mask.append(sample_wp_mask)
-            mask = torch.tensor(wp_mask)
+            mask = torch.concatenate(wp_mask)
             print(mask)
             log_prob = logits - torch.log((mask*exp_logits).sum(1, keepdim=True))
 
