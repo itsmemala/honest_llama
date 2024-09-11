@@ -120,6 +120,9 @@ class SupConLoss(nn.Module):
         mean_log_prob_pos = (mask * log_prob).sum(1) / mask_pos_pairs # this computes the loss for each sample as the average over all positive pairs for that sample
         if self.use_supcon_pos: mean_log_prob_pos = mean_log_prob_pos[(torch.squeeze(labels)==1).nonzero()] # select only positive class samples (i.e we do not want to pull together negative class samples)
         print(mean_log_prob_pos)
+        print(mask[11])
+        print(log_prob[11])
+        print(mean_log_prob_pos[11])
         
         # loss
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos

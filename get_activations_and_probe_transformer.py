@@ -563,10 +563,10 @@ def main():
                         scheduler.step()
                         epoch_train_loss += loss.item()
                         # train_loss.append(loss.item())
+                        break
                     # scheduler.step()
                     if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
                     epoch_train_loss = epoch_train_loss/(step+1)
-                    print(epoch_supcon_loss)
 
                     # Get val loss
                     nlinear_model.eval()
@@ -608,10 +608,7 @@ def main():
                         val_preds += val_preds_batch.tolist()
                         val_true += targets.tolist()
                     epoch_val_loss = epoch_val_loss/(step+1)
-                    try:
-                        epoch_val_auc = roc_auc_score(val_true, val_preds)
-                    except ValueError:
-                        print(val_preds)
+                    epoch_val_auc = roc_auc_score(val_true, val_preds)
                     supcon_train_loss.append(epoch_supcon_loss)
                     train_loss.append(epoch_train_loss)
                     val_loss.append(epoch_val_loss)
