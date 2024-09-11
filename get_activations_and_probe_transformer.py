@@ -554,7 +554,7 @@ def main():
                             else:
                                 logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
                                 supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
-                            print(supcon_loss.item())
+                            # print(supcon_loss.item())
                             epoch_supcon_loss += supcon_loss.item()
                             if (use_supcon_pos) and (sc_num_samples is not None):
                                 epoch_supcon1_loss += supcon1_loss.item()
