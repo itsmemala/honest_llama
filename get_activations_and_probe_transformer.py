@@ -118,6 +118,8 @@ def main():
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--norm_input',type=bool, default=False)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
+    parser.add_argument('--sc1_wgt',type=float, default=1)
+    parser.add_argument('--sc2_wgt',type=float, default=1)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -544,11 +546,10 @@ def main():
                             emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
                             if 'supconv2' in args.method:
                                 if (use_supcon_pos) and (sc_num_samples is not None):
-                                    sc1_wgt, sc2_wgt = 1, 1
                                     greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
                                     supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
                                     supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
-                                    supcon_loss = sc1_wgt*supcon1_loss + sc2_wgt*supcon2_loss
+                                    supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
                                 else:
                                     supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
                             else:
