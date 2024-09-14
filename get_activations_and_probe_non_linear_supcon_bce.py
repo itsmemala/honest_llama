@@ -394,6 +394,7 @@ def main():
                     train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
                 if args.norm_input:
                     transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k] for k in train_set_idxs]), dim=-2)
+                    print(torch.stack(my_train_acts).shape,transform_mean.shape)
                     my_train_acts = (torch.stack(my_train_acts)-transform_mean)/transform_std
                     my_test_acts = (torch.stack(my_test_acts)-transform_mean)/transform_std
 
