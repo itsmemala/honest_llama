@@ -320,6 +320,7 @@ def main():
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_test_acts.append(act)
+        my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
 
     if args.multi_gpu:
         device_id += 1
@@ -446,7 +447,6 @@ def main():
                         criterion_supcon = SupConLoss(temperature=args.supcon_temp) if 'supconv2' in args.method else NTXentLoss()
 
                         if args.norm_input:
-                            my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
                             transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2)
                             my_train_acts[:,layer,:] = (my_train_acts[:,layer,:]-transform_mean)/transform_std
                             my_test_acts[:,layer,:] = (my_test_acts[:,layer,:]-transform_mean)/transform_std
