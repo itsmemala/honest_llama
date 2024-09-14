@@ -393,9 +393,9 @@ def main():
                     # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
                     train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
                 if args.norm_input:
-                    transform_mean, transform_std = torch.mean(my_train_acts[torch.Tensor(train_set_idxs)], dim=-2).unsqueeze(-2), torch.std(my_train_acts[torch.Tensor(train_set_idxs)], dim=-2).unsqueeze(-2)
-                    my_train_acts = (my_train_acts-transform_mean)/transform_std
-                    my_test_acts = (my_test_acts-transform_mean)/transform_std
+                    transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k] for k in train_set_idxs]), dim=-2).unsqueeze(-2), torch.std(torch.stack([my_train_acts[k] for k in train_set_idxs]), dim=-2).unsqueeze(-2)
+                    my_train_acts = (torch.stack(my_train_acts)-transform_mean)/transform_std
+                    my_test_acts = (torch.stack(my_test_acts)-transform_mean)/transform_std
 
                 y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
                 y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
