@@ -362,6 +362,7 @@ def main():
                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device)
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
+        my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
 
     if args.multi_gpu:
         device_id += 1
@@ -430,10 +431,6 @@ def main():
                     # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
                     # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
                     train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
-                if args.norm_input:
-                    transform_mean, transform_std = torch.mean(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2), torch.std(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2)
-                    my_train_acts = (my_train_acts-transform_mean)/transform_std
-                    my_test_acts = (my_test_acts-transform_mean)/transform_std
 
                 y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
                 y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
@@ -487,6 +484,11 @@ def main():
                 else:
                     criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
                 
+                if args.norm_input:
+                    transform_mean, transform_std = torch.mean(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2), torch.std(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2)
+                    my_train_acts = (my_train_acts-transform_mean)/transform_std
+                    my_test_acts = (my_test_acts-transform_mean)/transform_std
+
                 # Training
                 supcon_train_loss, supcon1_train_loss, supcon2_train_loss, train_loss, val_loss, val_auc = [], [], [], [], [], []
                 best_val_loss, best_val_auc = torch.inf, 0
