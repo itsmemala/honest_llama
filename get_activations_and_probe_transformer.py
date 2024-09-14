@@ -485,9 +485,10 @@ def main():
                     criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
                 
                 if args.norm_input:
-                    transform_mean, transform_std = torch.mean(my_train_acts[train_set_idxs], dim=-2), torch.std(my_train_acts[train_set_idxs], dim=-2)
-                    my_train_acts = (my_train_acts-transform_mean)/transform_std
-                    my_test_acts = (my_test_acts-transform_mean)/transform_std
+                    for layer in my_train_acts.shape[1]:
+                        transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2)
+                        my_train_acts[:,layer,:] = (my_train_acts[:,layer,:]-transform_mean)/transform_std
+                        my_test_acts[:,layer,:] = (my_test_acts[:,layer,:]-transform_mean)/transform_std
 
                 # Training
                 supcon_train_loss, supcon1_train_loss, supcon2_train_loss, train_loss, val_loss, val_auc = [], [], [], [], [], []
