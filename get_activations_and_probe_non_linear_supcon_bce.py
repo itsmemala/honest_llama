@@ -448,8 +448,8 @@ def main():
                         if args.norm_input:
                             my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
                             transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2)
-                            my_train_acts[:,layer,:] = (torch.stack(my_train_acts)[:,layer,:]-transform_mean)/transform_std
-                            my_test_acts[:,layer,:] = (torch.stack(my_test_acts)[:,layer,:]-transform_mean)/transform_std
+                            my_train_acts[:,layer,:] = (my_train_acts[:,layer,:]-transform_mean)/transform_std
+                            my_test_acts[:,layer,:] = (my_test_acts[:,layer,:]-transform_mean)/transform_std
 
                         # Sup-Con training
                         if 'supcon' in args.method:
