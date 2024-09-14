@@ -392,11 +392,6 @@ def main():
                     # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
                     # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
                     train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
-                if args.norm_input:
-                    transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k] for k in train_set_idxs]), dim=-2)
-                    print(torch.stack(my_train_acts).shape,transform_mean.shape)
-                    my_train_acts = (torch.stack(my_train_acts)-transform_mean)/transform_std
-                    my_test_acts = (torch.stack(my_test_acts)-transform_mean)/transform_std
 
                 y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
                 y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
@@ -449,6 +444,12 @@ def main():
                         wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                         criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                         criterion_supcon = SupConLoss(temperature=args.supcon_temp) if 'supconv2' in args.method else NTXentLoss()
+
+                        if args.norm_input:
+                            my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
+                            transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2)
+                            my_train_acts[:,layer,:] = (torch.stack(my_train_acts)[:,layer,:]-transform_mean)/transform_std
+                            my_test_acts[:,layer,:] = (torch.stack(my_test_acts)[:,layer,:]-transform_mean)/transform_std
 
                         # Sup-Con training
                         if 'supcon' in args.method:
