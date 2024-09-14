@@ -342,6 +342,7 @@ def main():
                     print('Loading on device',device_id)
                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             my_train_acts.append(act)
+
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
         if args.test_file_name is not None:
@@ -429,6 +430,10 @@ def main():
                     # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
                     # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
                     train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
+                if args.norm_input:
+                    transform_mean, transform_std = torch.mean(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2), torch.std(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2)
+                    my_train_acts = (my_train_acts-transform_mean)/transform_std
+                    my_test_acts = (my_test_acts-transform_mean)/transform_std
 
                 y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
                 y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
@@ -535,7 +540,7 @@ def main():
                             inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                         else:
                             inputs = torch.stack(activations,axis=0)
-                        if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                         targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                         if 'supcon' in args.method:
@@ -616,7 +621,7 @@ def main():
                             inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                         else:
                             inputs = torch.stack(activations,axis=0)
-                        if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                         targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                         outputs = nlinear_model(inputs)
@@ -699,7 +704,7 @@ def main():
                             inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                         else:
                             inputs = torch.stack(activations,axis=0)
-                        if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                         predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                         y_val_pred += predicted
@@ -755,7 +760,7 @@ def main():
                                 inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                             else:
                                 inputs = torch.stack(activations,axis=0)
-                            if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                            # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                             y_test_pred += predicted

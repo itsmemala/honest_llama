@@ -392,6 +392,10 @@ def main():
                     # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
                     # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
                     train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
+                if args.norm_input:
+                    transform_mean, transform_std = torch.mean(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2), torch.std(my_train_acts[train_set_idxs], dim=-2).unsqueeze(-2)
+                    my_train_acts = (my_train_acts-transform_mean)/transform_std
+                    my_test_acts = (my_test_acts-transform_mean)/transform_std
 
                 y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
                 y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
@@ -568,7 +572,7 @@ def main():
                                 if args.token=='tagged_tokens':
                                     # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                                     targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                                if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
                                 # print(torch.mean(inputs, dim=-1).sum())
                                 if 'supcon' in args.method:
@@ -709,7 +713,7 @@ def main():
                                 if args.token=='tagged_tokens':
                                     # targets = torch.cat([torch.Tensor([y_label for j in range(num_tagged_tokens(tagged_token_idxs[idx]))]) for idx,y_label in zip(batch['inputs_idxs'],batch['labels'])],dim=0).type(torch.LongTensor)
                                     targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
-                                if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
                                 outputs = nlinear_model(inputs)
                                 epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -816,7 +820,7 @@ def main():
                                     if args.using_act=='ah': act = act[head*128:(head*128)+128]
                                     activations.append(act)
                                 inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
-                                if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
                                 predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                 y_val_pred += predicted
@@ -864,7 +868,7 @@ def main():
                                         if args.using_act=='ah': act = act[head*128:(head*128)+128]
                                         activations.append(act)
                                     inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
-                                    if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
+                                    # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                     # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
                                     predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                     y_test_pred += predicted
