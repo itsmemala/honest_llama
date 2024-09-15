@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA, KernelPCA
 from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt
 import seaborn as sns
+import llama
 import argparse
 from utils import LogisticRegression_Torch, tokenized_from_file
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
