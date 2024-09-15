@@ -28,6 +28,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='strqa')
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
+    parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--train_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_file_name", type=str, default=None, help='local directory with dataset')
@@ -40,6 +41,91 @@ def main():
 
     # Load model
     nlinear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}').to(device)
+
+    if args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa' or ('baseline' in args.train_file_name or 'dola' in args.train_file_name):
+        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 9 if 'sampled' in args.train_file_name else 1
+        file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
+        labels = []
+        num_samples_with_no_var = 0
+        all_hallu_prompts, all_nh_prompts, hetero_prompts_sum = [], [], []
+        with open(file_path, 'r') as read_file:
+            data = json.load(read_file)
+        for i in range(len(data['full_input_text'])):
+            if 'baseline' in args.train_file_name or num_samples==1:
+                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+                labels.append(label)
+            else:
+                sum_over_samples = 0
+                for j in range(num_samples):
+                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
+                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    labels.append(label)
+                    sum_over_samples += label
+                if sum_over_samples==0 or sum_over_samples==num_samples: 
+                    num_samples_with_no_var += 1
+                    if sum_over_samples==num_samples: all_hallu_prompts.append(i)
+                    if sum_over_samples==0: all_nh_prompts.append(i)
+                else:
+                    hetero_prompts_sum.append(sum_over_samples)
+        labels = labels[:args.len_dataset]
+    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
+        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
+        file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
+        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
+        if 'se_labels' in args.train_labels_file_name:
+            file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
+            labels = np.load(file_path)
+        else:
+            labels = []
+            file_path = f'{args.save_path}/responses/{args.train_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json'
+            with open(file_path, 'r') as read_file:
+                for line in read_file:
+                    data = json.loads(line)
+                    # for j in range(1,num_samples+1,1):
+                    #     if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                    #     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    #     labels.append(label)
+                    if 'greedy' in args.train_labels_file_name:
+                        if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                        if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                        labels.append(label)
+                    else:
+                        for j in range(1,num_samples+1,1):
+                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                            labels.append(label)
+        labels = labels[:args.len_dataset]
+    if args.test_file_name is None:
+        test_prompts, test_labels = [], [] # No test file
+    elif 'gsm8k' in args.test_file_name or 'strqa' in args.test_file_name:
+        file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
+        test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file_v2(file_path, tokenizer)
+        test_labels = []
+        with open(file_path, 'r') as read_file:
+            data = json.load(read_file)
+        for i in range(len(data['full_input_text'])):
+            if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+            if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+            test_labels.append(label)
+    else:
+        file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
+        test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer)
+        if 'se_labels' in args.test_labels_file_name:
+            file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.test_labels_file_name}.npy'
+            test_labels = np.load(file_path)
+        else:
+            test_labels = []
+            file_path = f'{args.save_path}/responses/{args.test_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json'
+            with open(file_path, 'r') as read_file:
+                for line in read_file:
+                    data = json.loads(line)
+                    if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    test_labels.append(label)
 
     if args.dataset_name=='strqa':
         args.acts_per_file = 50
@@ -54,6 +140,9 @@ def main():
         args.test_acts_per_file = 20
     else:
         args.test_acts_per_file = 100
+
+    test_idxs = np.arange(len(test_labels))
+    train_idxs = np.arange(args.len_dataset)
 
     # Load acts
     my_train_acts, my_test_acts = [], []
