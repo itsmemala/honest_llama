@@ -43,7 +43,7 @@ def main():
     # Load model
     nlinear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}').to(device)
 
-    MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
+    MODEL = HF_NAMES[args.model_name] #if not args.model_dir else args.model_dir
     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
 
     if args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa' or ('baseline' in args.train_file_name or 'dola' in args.train_file_name):
