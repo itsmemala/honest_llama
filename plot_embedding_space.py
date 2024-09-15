@@ -54,6 +54,7 @@ def main():
     parser.add_argument("--train_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
+    parser.add_argument('--plot_name',type=str, default=None)
     args = parser.parse_args()
 
     device = 'cuda'
@@ -219,15 +220,18 @@ def main():
     # TODO: norm input
     nlinear_model.eval()
     my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
+    my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts[:100]).detach().cpu().numpy()
 
 
     tsne = TSNE(n_components=2, random_state=42)
     X_tsne = tsne.fit_transform(my_train_embs)
     print(tsne.kl_divergence_)
-    fig, axs = plt.subplots(1,1)
-    axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=labels)
+    fig, axs = plt.subplots(1,2)
+    axs[0].scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=labels)
+    X_tsne = tsne.fit_transform(my_test_embs)
+    axs[1].scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=test_labels[:100])
     # fig.savefig(f'{args.save_path}/plotemb.png')
-    fig.savefig(f'plotemb.png')
+    fig.savefig(f'{args.plot_name}.png')
 
 
 if __name__ == '__main__':
