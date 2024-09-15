@@ -225,7 +225,7 @@ def main():
     X_tsne = tsne.fit_transform(my_train_embs)
     print(tsne.kl_divergence_)
     fig, axs = plt.subplots(1,1)
-    axs[0].scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=labels)
+    axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=labels)
     fig.savefig(f'{args.save_path}/plotemb.png')
 
 
