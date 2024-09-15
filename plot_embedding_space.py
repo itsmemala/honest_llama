@@ -43,6 +43,9 @@ def main():
     # Load model
     nlinear_model = torch.load(f'{args.save_path}/probes/models/{args.probes_file_name}').to(device)
 
+    MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
+    tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+
     if args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa' or ('baseline' in args.train_file_name or 'dola' in args.train_file_name):
         num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 9 if 'sampled' in args.train_file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
