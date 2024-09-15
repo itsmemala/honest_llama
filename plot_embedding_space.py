@@ -32,6 +32,8 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b'
 }
 
+act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+
 # Define a custom argument type for a list of integers
 def list_of_ints(arg):
     return list(map(int, arg.split(',')))
