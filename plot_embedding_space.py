@@ -16,6 +16,21 @@ import argparse
 from utils import LogisticRegression_Torch, tokenized_from_file
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
 
+HF_NAMES = {
+    'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
+    'hl_llama_7B': 'huggyllama/llama-7b',
+    'llama_2_7B': 'meta-llama/Llama-2-7b-hf',
+    'honest_llama_7B': 'validation/results_dump/llama_7B_seed_42_top_48_heads_alpha_15',
+    'alpaca_7B': 'circulus/alpaca-7b', 
+    'vicuna_7B': 'AlekseyKorshuk/vicuna-7b', 
+    'llama2_chat_7B': 'meta-llama/Llama-2-7b-chat-hf', 
+    'llama2_chat_13B': 'meta-llama/Llama-2-13b-chat-hf', 
+    'llama2_chat_70B': 'meta-llama/Llama-2-70b-chat-hf',
+    'llama_13B': 'huggyllama/llama-13b',
+    'llama_30B': 'huggyllama/llama-30b',
+    'flan_33B': 'timdettmers/qlora-flan-33b'
+}
+
 # Define a custom argument type for a list of integers
 def list_of_ints(arg):
     return list(map(int, arg.split(',')))
