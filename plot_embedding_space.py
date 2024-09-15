@@ -217,7 +217,8 @@ def main():
     my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
 
     # TODO: norm input
-    my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).cpu().numpy()
+    nlinear_model.eval()
+    my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
 
 
     tsne = TSNE(n_components=2, random_state=42)
