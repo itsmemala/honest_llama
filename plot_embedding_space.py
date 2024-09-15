@@ -217,7 +217,7 @@ def main():
     my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
 
     tsne = TSNE(n_components=2, random_state=42)
-    X_tsne = tsne.fit_transform(my_train_acts.numpy())
+    X_tsne = tsne.fit_transform(my_train_acts.cpu().numpy())
     print(tsne.kl_divergence_)
     fig = plt.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], color=y)
     fig.savefig(f'{args.save_path}/plotemb.png')
