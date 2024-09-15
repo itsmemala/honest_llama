@@ -227,7 +227,7 @@ def main():
     fig, axs = plt.subplots(1,1)
     axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=labels)
     # fig.savefig(f'{args.save_path}/plotemb.png')
-    fig.savefig(f'~/plotemb.png')
+    fig.savefig(f'~/plots/plotemb.png')
 
 
 if __name__ == '__main__':
