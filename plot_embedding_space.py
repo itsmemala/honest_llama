@@ -74,14 +74,16 @@ def main():
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
             if 'baseline' in args.train_file_name or num_samples==1:
-                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
-                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+                # if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+                # if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+                label = 0 if data['is_correct'][i]==True else 1
                 labels.append(label)
             else:
                 sum_over_samples = 0
                 for j in range(num_samples):
-                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
-                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    # if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
+                    # if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    label = 0 if data['is_correct'][i][j]==True else 1
                     labels.append(label)
                     sum_over_samples += label
                 if sum_over_samples==0 or sum_over_samples==num_samples: 
@@ -110,13 +112,15 @@ def main():
                     #     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                     #     labels.append(label)
                     if 'greedy' in args.train_labels_file_name:
-                        if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                        if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                        # if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                        # if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                        label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                         labels.append(label)
                     else:
                         for j in range(1,num_samples+1,1):
-                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
-                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                            # if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                            # if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                            label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
                             labels.append(label)
         labels = labels[:args.len_dataset]
     if args.test_file_name is None:
@@ -128,8 +132,9 @@ def main():
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
-            if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
-            if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+            # if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+            # if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+            label = 0 if data['is_correct'][i]==True else 1
             test_labels.append(label)
     else:
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
@@ -143,8 +148,9 @@ def main():
             with open(file_path, 'r') as read_file:
                 for line in read_file:
                     data = json.loads(line)
-                    if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    # if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                    # if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                    label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                     test_labels.append(label)
 
     if args.dataset_name=='strqa':
