@@ -216,8 +216,12 @@ def main():
         # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
     my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
 
+    # TODO: norm input
+    my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).cpu().numpy()
+
+
     tsne = TSNE(n_components=2, random_state=42)
-    X_tsne = tsne.fit_transform(my_train_acts.cpu().numpy())
+    X_tsne = tsne.fit_transform(my_train_embs)
     print(tsne.kl_divergence_)
     fig = plt.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], color=y)
     fig.savefig(f'{args.save_path}/plotemb.png')
