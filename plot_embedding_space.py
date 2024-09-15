@@ -220,7 +220,7 @@ def main():
     X_tsne = tsne.fit_transform(my_train_acts)
     print(tsne.kl_divergence_)
     fig = plt.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], color=y)
-    fig.savefig(f'{args.save_path}/plot1.png')
+    fig.savefig(f'{args.save_path}/plotemb.png')
 
 
 if __name__ == '__main__':
