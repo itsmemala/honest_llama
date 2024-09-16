@@ -48,6 +48,7 @@ def main():
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--len_dataset',type=int, default=5000)
+    parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--train_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_file_name", type=str, default=None, help='local directory with dataset')
