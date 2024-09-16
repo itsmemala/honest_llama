@@ -106,6 +106,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
+    parser.add_argument('--dataset_list', type=str, default=None)
+    parser.add_argument('--train_name_list', type=str, default=None)
+    parser.add_argument('--train_labels_name_list', type=str, default=None)
+    parser.add_argument('--len_dataset_list', type=str, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--max_tokens',type=int, default=25)
@@ -192,67 +196,80 @@ def main():
     device = "cuda" if args.device is None else args.device
 
     print("Loading prompts and model responses..")
-    test_labels = []
-    if args.dataset_name == 'counselling':
-        file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
-        prompts = tokenized_mi(file_path, tokenizer)
-    elif args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa' or ('baseline' in args.train_file_name or 'dola' in args.train_file_name):
-        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 9 if 'sampled' in args.train_file_name else 1
-        file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
-        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
-        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
-        labels = []
-        num_samples_with_no_var = 0
-        all_hallu_prompts, all_nh_prompts, hetero_prompts_sum = [], [], []
-        with open(file_path, 'r') as read_file:
-            data = json.load(read_file)
-        for i in range(len(data['full_input_text'])):
-            if 'baseline' in args.train_file_name or num_samples==1:
-                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
-                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
-                labels.append(label)
-            else:
-                sum_over_samples = 0
-                for j in range(num_samples):
-                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
-                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
-                    labels.append(label)
-                    sum_over_samples += label
-                if sum_over_samples==0 or sum_over_samples==num_samples: 
-                    num_samples_with_no_var += 1
-                    if sum_over_samples==num_samples: all_hallu_prompts.append(i)
-                    if sum_over_samples==0: all_nh_prompts.append(i)
-                else:
-                    hetero_prompts_sum.append(sum_over_samples)
-        labels = labels[:args.len_dataset]
-    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
-        num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
-        file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
-        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
-        prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
-        if 'se_labels' in args.train_labels_file_name:
-            file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
-            labels = np.load(file_path)
-        else:
+    all_labels = []
+    args.dataset_list = args.dataset_name if args.dataset_list is None else args.dataset_list
+    args.train_name_list = args.train_file_name if args.train_name_list is None else args.train_name_list
+    args.train_labels_name_list = args.train_labels_file_name if args.train_labels_name_list is None else args.train_labels_name_list
+    args.len_dataset_list = args.len_dataset if args.len_dataset_list is None else args.len_dataset
+    for dataset_name,train_file_name,train_labels_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list):
+        args.dataset_name = dataset_name
+        args.train_file_name = train_file_name
+        args.train_labels_file_name = train_labels_file_name
+        args.len_dataset = len_dataset
+        if args.dataset_name == 'counselling':
+            file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
+            prompts = tokenized_mi(file_path, tokenizer)
+        elif args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa' or ('baseline' in args.train_file_name or 'dola' in args.train_file_name):
+            num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 9 if 'sampled' in args.train_file_name else 1
+            file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
+            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
+            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
             labels = []
-            file_path = f'{args.save_path}/responses/{args.train_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json'
+            num_samples_with_no_var = 0
+            all_hallu_prompts, all_nh_prompts, hetero_prompts_sum = [], [], []
             with open(file_path, 'r') as read_file:
-                for line in read_file:
-                    data = json.loads(line)
-                    # for j in range(1,num_samples+1,1):
-                    #     if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    #     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
-                    #     labels.append(label)
-                    if 'greedy' in args.train_labels_file_name:
-                        if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                        if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                data = json.load(read_file)
+            for i in range(len(data['full_input_text'])):
+                if 'baseline' in args.train_file_name or num_samples==1:
+                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+                    labels.append(label)
+                else:
+                    sum_over_samples = 0
+                    for j in range(num_samples):
+                        if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
+                        if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
                         labels.append(label)
+                        sum_over_samples += label
+                    if sum_over_samples==0 or sum_over_samples==num_samples: 
+                        num_samples_with_no_var += 1
+                        if sum_over_samples==num_samples: all_hallu_prompts.append(i)
+                        if sum_over_samples==0: all_nh_prompts.append(i)
                     else:
-                        for j in range(1,num_samples+1,1):
-                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
-                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                        hetero_prompts_sum.append(sum_over_samples)
+            labels = labels[:args.len_dataset]
+            all_labels += labels
+        elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
+            num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
+            file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
+            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
+            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
+            if 'se_labels' in args.train_labels_file_name:
+                file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
+                labels = np.load(file_path)
+            else:
+                labels = []
+                file_path = f'{args.save_path}/responses/{args.train_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json'
+                with open(file_path, 'r') as read_file:
+                    for line in read_file:
+                        data = json.loads(line)
+                        # for j in range(1,num_samples+1,1):
+                        #     if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                        #     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                        #     labels.append(label)
+                        if 'greedy' in args.train_labels_file_name:
+                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                             labels.append(label)
-        labels = labels[:args.len_dataset]
+                        else:
+                            for j in range(1,num_samples+1,1):
+                                if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                                if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                                labels.append(label)
+            labels = labels[:args.len_dataset]
+            all_labels += labels
+    labels = all_labels
+    test_labels = []
     if args.test_file_name is None:
         test_prompts, test_labels = [], [] # No test file
     elif 'gsm8k' in args.test_file_name or 'strqa' in args.test_file_name:
@@ -293,12 +310,12 @@ def main():
     # else:
     #     tagged_token_idxs,test_tagged_token_idxs = [[] for i in range(len(prompts))],[[] for i in range(len(test_prompts))]
     
-    if args.dataset_name=='strqa':
-        args.acts_per_file = 50
-    elif args.dataset_name=='gsm8k':
-        args.acts_per_file = 20
-    else:
-        args.acts_per_file = 100
+    # if args.dataset_name=='strqa':
+    #     args.acts_per_file = 50
+    # elif args.dataset_name=='gsm8k':
+    #     args.acts_per_file = 20
+    # else:
+    #     args.acts_per_file = 100
     
     if 'strqa' in args.test_file_name:
         args.test_acts_per_file = 50
@@ -314,7 +331,7 @@ def main():
             train_idxs = sampled_idxs
         else:
             test_idxs = np.arange(len(test_labels))
-            train_idxs = np.arange(args.len_dataset)
+            train_idxs = np.arange(len(labels)) # np.arange(args.len_dataset)
     else: # n-fold CV
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
@@ -322,26 +339,36 @@ def main():
         device_id, device = 0, 'cuda:0' # start with first gpu
         print("Loading acts...")
         my_train_acts, my_test_acts = [], []
-        for idx in train_idxs:
-            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-            if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
-                # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                act = combine_acts(idx,args.train_file_name,args)
-                if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                if args.no_sep==False:
-                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                    act = torch.cat((act,sep_token), dim=1)
-                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+        for dataset_name,train_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.len_dataset_list):
+            args.dataset_name = dataset_name
+            args.train_file_name = train_file_name
+            args.len_dataset = len_dataset
+            if args.dataset_name=='strqa':
+                args.acts_per_file = 50
+            elif args.dataset_name=='gsm8k':
+                args.acts_per_file = 20
             else:
-                try:
-                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                except torch.cuda.OutOfMemoryError:
-                    device_id += 1
-                    device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
-                    print('Loading on device',device_id)
-                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-            my_train_acts.append(act)
+                args.acts_per_file = 100
+            for idx in train_idxs:
+                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
+                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    act = combine_acts(idx,args.train_file_name,args)
+                    if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                    if args.no_sep==False:
+                        sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                        act = torch.cat((act,sep_token), dim=1)
+                    act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                else:
+                    try:
+                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    except torch.cuda.OutOfMemoryError:
+                        device_id += 1
+                        device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+                        print('Loading on device',device_id)
+                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                my_train_acts.append(act)
 
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
