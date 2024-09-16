@@ -226,14 +226,17 @@ def main():
     my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels[:100]]
     my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'test_NH',3:'test_H'}
     my_plot_labels_name = [my_plot_labels_dict[l] for l in my_plot_labels]
+    clset = set(zip(my_plot_labels, my_plot_labels_name))
 
 
     tsne = TSNE(n_components=2, random_state=42)
     X_tsne = tsne.fit_transform(my_embs)
     print(tsne.kl_divergence_)
     fig, axs = plt.subplots(1,1)
-    axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels, label=my_plot_labels_name)
-    axs.legend()
+    sc = axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels, cmap="brg") #label=my_plot_labels_name)
+    handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
+    labels = [l for c,l in clset]
+    axs.legend(handles, labels)
     # fig.savefig(f'{args.save_path}/plotemb.png')
     fig.savefig(f'{args.plot_name}.png')
 
