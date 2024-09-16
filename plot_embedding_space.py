@@ -224,13 +224,15 @@ def main():
     my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
     print(my_embs.shape)
     my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels[:100]]
+    my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'test_NH',3:'test_H'}
+    my_plot_labels = [my_plot_labels_dict[l] for l in my_plot_labels]
 
 
     tsne = TSNE(n_components=2, random_state=42)
     X_tsne = tsne.fit_transform(my_embs)
     print(tsne.kl_divergence_)
     fig, axs = plt.subplots(1,1)
-    axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels)
+    axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels, label=)
     axs.legend()
     # fig.savefig(f'{args.save_path}/plotemb.png')
     fig.savefig(f'{args.plot_name}.png')
