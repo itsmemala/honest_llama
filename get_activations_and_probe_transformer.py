@@ -48,6 +48,8 @@ def list_of_ints(arg):
     return list(map(int, arg.split(',')))
 def list_of_floats(arg):
     return list(map(float, arg.split(',')))
+def list_of_strs(arg):
+    return list(map(str, arg.split(',')))
 
 def boolean_string(s):
     if s not in {'False', 'True'}:
@@ -106,10 +108,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
-    parser.add_argument('--dataset_list', type=str, default=None)
-    parser.add_argument('--train_name_list', type=str, default=None)
-    parser.add_argument('--train_labels_name_list', type=str, default=None)
-    parser.add_argument('--len_dataset_list', type=str, default=None)
+    parser.add_argument('--dataset_list', type=list_of_strs, default=None)
+    parser.add_argument('--train_name_list', type=list_of_strs, default=None)
+    parser.add_argument('--train_labels_name_list', type=list_of_strs, default=None)
+    parser.add_argument('--len_dataset_list', type=list_of_strs, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--max_tokens',type=int, default=25)
