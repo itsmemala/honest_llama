@@ -231,6 +231,7 @@ def main():
     print(tsne.kl_divergence_)
     fig, axs = plt.subplots(1,1)
     axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels)
+    axs.legend()
     # fig.savefig(f'{args.save_path}/plotemb.png')
     fig.savefig(f'{args.plot_name}.png')
 
