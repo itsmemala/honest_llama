@@ -229,7 +229,7 @@ def main():
     tsne = TSNE(n_components=2, random_state=42)
     X_tsne = tsne.fit_transform(my_embs)
     print(tsne.kl_divergence_)
-    fig, axs = plt.subplots(1,2)
+    fig, axs = plt.subplots(1,1)
     axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels)
     # fig.savefig(f'{args.save_path}/plotemb.png')
     fig.savefig(f'{args.plot_name}.png')
