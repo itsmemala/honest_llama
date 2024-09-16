@@ -83,7 +83,7 @@ def main():
     parser.add_argument('--dataset_list', type=list_of_strs, default=None)
     parser.add_argument('--train_name_list', type=list_of_strs, default=None)
     parser.add_argument('--train_labels_name_list', type=list_of_strs, default=None)
-    parser.add_argument('--len_dataset_list', type=list_of_strs, default=None)
+    parser.add_argument('--len_dataset_list', type=list_of_ints, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <reverse>, <_hallu_pos>)
