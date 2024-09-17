@@ -1029,7 +1029,7 @@ def main():
                 config={
                 "run_name": probes_file_name,
                 "model": args.model_name,
-                "dataset": args.dataset_name,
+                "dataset": test_dataset_name,
                 "act_type": args.using_act,
                 "token": args.token,
                 "method": args.method,
