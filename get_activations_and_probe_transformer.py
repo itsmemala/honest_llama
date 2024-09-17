@@ -351,7 +351,8 @@ def main():
                 args.acts_per_file = 20
             else:
                 args.acts_per_file = 100
-            for idx in train_idxs:
+            temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(args.len_dataset)
+            for idx in temp_train_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
