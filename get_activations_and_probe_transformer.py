@@ -849,7 +849,7 @@ def main():
                     # print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
             
 
-            np.save(f'{args.save_path}/probes/_val_auc.npy', all_val_auc)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', all_val_auc)
             # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
             np.save(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', all_val_loss)
             # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
