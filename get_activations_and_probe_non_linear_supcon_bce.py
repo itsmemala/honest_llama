@@ -374,10 +374,6 @@ def main():
     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_knn) if 'orthogonal' in args.method and args.excl_ce else method_concat
     method_concat = method_concat + '_excl_ce' if args.excl_ce else method_concat
-    if args.dataset_list is None:
-        probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-    else:
-        probes_file_name = f'NLSC{save_seed}_{args.model_name}_multi_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
 
     for lr in args.lr_list:
         print('Training lr',lr)
@@ -391,6 +387,11 @@ def main():
             torch.manual_seed(save_seed)
             if torch.cuda.is_available(): torch.cuda.manual_seed(save_seed)
             # save_seed = save_seed if save_seed!=42 else '' # for backward compat
+
+            if args.dataset_list is None:
+                probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+            else:
+                probes_file_name = f'NLSC{save_seed}_{args.model_name}_multi_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
 
             # Individual probes
             all_supcon_train_loss, all_supcon_val_loss = {}, {}
