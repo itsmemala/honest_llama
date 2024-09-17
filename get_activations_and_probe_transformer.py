@@ -416,9 +416,9 @@ def main():
             # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
             if args.dataset_list is None:
-                probes_file_name = T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}
+                probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
             else:
-                probes_file_name = T{save_seed}_{args.model_name}_multi_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}
+                probes_file_name = f'T{save_seed}_{args.model_name}_multi_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
 
             # Individual probes
             all_supcon_train_loss,all_supcon1_train_loss,all_supcon2_train_loss = {}, {}, {}
