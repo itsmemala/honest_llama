@@ -357,7 +357,8 @@ def main():
                 args.acts_per_file = 100
             for idx in test_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                test_dataset_name = args.test_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
+                file_path = f'{args.save_path}/features/{args.model_name}_{test_dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_test_acts.append(act)
         my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
@@ -373,6 +374,10 @@ def main():
     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_knn) if 'orthogonal' in args.method and args.excl_ce else method_concat
     method_concat = method_concat + '_excl_ce' if args.excl_ce else method_concat
+    if args.dataset_list is None:
+        probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+    else:
+        probes_file_name = f'NLSC{save_seed}_{args.model_name}_multi_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
 
     for lr in args.lr_list:
         print('Training lr',lr)
@@ -834,7 +839,7 @@ def main():
                         
                         # print(np.array(val_loss))
                         if args.save_probes:
-                            probe_save_path = f'{args.save_path}/probes/models/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_model{i}_{layer}_{head}'
+                            probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}_{layer}_{head}'
                             torch.save(nlinear_model, probe_save_path)
                             probes_saved.append(probe_save_path)
                         
@@ -940,20 +945,20 @@ def main():
                 # break
             
 
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_auc.npy', all_val_auc)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', all_val_auc)
             # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_loss.npy', all_val_loss)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', all_val_loss)
             # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_train_loss.npy', all_train_loss)
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_supcon_train_loss.npy', all_supcon_train_loss)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', all_train_loss)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', all_supcon_train_loss)
             # all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_pred.npy', all_val_preds)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', all_val_preds)
             # all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_f1.npy', all_val_f1s)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_val_f1.npy', all_val_f1s)
             # all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_true.npy', all_y_true_val)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', all_y_true_val)
             # all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-            np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_val_logits.npy', all_val_logits)
+            np.save(f'{args.save_path}/probes/{probes_file_name}_val_logits.npy', all_val_logits)
             # all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
             # np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
             # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
@@ -961,16 +966,16 @@ def main():
 
             if args.test_file_name is not None:
                 all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-                np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_pred.npy', all_test_preds)
+                np.save(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy', all_test_preds)
                 all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-                np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_f1.npy', all_test_f1s)
+                np.save(f'{args.save_path}/probes/{probes_file_name}_test_f1.npy', all_test_f1s)
                 all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
-                np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_true.npy', all_y_true_test)
+                np.save(f'{args.save_path}/probes/{probes_file_name}_test_true.npy', all_y_true_test)
                 all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-                np.save(f'{args.save_path}/probes/NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_test_logits.npy', all_test_logits)
+                np.save(f'{args.save_path}/probes/{probes_file_name}_test_logits.npy', all_test_logits)
 
             if args.plot_name is not None:
-                probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                # probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                 val_auc = np.load(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', allow_pickle=True).item()[0]
                 val_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
                 train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
