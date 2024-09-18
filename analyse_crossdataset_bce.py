@@ -47,6 +47,7 @@ def main():
     parser.add_argument("--responses_file_name", type=str, default='', help='local directory with dataset')
     parser.add_argument("--mitigated_responses_file_name", type=str, default='', help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--probes_file_name_concat", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
@@ -140,7 +141,7 @@ def main():
         if args.lr_list is not None:
             probes_file_name_list, auc_by_lr = [], []
             for lr in args.lr_list:
-                probes_file_name = args.probes_file_name + str(lr) + '_False'
+                probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                 probes_file_name_list.append(probes_file_name)
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                 auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
