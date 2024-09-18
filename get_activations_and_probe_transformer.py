@@ -99,7 +99,7 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
             best_val_perf, best_t = perf, t
     return best_t
 
-def compute_knn_dist(outputs,train_outputs):
+def compute_knn_dist(outputs,train_outputs,top_k=5):
     outputs = F.normalize(outputs, p=2, dim=-1)
     train_outputs = F.normalize(train_outputs, p=2, dim=-1)
     for o in outputs[:1]:
