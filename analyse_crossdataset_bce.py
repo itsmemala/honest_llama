@@ -458,7 +458,7 @@ def main():
         # fig.savefig(f'{args.save_path}/plot1.png')
     
     print('\n')
-
+    print(np.argmax(val_f1_avg))
 
     # Get preds on all tokens
     # if args.responses_file_name=='' and args.dataset_name=='tqa_gen':

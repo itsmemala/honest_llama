@@ -642,11 +642,12 @@ def main():
                                     supcon_loss.backward()
                                     # supcon_train_loss.append(supcon_loss.item())
                                     # CE backward
-                                    emb = nlinear_model.forward_upto_classifier(inputs).detach()
-                                    norm_emb = F.normalize(emb, p=2, dim=-1)
-                                    outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
-                                    loss = criterion(outputs, targets.to(device).float())
-                                    loss.backward()
+                                    if 'knn' not in args.method:
+                                        emb = nlinear_model.forward_upto_classifier(inputs).detach()
+                                        norm_emb = F.normalize(emb, p=2, dim=-1)
+                                        outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
+                                        loss = criterion(outputs, targets.to(device).float())
+                                        loss.backward()
                                 else:
                                     outputs = nlinear_model.linear(inputs) if 'individual_linear' in args.method else nlinear_model(inputs)
                                     loss = criterion(outputs, targets.to(device).float())
