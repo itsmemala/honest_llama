@@ -85,9 +85,10 @@ def combine_acts(idx,file_name,args):
         act = torch.concatenate([act1[:,None,:],act2[:,None,:],act3[:,None,:]],dim=1)
     return act
 
-def get_best_threshold(val_true, val_preds):
+def get_best_threshold(val_true, val_preds, is_knn=False):
     best_val_perf, best_t = 0, 0.5
-    for t in [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]:
+    thresholds = np.histogram_bin_edges(val_preds, bins='auto') if is_knn else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+    for t in thresholds:
         val_pred_at_thres = deepcopy(val_preds) # Deep copy so as to not touch orig values
         val_pred_at_thres[val_pred_at_thres>t] = 1
         val_pred_at_thres[val_pred_at_thres<=t] = 0
@@ -97,6 +98,11 @@ def get_best_threshold(val_true, val_preds):
         if perf>best_val_perf:
             best_val_perf, best_t = perf, t
     return best_t
+
+def compute_knn_dist(outputs,train_outputs):
+    for o in outputs[:2]:
+        print(o.shape,train_outputs.shape)
+    return dist, preds
 
 def main(): 
     """
@@ -610,11 +616,14 @@ def main():
                             supcon_loss.backward()
                             # supcon_train_loss.append(supcon_loss.item())
                             # CE backward
-                            emb = nlinear_model.forward_upto_classifier(inputs).detach()
-                            norm_emb = F.normalize(emb, p=2, dim=-1)
-                            outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
-                            loss = criterion(outputs, targets.to(device).float())
-                            loss.backward()
+                            if 'knn' in args.method:
+                                loss = torch.Tensor([0])
+                            else:
+                                emb = nlinear_model.forward_upto_classifier(inputs).detach()
+                                norm_emb = F.normalize(emb, p=2, dim=-1)
+                                outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
+                                loss = criterion(outputs, targets.to(device).float())
+                                loss.backward()
                         else:
                             outputs = nlinear_model(inputs)
                             loss = criterion(outputs, targets.to(device).float())
@@ -666,10 +675,16 @@ def main():
                         # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                         targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                        outputs = nlinear_model(inputs)
-                        nlinear_model
-                        epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
-                        val_preds_batch = torch.sigmoid(outputs.data)
+                        if 'knn' in args.method:
+                            outputs = nlinear_model.forward_upto_classifier(inputs)
+                            epoch_val_loss += 0
+                            train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs],axis=0)
+                            train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                        else:
+                            outputs = nlinear_model(inputs)
+                            epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                            val_preds_batch = torch.sigmoid(outputs.data)
                         val_preds += val_preds_batch.tolist()
                         val_true += targets.tolist()
                     epoch_val_loss = epoch_val_loss/(step+1)
@@ -748,10 +763,17 @@ def main():
                             inputs = torch.stack(activations,axis=0)
                         # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                        predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                        if 'knn' in args.method:
+                            outputs = nlinear_model.forward_upto_classifier(inputs)
+                            epoch_val_loss += 0
+                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0)
+                            train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                            val_preds_batch, predicted = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                        else:
+                            predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                            val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                         y_val_pred += predicted
                         y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
-                        val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                         val_preds.append(val_preds_batch)
                         val_logits.append(nlinear_model(inputs))
                 val_preds = torch.cat(val_preds).cpu().numpy()
@@ -761,7 +783,7 @@ def main():
                 all_val_logits[i].append(torch.cat(val_logits))
                 print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
                 print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
-                best_val_t = get_best_threshold(y_val_true, val_preds)
+                best_val_t = get_best_threshold(y_val_true, val_preds, True if 'knn' in args.method else False)
                 y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
                 log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
                 log_val_recall = recall_score(y_val_true,y_val_pred_opt)
@@ -804,10 +826,17 @@ def main():
                                 inputs = torch.stack(activations,axis=0)
                             # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                            predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                            if 'knn' in args.method:
+                                outputs = nlinear_model.forward_upto_classifier(inputs)
+                                epoch_val_loss += 0
+                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0)
+                                train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                                test_preds_batch, predicted = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                            else:
+                                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                                test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                             y_test_pred += predicted
                             y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
-                            test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                             test_preds.append(test_preds_batch)
                             test_logits.append(nlinear_model(inputs))
                     test_preds = torch.cat(test_preds).cpu().numpy()
