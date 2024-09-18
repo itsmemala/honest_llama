@@ -144,13 +144,13 @@ def main():
                 probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                 probes_file_name_list.append(probes_file_name)
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
-                print(all_val_pred)
+                print(all_val_pred.shape)
                 auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
             best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
         else:
             best_probes_file_name = args.probes_file_name
         
-        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
+        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
         if args.best_threshold:
             best_val_perf, best_t = 0, 0.5
             for t in [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]:
@@ -166,7 +166,7 @@ def main():
             best_t = 0.5
         return best_probes_file_name, all_val_pred, all_val_true, best_t
 
-    # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
+    # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
     fold = 0
     test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
     best_probes_per_model, layer_pred_thresholds = [], []
