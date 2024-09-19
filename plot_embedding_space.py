@@ -221,10 +221,10 @@ def main():
     # TODO: norm input
     nlinear_model.eval()
     my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
-    my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts[:100]).detach().cpu().numpy()
+    my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu().numpy()
     my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
     print(my_embs.shape)
-    my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels[:100]]
+    my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels]
     my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'test_NH',3:'test_H'}
     my_plot_labels_name = [my_plot_labels_dict[l] for l in my_plot_labels]
     # my_plot_labels_cdict = {0:,1:,2:,3:}
