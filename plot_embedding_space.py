@@ -224,7 +224,8 @@ def main():
     # my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
     # my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu().numpy()
     # my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
-    # my_train_acts, my_test_acts = 
+    my_train_acts = torch.stack([torch.concatenate(act) for act in my_train_acts]).detach().cpu().numpy() # concatenate layers
+    my_test_acts = torch.stack([torch.concatenate(act) for act in my_test_acts]).detach().cpu().numpy() # concatenate layers
     print(my_train_acts.shape)
     my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
     print(my_embs.shape)
