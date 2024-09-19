@@ -141,6 +141,7 @@ def main():
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--sc1_wgt',type=float, default=1)
     parser.add_argument('--sc2_wgt',type=float, default=1)
+    parser.add_argument('--top_k',type=int, default=5)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -415,7 +416,8 @@ def main():
         print('Loading on device',device_id)
 
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
-    method_concat = args.method + '_no_bias' if args.no_bias else method_concat
+    method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
+    method_concat = method_concat + '_' + str(args.top_k) if 'knn' in args.method else method_concat
 
     for lr in args.lr_list:
         print('Training lr',lr)
@@ -689,7 +691,7 @@ def main():
                             epoch_val_loss += 0
                             train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k)
                         else:
                             outputs = nlinear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -777,7 +779,7 @@ def main():
                             epoch_val_loss += 0
                             train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k)
                             predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                         else:
                             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
@@ -844,7 +846,7 @@ def main():
                                 epoch_val_loss += 0
                                 train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                 train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data)
+                                test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k)
                                 predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                             else:
                                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
