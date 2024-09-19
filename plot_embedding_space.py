@@ -236,7 +236,7 @@ def main():
     X_tsne = tsne.fit_transform(my_embs)
     print(tsne.kl_divergence_)
     fig, axs = plt.subplots(1,1)
-    sc = axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels_colors, cmap=colors.ListedColormap(['lightgreen','lightblue','darkgreen','darkblue'])) #label=my_plot_labels_name)
+    sc = axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels_colors, cmap= matplotlib.colors.ListedColormap(['lightgreen','lightblue','darkgreen','darkblue'])) #label=my_plot_labels_name)
     handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
