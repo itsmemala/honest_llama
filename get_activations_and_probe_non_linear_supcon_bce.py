@@ -71,10 +71,10 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
             best_val_perf, best_t = perf, t
     return best_t
 
-def compute_knn_dist(outputs,train_outputs):
+def compute_knn_dist(outputs,train_outputs,top_k=5):
     for o in outputs[:2]:
         print(o.shape,train_outputs.shape)
-    return dist, preds
+    return dist
 
 def main(): 
     """
@@ -781,7 +781,7 @@ def main():
                                     epoch_val_loss += 0
                                     train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs],axis=0)
                                     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                    val_preds_batch, _ = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
                                 else:
                                     outputs = nlinear_model(inputs)
                                     epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -895,7 +895,8 @@ def main():
                                     epoch_val_loss += 0
                                     train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs],axis=0)
                                     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                    val_preds_batch, predicted = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                                    predicted = [1 if v>0.5 else 0 for v in val_preds_batch]
                                 else:
                                     predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                     val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
@@ -950,7 +951,8 @@ def main():
                                         epoch_val_loss += 0
                                         train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs],axis=0)
                                         train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                        test_preds_batch, predicted = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                                        test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
+                                        predicted = [1 if v>0.5 else 0 for v in test_preds_batch]
                                     else:
                                         predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                         test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens

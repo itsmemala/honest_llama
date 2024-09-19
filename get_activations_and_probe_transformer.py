@@ -104,11 +104,10 @@ def compute_knn_dist(outputs,train_outputs,top_k=5):
     train_outputs = F.normalize(train_outputs, p=2, dim=-1)
     dist = []
     for o in outputs[:1]:
-        o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0]
-        print(o_dist.shape)
-        print(o_dist[torch.argsort(o_dist)[:top_k]].shape) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
-        dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]]))
-    return dist, preds
+        o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
+        dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+    dist = torch.stack(dist)
+    return dist
 
 def main(): 
     """
@@ -686,7 +685,7 @@ def main():
                             epoch_val_loss += 0
                             train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0)
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch, _ = compute_knn_dist(outputs.data,train_outputs.data)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data)
                         else:
                             outputs = nlinear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -774,7 +773,8 @@ def main():
                             epoch_val_loss += 0
                             train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0)
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch, predicted = compute_knn_dist(outputs.data,train_outputs.data)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data)
+                            predicted = [1 if v>0.5 else 0 for v in val_preds_batch]
                         else:
                             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                             val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
@@ -837,7 +837,8 @@ def main():
                                 epoch_val_loss += 0
                                 train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0)
                                 train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                test_preds_batch, predicted = compute_knn_dist(outputs.data,train_outputs.data)
+                                test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data)
+                                predicted = [1 if v>0.5 else 0 for v in test_preds_batch]
                             else:
                                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
