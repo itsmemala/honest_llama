@@ -784,7 +784,7 @@ def main():
                                 if 'knn' in args.method:
                                     outputs = nlinear_model.forward_upto_classifier(inputs)
                                     epoch_val_loss += 0
-                                    train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs],axis=0)
+                                    train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                     val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
                                 else:
@@ -898,7 +898,7 @@ def main():
                                 if 'knn' in args.method:
                                     outputs = nlinear_model.forward_upto_classifier(inputs)
                                     epoch_val_loss += 0
-                                    train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs],axis=0)
+                                    train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                     val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
                                     predicted = [1 if v>0.5 else 0 for v in val_preds_batch]
@@ -954,7 +954,7 @@ def main():
                                     if 'knn' in args.method:
                                         outputs = nlinear_model.forward_upto_classifier(inputs)
                                         epoch_val_loss += 0
-                                        train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs],axis=0)
+                                        train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                         train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                         test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
                                         predicted = [1 if v>0.5 else 0 for v in test_preds_batch]
