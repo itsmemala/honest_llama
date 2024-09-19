@@ -155,8 +155,12 @@ def main():
             thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='auto') if 'knn' in args.probes_file_name else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
             for t in thresholds:
                 val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-                val_pred_model[val_pred_model>t] = 1
-                val_pred_model[val_pred_model<=t] = 0
+                if 'knn' in args.probes_file_name:
+                    val_pred_model[val_pred_model<t] = 1
+                    val_pred_model[val_pred_model>=t] = 0
+                else:
+                    val_pred_model[val_pred_model>t] = 1
+                    val_pred_model[val_pred_model<=t] = 0
                 cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                 cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
                 perf = np.mean((cls1_f1,cls0_f1))
@@ -184,8 +188,12 @@ def main():
         all_preds.append(test_preds[model])
 
         val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-        val_pred_model[val_pred_model>best_t] = 1
-        val_pred_model[val_pred_model<=best_t] = 0
+        if 'knn' in args.probes_file_name:
+            val_pred_model[val_pred_model<best_t] = 1
+            val_pred_model[val_pred_model>=best_t] = 0
+        else:
+            val_pred_model[val_pred_model>best_t] = 1
+            val_pred_model[val_pred_model<=best_t] = 0
         cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
         cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
         val_f1_cls0.append(cls0_f1)
@@ -197,8 +205,12 @@ def main():
             incl_layers.append(model)
         
         test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-        test_pred_model[test_pred_model>best_t] = 1
-        test_pred_model[test_pred_model<=best_t] = 0
+        if 'knn' in args.probes_file_name:
+            test_pred_model[test_pred_model<best_t] = 1
+            test_pred_model[test_pred_model>=best_t] = 0
+        else:
+            test_pred_model[test_pred_model>best_t] = 1
+            test_pred_model[test_pred_model<=best_t] = 0
         cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
         cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
         test_f1_cls0.append(cls0_f1)

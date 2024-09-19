@@ -62,8 +62,12 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
     thresholds = np.histogram_bin_edges(val_preds, bins='auto') if is_knn else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
     for t in thresholds:
         val_pred_at_thres = deepcopy(val_preds) # Deep copy so as to not touch orig values
-        val_pred_at_thres[val_pred_at_thres>t] = 1
-        val_pred_at_thres[val_pred_at_thres<=t] = 0
+        if is_knn:
+            val_pred_at_thres[val_pred_at_thres<t] = 1
+            val_pred_at_thres[val_pred_at_thres>=t] = 0
+        else:
+            val_pred_at_thres[val_pred_at_thres>t] = 1
+            val_pred_at_thres[val_pred_at_thres<=t] = 0
         cls1_f1 = f1_score(val_true,val_pred_at_thres)
         cls0_f1 = f1_score(val_true,val_pred_at_thres,pos_label=0)
         perf = np.mean((cls1_f1,cls0_f1))
@@ -901,7 +905,7 @@ def main():
                                     train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                     val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
-                                    predicted = [1 if v>0.5 else 0 for v in val_preds_batch]
+                                    predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                 else:
                                     predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                     val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
@@ -918,7 +922,10 @@ def main():
                             print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
                             print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
                             best_val_t = get_best_threshold(y_val_true, val_preds, True if 'knn' in args.method else False)
-                            y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
+                            if 'knn' in args.method:
+                                y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
+                            else:
+                                y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
                             log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
                             log_val_recall = recall_score(y_val_true,y_val_pred_opt)
                             log_val_auc = roc_auc_score(y_val_true, val_preds)
@@ -957,7 +964,7 @@ def main():
                                         train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                         train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                         test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data) if args.token in single_token_types else None
-                                        predicted = [1 if v>0.5 else 0 for v in test_preds_batch]
+                                        predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                                     else:
                                         predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                         test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
@@ -976,7 +983,10 @@ def main():
                                 print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
                                 print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
                                 print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
-                                y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
+                                if 'knn' in args.method:
+                                    y_test_pred_opt = [1 if v<best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
+                                else:
+                                    y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
                                 log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
                                 log_test_recall = recall_score(y_test_true, y_test_pred_opt)
                                 log_test_auc = roc_auc_score(y_test_true, test_preds)
