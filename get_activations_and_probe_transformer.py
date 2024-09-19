@@ -697,7 +697,7 @@ def main():
                         val_preds += val_preds_batch.tolist()
                         val_true += targets.tolist()
                     epoch_val_loss = epoch_val_loss/(step+1)
-                    epoch_val_auc = roc_auc_score(val_true, -val_preds) if 'knn' in args.method else roc_auc_score(val_true, val_preds)
+                    epoch_val_auc = roc_auc_score(val_true, [-v for v in val_preds]) if 'knn' in args.method else roc_auc_score(val_true, val_preds)
                     supcon_train_loss.append(epoch_supcon_loss)
                     supcon1_train_loss.append(epoch_supcon1_loss)
                     supcon2_train_loss.append(epoch_supcon2_loss)
@@ -800,7 +800,7 @@ def main():
                     y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
                 log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
                 log_val_recall = recall_score(y_val_true,y_val_pred_opt)
-                log_val_auc = roc_auc_score(y_val_true, -val_preds) if 'knn' in args.method else roc_auc_score(y_val_true, val_preds)
+                log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if 'knn' in args.method else roc_auc_score(y_val_true, val_preds)
                 pred_correct = 0
                 y_test_pred, y_test_true = [], []
                 test_preds = []
@@ -869,7 +869,7 @@ def main():
                         y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
                     log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
                     log_test_recall = recall_score(y_test_true, y_test_pred_opt)
-                    log_test_auc = roc_auc_score(y_test_true, -test_preds) if 'knn' in args.method else roc_auc_score(y_test_true, test_preds)
+                    log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if 'knn' in args.method else roc_auc_score(y_test_true, test_preds)
                     all_test_logits[i].append(torch.cat(test_logits))
 
                     # # Get preds on all tokens
