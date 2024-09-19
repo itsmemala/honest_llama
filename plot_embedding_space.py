@@ -220,14 +220,14 @@ def main():
     my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
 
     # TODO: norm input
-    my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-    my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-    print(my_train_acts.shape)
-    my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
-    # nlinear_model.eval()
-    # my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
-    # my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu().numpy()
-    # my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
+    # my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+    # my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+    # print(my_train_acts.shape)
+    # my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
+    nlinear_model.eval()
+    my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
+    my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu().numpy()
+    my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
     
     print(my_embs.shape)
     my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels]
