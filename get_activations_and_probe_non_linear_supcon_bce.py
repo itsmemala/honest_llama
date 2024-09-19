@@ -72,8 +72,13 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
     return best_t
 
 def compute_knn_dist(outputs,train_outputs,top_k=5):
-    for o in outputs[:2]:
-        print(o.shape,train_outputs.shape)
+    outputs = F.normalize(outputs, p=2, dim=-1)
+    train_outputs = F.normalize(train_outputs, p=2, dim=-1)
+    dist = []
+    for o in outputs:
+        o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
+        dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+    dist = torch.stack(dist)
     return dist
 
 def main(): 
