@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -418,6 +419,8 @@ def main():
             plot_name_concat += 'a' if args.best_using_auc else ''
             plot_name_concat += 'l' if args.best_as_last else ''
             probes_file_name += plot_name_concat
+            print(probes_file_name)
+            sys.exist()
 
             # Individual probes
             all_supcon_train_loss, all_supcon_val_loss = {}, {}
