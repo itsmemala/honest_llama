@@ -439,7 +439,8 @@ def main():
             elif args.dataset_list is not None:
                 probes_file_name = f'T{save_seed}_{args.model_name}_multi_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
             elif args.ood_test:
-                probes_file_name = f'T{save_seed}_{args.model_name}_ood_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
+                probes_file_name = f'T{save_seed}_{args.model_name}_ood_{train_dataset_name}_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
             plot_name_concat = 'b' if args.use_best_val_t else ''
             plot_name_concat += 'a' if args.best_using_auc else ''
             plot_name_concat += 'l' if args.best_as_last else ''
