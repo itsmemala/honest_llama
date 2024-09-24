@@ -420,7 +420,7 @@ def main():
             plot_name_concat += 'l' if args.best_as_last else ''
             probes_file_name += plot_name_concat
             print(probes_file_name)
-            sys.exist()
+            sys.exit()
 
             # Individual probes
             all_supcon_train_loss, all_supcon_val_loss = {}, {}
