@@ -138,6 +138,7 @@ def main():
     parser.add_argument("--test_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--train_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument('--ood_test', type=bool, default=False)
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--fast_mode',type=bool, default=False) # use when GPU space is free, dataset is small and using only 1 token per sample
     # parser.add_argument('--seed',type=int, default=42)
@@ -405,10 +406,12 @@ def main():
             if torch.cuda.is_available(): torch.cuda.manual_seed(save_seed)
             # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
-            if args.dataset_list is None:
+            if args.dataset_list is None and args.ood_test==False:
                 probes_file_name = f'NLSC{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-            else:
+            elif args.dataset_list is not None:
                 probes_file_name = f'NLSC{save_seed}_{args.model_name}_multi_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+            elif args.ood_test:
+                probes_file_name = f'NLSC{save_seed}_{args.model_name}_ood_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
             plot_name_concat = 'b' if args.use_best_val_t else ''
             plot_name_concat += 'a' if args.best_using_auc else ''
             plot_name_concat += 'l' if args.best_as_last else ''
@@ -494,7 +497,7 @@ def main():
                         class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
                         weight = 1. / class_sample_count
                         samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
-                        sampler = WeightedRandomSampler(samples_weight, len(samples_weight), replacement=True)
+                        sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
                         ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
                         ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler) if args.no_batch_sampling==False else DataLoader(ds_train, batch_size=args.bs)
                         ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
