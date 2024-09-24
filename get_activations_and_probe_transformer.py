@@ -510,7 +510,8 @@ def main():
                 class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
                 weight = 1. / class_sample_count
                 samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
-                samples_weight.shape
+                print(samples_weight.shape)
+                sys.exit()
                 # sampler = WeightedRandomSampler(samples_weight, len(samples_weight), replacement=True)
                 ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
                 sampler = RandomSampler(ds_train, replacement=True)
