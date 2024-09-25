@@ -70,51 +70,53 @@ def main():
     #         json.dump(entry, outfile)
             # outfile.write('\n')
     
-    # greedy_resp_data = []
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_greedy_responses_train5000.json', 'r') as read_file:
-    #     for line in read_file:
-    #         greedy_resp_data.append(json.loads(line))
-    # greedy_resp_data = greedy_resp_data#[:2000]
-    # sampled_resp_data = []
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampled_responses_train2000.json', 'r') as read_file:
-    #     for line in read_file:
-    #         sampled_resp_data.append(json.loads(line))
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampled_responses_train5000.json', 'r') as read_file:
-    #     for line in read_file:
-    #         sampled_resp_data.append(json.loads(line))
-    # for i,s_row in enumerate(sampled_resp_data):
-    #     greedy_i = ''
-    #     for k,g_row in enumerate(greedy_resp_data):
-    #         if g_row['prompt']==s_row['prompt']: greedy_i = k
-    #     sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
-        
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampledplus_responses_train5000.json', 'w') as outfile:
-    #     for entry in sampled_resp_data:
-    #         json.dump(entry, outfile)
-    #         outfile.write('\n')
+    greedy_resp_data = []
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_greedy_responses_train5000.json', 'r') as read_file:
+        for line in read_file:
+            greedy_resp_data.append(json.loads(line))
+    greedy_resp_data = greedy_resp_data#[:2000]
+    sampled_resp_data = []
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampled_responses_train2000.json', 'r') as read_file:
+        for line in read_file:
+            sampled_resp_data.append(json.loads(line))
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampled_responses_train5000.json', 'r') as read_file:
+        for line in read_file:
+            sampled_resp_data.append(json.loads(line))
+    for i,s_row in enumerate(sampled_resp_data):
+        greedy_i = ''
+        for k,g_row in enumerate(greedy_resp_data):
+            if g_row['prompt']==s_row['prompt']: greedy_i = k
+        sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
+
+    print(len(sampled_resp_data))    
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampledplus_responses_train5000.json', 'w') as outfile:
+        for entry in sampled_resp_data:
+            json.dump(entry, outfile)
+            outfile.write('\n')
     
-    # greedy_labels_data = []
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_greedy_responses_labels_train5000.json', 'r') as read_file:
-    #     for line in read_file:
-    #         greedy_labels_data.append(json.loads(line))
-    # greedy_labels_data = greedy_labels_data#[:2000]
-    # sampled_labels_data = []
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampled_responses_labels_train2000.json', 'r') as read_file:
-    #     for line in read_file:
-    #         sampled_labels_data.append(json.loads(line))
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampled_responses_labels_train5000.json', 'r') as read_file:
-    #     for line in read_file:
-    #         sampled_labels_data.append(json.loads(line))
-    # for i,s_row in enumerate(sampled_resp_data):
-    #     greedy_i = ''
-    #     for k,g_row in enumerate(greedy_resp_data):
-    #         if g_row['prompt']==s_row['prompt']: greedy_i = k
-    #     sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
+    greedy_labels_data = []
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_greedy_responses_labels_train5000.json', 'r') as read_file:
+        for line in read_file:
+            greedy_labels_data.append(json.loads(line))
+    greedy_labels_data = greedy_labels_data#[:2000]
+    sampled_labels_data = []
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampled_responses_labels_train2000.json', 'r') as read_file:
+        for line in read_file:
+            sampled_labels_data.append(json.loads(line))
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampled_responses_labels_train5000.json', 'r') as read_file:
+        for line in read_file:
+            sampled_labels_data.append(json.loads(line))
+    for i,s_row in enumerate(sampled_resp_data):
+        greedy_i = ''
+        for k,g_row in enumerate(greedy_resp_data):
+            if g_row['prompt']==s_row['prompt']: greedy_i = k
+        sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
         
-    # with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampledplus_responses_labels_train5000.json', 'w') as outfile:
-    #     for entry in sampled_labels_data:
-    #         json.dump(entry, outfile)
-    #         outfile.write('\n')
+    print(len(sampled_labels_data))
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampledplus_responses_labels_train5000.json', 'w') as outfile:
+        for entry in sampled_labels_data:
+            json.dump(entry, outfile)
+            outfile.write('\n')
 
 
     # labels_data = []
@@ -229,28 +231,28 @@ def main():
     ##
 
     ##gsm8k
-    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
-        greedy_train_data = json.load(read_file)
-    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
-        sampled_train_data = json.load(read_file)
-    # print(len(sampled_train_data['is_correct']))
-    # print(sampled_train_data.keys())
-    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
-    for i in range(len(sampled_train_data['is_correct'])):
-        if len(sampled_train_data['is_correct'][i])>0:
-            # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
-            greedy_i = ''
-            for j in range(len(greedy_train_data['full_input_text'])):
-                if greedy_train_data['full_input_text'][j]==sampled_train_data['full_input_text'][i][0]: greedy_i=j # needed to match rows when generated using parallel gpus
-            if greedy_i == '': print(i,sampled_train_data['full_input_text'][i])
-            result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][greedy_i]])
-            result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][greedy_i]])
-            result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][greedy_i]])
-            result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][greedy_i]])
+    # with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
+    #     greedy_train_data = json.load(read_file)
+    # with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
+    #     sampled_train_data = json.load(read_file)
+    # # print(len(sampled_train_data['is_correct']))
+    # # print(sampled_train_data.keys())
+    # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
+    # for i in range(len(sampled_train_data['is_correct'])):
+    #     if len(sampled_train_data['is_correct'][i])>0:
+    #         # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
+    #         greedy_i = ''
+    #         for j in range(len(greedy_train_data['full_input_text'])):
+    #             if greedy_train_data['full_input_text'][j]==sampled_train_data['full_input_text'][i][0]: greedy_i=j # needed to match rows when generated using parallel gpus
+    #         if greedy_i == '': print(i,sampled_train_data['full_input_text'][i])
+    #         result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][greedy_i]])
+    #         result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][greedy_i]])
+    #         result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][greedy_i]])
+    #         result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][greedy_i]])
     
-    print(len(result_dict['is_correct'])) # 1999
-    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
-            json.dump(result_dict, f)
+    # print(len(result_dict['is_correct'])) # 1999
+    # with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
+    #         json.dump(result_dict, f)
 
     ## this was not needed since start_at doesn't apply to gsm8k in get_prompt_responses_factual.py
     # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
