@@ -229,9 +229,9 @@ def main():
     ##
 
     ##gsm8k
-    with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
         greedy_train_data = json.load(read_file)
-    with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
         sampled_train_data = json.load(read_file)
     # print(len(sampled_train_data['is_correct']))
     # print(sampled_train_data.keys())
@@ -249,7 +249,7 @@ def main():
             result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][greedy_i]])
     
     print(len(result_dict['is_correct'])) # 1999
-    with open(f'{args.save_path}/responses/hl_llama_7B_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
+    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
             json.dump(result_dict, f)
 
     ## this was not needed since start_at doesn't apply to gsm8k in get_prompt_responses_factual.py
