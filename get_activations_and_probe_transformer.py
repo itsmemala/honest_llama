@@ -487,7 +487,7 @@ def main():
                     train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
                     train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
                     # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
-                    val_set_idxs = np.concatenate([k*num_samples for k in val_prompt_idxs], axis=0)
+                    val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
                     # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
                     print('Hallu in val:',sum([labels[i] for i in val_set_idxs])/len(val_set_idxs),'Hallu in train:',sum([labels[i] for i in train_set_idxs])/len(train_set_idxs))
                 else:
