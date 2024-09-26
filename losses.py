@@ -107,7 +107,7 @@ class SupConLoss(nn.Module):
                 wp_mask.append(sample_wp_mask)
                 all_prompt_mask.append(prompt_mask)
             mask, all_prompt_mask = torch.stack(wp_mask), torch.stack(all_prompt_mask)
-            log_prob = logits[wp_samples] - torch.log((all_prompt_mask*exp_logits[wp_samples]).sum(1, keepdim=True))
+            log_prob = logits[wp_samples] - torch.log((all_prompt_mask*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use all_prompt_mask to normalise over only pairs from same prompt
 
         # compute mean of log-likelihood over positive
         # modified to handle edge cases when there is no positive pair

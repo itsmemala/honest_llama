@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
+    parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
@@ -137,341 +138,351 @@ def main():
             np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy',all_preds)
 
 
-    def results_at_best_lr(model):
-        if args.lr_list is not None:
-            probes_file_name_list, auc_by_lr = [], []
-            for lr in args.lr_list:
-                probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
-                probes_file_name_list.append(probes_file_name)
-                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
-                auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
-            best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
-        else:
-            best_probes_file_name = args.probes_file_name
-        
-        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
-        if args.best_threshold:
-            best_val_perf, best_t = 0, 0.5
-            thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='auto') if 'knn' in args.probes_file_name else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
-            for t in thresholds:
-                val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-                if 'knn' in args.probes_file_name:
-                    val_pred_model[val_pred_model<t] = 1
-                    val_pred_model[val_pred_model>=t] = 0
-                else:
-                    val_pred_model[val_pred_model>t] = 1
-                    val_pred_model[val_pred_model<=t] = 0
-                cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
-                cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
-                perf = np.mean((cls1_f1,cls0_f1))
-                if perf>best_val_perf:
-                    best_val_perf, best_t = perf, t
-        else:
-            best_t = 0.5
-        return best_probes_file_name, all_val_pred, all_val_true, best_t
+    all_results_list = []
 
-    # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
-    fold = 0
-    test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
-    best_probes_per_model, layer_pred_thresholds = [], []
-    excl_layers, incl_layers = [], []
-    aupr_by_layer, auroc_by_layer = [], []
-    num_models = 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
-    print(num_models)
-    all_preds = []
-    for model in tqdm(range(num_models)):
-        best_probes_file_name, all_val_pred, all_val_true, best_t = results_at_best_lr(model)
-        best_probes_per_model.append(best_probes_file_name)
-        layer_pred_thresholds.append(best_t)
-        test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
-        labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
-        all_preds.append(test_preds[model])
+    for seed in args.seed_list:
+        args.probes_file_name = 'NLSC'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
+        seed_results_list = []
 
-        val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-        if 'knn' in args.probes_file_name:
-            val_pred_model[val_pred_model<best_t] = 1
-            val_pred_model[val_pred_model>=best_t] = 0
-        else:
-            val_pred_model[val_pred_model>best_t] = 1
-            val_pred_model[val_pred_model<=best_t] = 0
-        cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
-        cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
-        val_f1_cls0.append(cls0_f1)
-        val_f1_cls1.append(cls1_f1)
-        val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
-        if cls0_f1==0 or cls1_f1==0:
-            excl_layers.append(model)
-        else:
-            incl_layers.append(model)
-        
-        test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-        if 'knn' in args.probes_file_name:
-            test_pred_model[test_pred_model<best_t] = 1
-            test_pred_model[test_pred_model>=best_t] = 0
-        else:
-            test_pred_model[test_pred_model>best_t] = 1
-            test_pred_model[test_pred_model<=best_t] = 0
-        cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
-        cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
-        test_f1_cls0.append(cls0_f1)
-        test_f1_cls1.append(cls1_f1)
-        test_recall_cls0.append(cls0_re)
-        test_recall_cls1.append(cls1_re)
-        precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model,:,:]))
-        aupr_by_layer.append(auc(recall,precision))
-        auroc_by_layer.append(roc_auc_score(labels, np.squeeze(test_preds[model,:,:])))
-    # print('\nValidation performance:\n',val_f1_avg)
-    incl_layers = np.array(incl_layers)
-    print('\nExcluded layers:',excl_layers)
-    # print(incl_layers)
-    # if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
-    # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
-    # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
-    # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
-    print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
-    print(np.mean(test_recall_cls1)) # H
-    print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
-    print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-    # print(auroc_by_layer)
-    all_preds = np.stack(all_preds, axis=0)
-
-
-    # print('\n')
-    if len(labels)>0:
-        # print('\nValidating probe performance...')
-        # Last layer probe
-        confident_sample_pred = []
-        for i in range(all_preds.shape[1]):
-            sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
-            confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
-        # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
-        print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
-        print(recall_score(labels,confident_sample_pred))
-        precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1,:,:]))
-        print(auc(recall,precision))
-        print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
-
-        # Best probe from validation data
-        confident_sample_pred = []
-        for i in range(all_preds.shape[1]):
-            sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
-            confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[np.argmax(val_f1_avg)] else 0)
-        # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
-        print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
-        print(recall_score(labels,confident_sample_pred))
-        precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[np.argmax(val_f1_avg),:,:]))
-        print(auc(recall,precision))
-        print(roc_auc_score(labels,np.squeeze(all_preds[np.argmax(val_f1_avg),:,:])))
-
-        #####################################################################################################################################
-        # Probe selection - a
-        # confident_sample_pred,confident_sample_probs = [], []
-        # mc_layer = []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
-        #     # print(sample_pred.shape,sample_pred[:5])
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     layer = np.argmin(probe_wise_entropy)
-        #     confident_sample_pred.append(np.argmax(sample_pred[layer]))
-        #     confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
-        #     if confident_sample_pred[-1]==hallu_cls: mc_layer.append(layer)
-        # # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using most confident probe per sample (0.5 threshold):\n',classification_report(labels,confident_sample_pred))
-        # print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
-        # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        # print('AUPR:',auc(recall,precision))
-        # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
-
-        # Probe selection - a
-        # confident_sample_pred = []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
-        #     # print(sample_pred.shape,sample_pred[:5])
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     layer = np.argmin(probe_wise_entropy)
-        #     confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
-        # # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using most confident probe per sample (best val threshold):\n',classification_report(labels,confident_sample_pred))
-
-        # Probe selection - a
-        confident_sample_pred,confident_sample_probs = [], []
-        for i in range(all_preds.shape[1]):
-            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
-            # print(sample_pred.shape,sample_pred[:5])
-            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-            layer = incl_layers[np.argmin(probe_wise_entropy[incl_layers])]
-            confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
-            confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
-        # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
-        print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
-        print(recall_score(labels,confident_sample_pred))
-        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print(auc(recall,precision))
-        print(roc_auc_score(labels,confident_sample_probs))
-
-        #####################################################################################################################################
-        # Probe selection - a
-        # confident_sample_pred,confident_sample_probs = [], []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0) # Using layer with max prob
-        #     confident_sample_probs.append(np.max(sample_pred))
-        # # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using max prob probe per sample (actual prob):\n',classification_report(labels,confident_sample_pred))
-        # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        # print('AUPR:',auc(recall,precision))
-        # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
-        # print('AUROC (cls0):',roc_auc_score([not bool(label) for label in labels],[1-prob for prob in confident_sample_probs]))
-
-        
-        # best_f1, best_single_threshold, best_report = 0, 0, None
-        # for t in thresholds:
-        #     confident_sample_pred = []
-        #     for i in range(all_preds.shape[1]):
-        #         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #         confident_sample_pred.append(1 if np.max(sample_pred)>t else 0) # Using layer with max prob
-        #     if f1_score(labels,confident_sample_pred)>best_f1:
-        #         best_f1, best_single_threshold = f1_score(labels,confident_sample_pred,average='macro'), t
-        #         best_report = classification_report(labels,confident_sample_pred)
-        # print('Results at threshold with best macro-F1:\n',best_report)
-
-
-        # Probe selection - a
-        # confident_sample_pred,confident_sample_probs = [], []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]  # Using layer with max dist from threshold
-        #     layer = np.argmax(sample_pred_dist)
-        #     confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
-        #     confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
-        # # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using max prob probe per sample (distance from best val threshold):\n',classification_report(labels,confident_sample_pred))
-        # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        # print('AUPR:',auc(recall,precision))
-        # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
-
-
-        # best_f1, best_single_threshold, best_report = 0, 0, None
-        # for t in thresholds:
-        #     confident_sample_pred = []
-        #     for i in range(all_preds.shape[1]):
-        #         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #         confident_sample_pred.append(1 if np.max(sample_pred)>t else 0) # Using layer with max prob
-        #     if f1_score(labels,confident_sample_pred)>best_f1:
-        #         best_f1, best_single_threshold = f1_score(labels,confident_sample_pred,average='macro'), t
-        #         best_report = classification_report(labels,confident_sample_pred)
-        # print('Results at threshold with best macro-F1:\n',best_report)
-
-
-        # Probe selection - a
-        # confident_sample_pred,confident_sample_probs = [], []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]
-        #     sample_pred_dist = np.array(sample_pred_dist)
-        #     layer = incl_layers[np.argmax(sample_pred_dist[incl_layers])]
-        #     confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
-        #     confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
-        # # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Using max prob probe per sample (distance from best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
-        # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        # print('AUPR:',auc(recall,precision))
-        # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
-        #####################################################################################################################################
-
-        # Probe selection - d
-        # confident_sample_pred,confident_sample_probs = [], []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
-        #     class_1_vote_cnt = sum(sample_pred_val)
-        #     maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
-        #     confident_sample_pred.append(maj_vote)
-        #     confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
-        # # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
-        # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        # print('AUPR:',auc(recall,precision))
-        # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
-
-         # Probe selection - d
-        confident_sample_pred,confident_sample_probs = [], []
-        for i in range(all_preds.shape[1]):
-            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred_val = [1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)]
-            sample_pred_val = np.array(sample_pred_val)
-            class_1_vote_cnt = sum(sample_pred_val[incl_layers])
-            maj_vote = 1 if class_1_vote_cnt>=(len(incl_layers)/2) else 0
-            confident_sample_pred.append(maj_vote)
-            confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
-        # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
-        print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
-        print(recall_score(labels,confident_sample_pred))
-        precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-        print(auc(recall,precision))
-        print(roc_auc_score(labels,confident_sample_probs))
-
-        # MC5 Statistics
-        # confident_sample_pred = []
-        # mc5_entropy_hallu, mc5_entropy_nonhallu = [], []
-        # mc5_entropy_hallu_mis, mc5_entropy_nonhallu_mis = 0, 0
-        # mc5_conf_gap_hallu, mc5_conf_gap_nonhallu = [], []
-        # for i in range(all_preds.shape[1]):
-        #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-        #     sample_pred_cls = np.array([1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)])
-        #     sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
-        #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-        #     best_probe_idxs = np.argpartition(probe_wise_entropy, 5)[:5] # Note: sort is asc, so take first x values for smallest x
+        def results_at_best_lr(model):
+            if args.lr_list is not None:
+                probes_file_name_list, auc_by_lr = [], []
+                for lr in args.lr_list:
+                    probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
+                    probes_file_name_list.append(probes_file_name)
+                    all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
+                    auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
+                best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
+            else:
+                best_probes_file_name = args.probes_file_name
             
-        #     # top_5_lower_bound_val = np.max(probe_wise_entropy)
-        #     # best_probe_idxs = probe_wise_entropy<=top_5_lower_bound_val
-        #     # sample_pred_chosen = sample_pred_cls[best_probe_idxs]
-        #     # cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
-        #     # vote_distri = np.array([cls1_vote, 1 - cls1_vote])
-        #     # mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
+            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
+            if args.best_threshold:
+                best_val_perf, best_t = 0, 0.5
+                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='auto') if 'knn' in args.probes_file_name else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+                for t in thresholds:
+                    val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
+                    if 'knn' in args.probes_file_name:
+                        val_pred_model[val_pred_model<t] = 1
+                        val_pred_model[val_pred_model>=t] = 0
+                    else:
+                        val_pred_model[val_pred_model>t] = 1
+                        val_pred_model[val_pred_model<=t] = 0
+                    cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
+                    cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
+                    perf = np.mean((cls1_f1,cls0_f1))
+                    if perf>best_val_perf:
+                        best_val_perf, best_t = perf, t
+            else:
+                best_t = 0.5
+            return best_probes_file_name, all_val_pred, all_val_true, best_t
+
+        # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy', allow_pickle=True).item()
+        fold = 0
+        test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
+        best_probes_per_model, layer_pred_thresholds = [], []
+        excl_layers, incl_layers = [], []
+        aupr_by_layer, auroc_by_layer = [], []
+        num_models = 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+        print(num_models)
+        all_preds = []
+        for model in tqdm(range(num_models)):
+            best_probes_file_name, all_val_pred, all_val_true, best_t = results_at_best_lr(model)
+            best_probes_per_model.append(best_probes_file_name)
+            layer_pred_thresholds.append(best_t)
+            test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
+            labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
+            all_preds.append(test_preds[model])
+
+            val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
+            if 'knn' in args.probes_file_name:
+                val_pred_model[val_pred_model<best_t] = 1
+                val_pred_model[val_pred_model>=best_t] = 0
+            else:
+                val_pred_model[val_pred_model>best_t] = 1
+                val_pred_model[val_pred_model<=best_t] = 0
+            cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
+            cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
+            val_f1_cls0.append(cls0_f1)
+            val_f1_cls1.append(cls1_f1)
+            val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
+            if cls0_f1==0 or cls1_f1==0:
+                excl_layers.append(model)
+            else:
+                incl_layers.append(model)
             
-        #     sample_pred_chosen = sample_pred[best_probe_idxs][1]
-        #     # sample_pred_chosen = np.squeeze(all_logits[:,i,:])[best_probe_idxs]*100
-        #     # sample_pred_chosen[sample_pred_chosen<0] = 0
-        #     sample_pred_chosen = np.exp(sample_pred_chosen)/sum(np.exp(sample_pred_chosen))
-        #     mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.emath.logn(5, sample_pred_chosen),neginf=0)).sum()
-        #     if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
-        #     if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
+            test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
+            if 'knn' in args.probes_file_name:
+                test_pred_model[test_pred_model<best_t] = 1
+                test_pred_model[test_pred_model>=best_t] = 0
+            else:
+                test_pred_model[test_pred_model>best_t] = 1
+                test_pred_model[test_pred_model<=best_t] = 0
+            cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
+            cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
+            test_f1_cls0.append(cls0_f1)
+            test_f1_cls1.append(cls1_f1)
+            test_recall_cls0.append(cls0_re)
+            test_recall_cls1.append(cls1_re)
+            precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model,:,:]))
+            aupr_by_layer.append(auc(recall,precision))
+            auroc_by_layer.append(roc_auc_score(labels, np.squeeze(test_preds[model,:,:])))
+        # print('\nValidation performance:\n',val_f1_avg)
+        incl_layers = np.array(incl_layers)
+        print('\nExcluded layers:',excl_layers)
+        # print(incl_layers)
+        # if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
+        # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
+        # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
+        # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
+        seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+        seed_results_list.append(np.mean(test_recall_cls1)) # print(np.mean(test_recall_cls1)) # H
+        seed_results_list.append(np.mean(aupr_by_layer)) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
+        seed_results_list.append(np.mean(auroc_by_layer)) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
+        # print(auroc_by_layer)
+        all_preds = np.stack(all_preds, axis=0)
+
+
+        # print('\n')
+        if len(labels)>0:
+            # print('\nValidating probe performance...')
+            # Last layer probe
+            confident_sample_pred = []
+            for i in range(all_preds.shape[1]):
+                sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
+                confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
+            # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
+            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
+            precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1,:,:]))
+            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
+            seed_results_list.append(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:]))) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
+
+            # Best probe from validation data
+            confident_sample_pred = []
+            for i in range(all_preds.shape[1]):
+                sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
+                confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[np.argmax(val_f1_avg)] else 0)
+            # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
+            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
+            precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[np.argmax(val_f1_avg),:,:]))
+            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
+            seed_results_list.append(roc_auc_score(labels,np.squeeze(all_preds[np.argmax(val_f1_avg),:,:]))) # print(roc_auc_score(labels,np.squeeze(all_preds[np.argmax(val_f1_avg),:,:])))
+
+            #####################################################################################################################################
+            # Probe selection - a
+            # confident_sample_pred,confident_sample_probs = [], []
+            # mc_layer = []
+            # for i in range(all_preds.shape[1]):
+            #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #     sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
+            #     # print(sample_pred.shape,sample_pred[:5])
+            #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            #     layer = np.argmin(probe_wise_entropy)
+            #     confident_sample_pred.append(np.argmax(sample_pred[layer]))
+            #     confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
+            #     if confident_sample_pred[-1]==hallu_cls: mc_layer.append(layer)
+            # # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using most confident probe per sample (0.5 threshold):\n',classification_report(labels,confident_sample_pred))
+            # print('\nMc Layer:\n',np.histogram(mc_layer, bins=range(num_layers+1)))
+            # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            # print('AUPR:',auc(recall,precision))
+            # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+
+            # Probe selection - a
+            # confident_sample_pred = []
+            # for i in range(all_preds.shape[1]):
+            #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #     sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
+            #     # print(sample_pred.shape,sample_pred[:5])
+            #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            #     layer = np.argmin(probe_wise_entropy)
+            #     confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
+            # # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using most confident probe per sample (best val threshold):\n',classification_report(labels,confident_sample_pred))
+
+            # Probe selection - a
+            confident_sample_pred,confident_sample_probs = [], []
+            for i in range(all_preds.shape[1]):
+                sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+                sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
+                # print(sample_pred.shape,sample_pred[:5])
+                probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+                layer = incl_layers[np.argmin(probe_wise_entropy[incl_layers])]
+                confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
+                confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
+            # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
+            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
+            precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
+            seed_results_list.append(roc_auc_score(labels,confident_sample_probs)) # print(roc_auc_score(labels,confident_sample_probs))
+
+            #####################################################################################################################################
+            # Probe selection - a
+            # confident_sample_pred,confident_sample_probs = [], []
+            # for i in range(all_preds.shape[1]):
+            #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #     confident_sample_pred.append(1 if np.max(sample_pred)>layer_pred_thresholds[np.argmax(sample_pred)] else 0) # Using layer with max prob
+            #     confident_sample_probs.append(np.max(sample_pred))
+            # # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using max prob probe per sample (actual prob):\n',classification_report(labels,confident_sample_pred))
+            # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            # print('AUPR:',auc(recall,precision))
+            # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+            # print('AUROC (cls0):',roc_auc_score([not bool(label) for label in labels],[1-prob for prob in confident_sample_probs]))
+
             
-        #     # maj_vote = 1 if cls1_vote>0.5 else 0
-        #     # if labels[i]==hallu_cls and maj_vote!=hallu_cls: mc5_entropy_hallu_mis += 1
-        #     # if labels[i]!=hallu_cls and maj_vote==hallu_cls: mc5_entropy_nonhallu_mis += 1
-        #     # probe_wise_conf = []
-        #     # hallu_vote = cls1_vote if 'hallu_pos' in args.probes_file_name else 1-cls1_vote
-        #     # if hallu_vote>0:
-        #     #     for layer in best_probe_idxs:
-        #     #         probe_wise_conf.append((sample_pred[layer]-layer_pred_thresholds[layer])/(1-layer_pred_thresholds[layer]))
-        #     #     mc5_conf_gap_hallu = np.max(probe_wise_conf) - np.min(probe_wise_conf)
-        #     # if mc5_entropy
-        #     #     confident_sample_pred.append()
-        # # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-        # print('MC5 entropy for hallucinations:\n',np.histogram(mc5_entropy_hallu))
-        # # print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_hallu_mis)
-        # print('MC5 entropy for non-hallucinations:\n',np.histogram(mc5_entropy_nonhallu))
-        # # print('Low entropy and mis-classified as hallucination:',mc5_entropy_nonhallu_mis)
-        # fig, axs = plt.subplots(1,2)
-        # counts_confident_nh, bins = np.histogram(mc5_entropy_nonhallu, bins=10)
-        # axs[0].stairs(counts_confident_nh, bins)
-        # axs[0].title.set_text('Non-Hallucinated')
-        # counts_confident_nh, bins = np.histogram(mc5_entropy_hallu, bins=10)
-        # axs[1].stairs(counts_confident_nh, bins)
-        # axs[1].title.set_text('Hallucinated')
-        # fig.savefig(f'{args.save_path}/plot1.png')
-    
-    print('\n')
-    print(np.argmax(val_f1_avg))
+            # best_f1, best_single_threshold, best_report = 0, 0, None
+            # for t in thresholds:
+            #     confident_sample_pred = []
+            #     for i in range(all_preds.shape[1]):
+            #         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #         confident_sample_pred.append(1 if np.max(sample_pred)>t else 0) # Using layer with max prob
+            #     if f1_score(labels,confident_sample_pred)>best_f1:
+            #         best_f1, best_single_threshold = f1_score(labels,confident_sample_pred,average='macro'), t
+            #         best_report = classification_report(labels,confident_sample_pred)
+            # print('Results at threshold with best macro-F1:\n',best_report)
+
+
+            # Probe selection - a
+            # confident_sample_pred,confident_sample_probs = [], []
+            # for i in range(all_preds.shape[1]):
+            #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #     sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]  # Using layer with max dist from threshold
+            #     layer = np.argmax(sample_pred_dist)
+            #     confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
+            #     confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
+            # # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using max prob probe per sample (distance from best val threshold):\n',classification_report(labels,confident_sample_pred))
+            # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            # print('AUPR:',auc(recall,precision))
+            # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+
+
+            # best_f1, best_single_threshold, best_report = 0, 0, None
+            # for t in thresholds:
+            #     confident_sample_pred = []
+            #     for i in range(all_preds.shape[1]):
+            #         sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #         confident_sample_pred.append(1 if np.max(sample_pred)>t else 0) # Using layer with max prob
+            #     if f1_score(labels,confident_sample_pred)>best_f1:
+            #         best_f1, best_single_threshold = f1_score(labels,confident_sample_pred,average='macro'), t
+            #         best_report = classification_report(labels,confident_sample_pred)
+            # print('Results at threshold with best macro-F1:\n',best_report)
+
+
+            # Probe selection - a
+            # confident_sample_pred,confident_sample_probs = [], []
+            # for i in range(all_preds.shape[1]):
+            #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #     sample_pred_dist = [sample_pred[layer]-layer_pred_thresholds[layer] for layer,pred in enumerate(sample_pred)]
+            #     sample_pred_dist = np.array(sample_pred_dist)
+            #     layer = incl_layers[np.argmax(sample_pred_dist[incl_layers])]
+            #     confident_sample_pred.append(1 if sample_pred[layer]>layer_pred_thresholds[layer] else 0)
+            #     confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
+            # # print('Using max prob probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using max prob probe per sample (distance from best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
+            # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            # print('AUPR:',auc(recall,precision))
+            # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+            #####################################################################################################################################
+
+            # Probe selection - d
+            # confident_sample_pred,confident_sample_probs = [], []
+            # for i in range(all_preds.shape[1]):
+            #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #     sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
+            #     class_1_vote_cnt = sum(sample_pred_val)
+            #     maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+            #     confident_sample_pred.append(maj_vote)
+            #     confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
+            # # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Voting amongst all probes per sample:\n',classification_report(labels,confident_sample_pred))
+            # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            # print('AUPR:',auc(recall,precision))
+            # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
+
+            # Probe selection - d
+            confident_sample_pred,confident_sample_probs = [], []
+            for i in range(all_preds.shape[1]):
+                sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+                sample_pred_val = [1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)]
+                sample_pred_val = np.array(sample_pred_val)
+                class_1_vote_cnt = sum(sample_pred_val[incl_layers])
+                maj_vote = 1 if class_1_vote_cnt>=(len(incl_layers)/2) else 0
+                confident_sample_pred.append(maj_vote)
+                confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
+            # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
+            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
+            precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
+            seed_results_list.append(roc_auc_score(labels,confident_sample_probs)) # print(roc_auc_score(labels,confident_sample_probs))
+
+            # MC5 Statistics
+            # confident_sample_pred = []
+            # mc5_entropy_hallu, mc5_entropy_nonhallu = [], []
+            # mc5_entropy_hallu_mis, mc5_entropy_nonhallu_mis = 0, 0
+            # mc5_conf_gap_hallu, mc5_conf_gap_nonhallu = [], []
+            # for i in range(all_preds.shape[1]):
+            #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+            #     sample_pred_cls = np.array([1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)])
+            #     sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
+            #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+            #     best_probe_idxs = np.argpartition(probe_wise_entropy, 5)[:5] # Note: sort is asc, so take first x values for smallest x
+                
+            #     # top_5_lower_bound_val = np.max(probe_wise_entropy)
+            #     # best_probe_idxs = probe_wise_entropy<=top_5_lower_bound_val
+            #     # sample_pred_chosen = sample_pred_cls[best_probe_idxs]
+            #     # cls1_vote = np.sum(sample_pred_chosen)/len(sample_pred_chosen)
+            #     # vote_distri = np.array([cls1_vote, 1 - cls1_vote])
+            #     # mc5_entropy = (-vote_distri*np.nan_to_num(np.log2(vote_distri),neginf=0)).sum()
+                
+            #     sample_pred_chosen = sample_pred[best_probe_idxs][1]
+            #     # sample_pred_chosen = np.squeeze(all_logits[:,i,:])[best_probe_idxs]*100
+            #     # sample_pred_chosen[sample_pred_chosen<0] = 0
+            #     sample_pred_chosen = np.exp(sample_pred_chosen)/sum(np.exp(sample_pred_chosen))
+            #     mc5_entropy = (-sample_pred_chosen*np.nan_to_num(np.emath.logn(5, sample_pred_chosen),neginf=0)).sum()
+            #     if labels[i]==hallu_cls: mc5_entropy_hallu.append(mc5_entropy)
+            #     if labels[i]!=hallu_cls: mc5_entropy_nonhallu.append(mc5_entropy)
+                
+            #     # maj_vote = 1 if cls1_vote>0.5 else 0
+            #     # if labels[i]==hallu_cls and maj_vote!=hallu_cls: mc5_entropy_hallu_mis += 1
+            #     # if labels[i]!=hallu_cls and maj_vote==hallu_cls: mc5_entropy_nonhallu_mis += 1
+            #     # probe_wise_conf = []
+            #     # hallu_vote = cls1_vote if 'hallu_pos' in args.probes_file_name else 1-cls1_vote
+            #     # if hallu_vote>0:
+            #     #     for layer in best_probe_idxs:
+            #     #         probe_wise_conf.append((sample_pred[layer]-layer_pred_thresholds[layer])/(1-layer_pred_thresholds[layer]))
+            #     #     mc5_conf_gap_hallu = np.max(probe_wise_conf) - np.min(probe_wise_conf)
+            #     # if mc5_entropy
+            #     #     confident_sample_pred.append()
+            # # print('Using entropy among most confident 5 probes:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('MC5 entropy for hallucinations:\n',np.histogram(mc5_entropy_hallu))
+            # # print('Low entropy and mis-classified as non-hallucination:',mc5_entropy_hallu_mis)
+            # print('MC5 entropy for non-hallucinations:\n',np.histogram(mc5_entropy_nonhallu))
+            # # print('Low entropy and mis-classified as hallucination:',mc5_entropy_nonhallu_mis)
+            # fig, axs = plt.subplots(1,2)
+            # counts_confident_nh, bins = np.histogram(mc5_entropy_nonhallu, bins=10)
+            # axs[0].stairs(counts_confident_nh, bins)
+            # axs[0].title.set_text('Non-Hallucinated')
+            # counts_confident_nh, bins = np.histogram(mc5_entropy_hallu, bins=10)
+            # axs[1].stairs(counts_confident_nh, bins)
+            # axs[1].title.set_text('Hallucinated')
+            # fig.savefig(f'{args.save_path}/plot1.png')
+        
+        print('\n')
+        print(np.argmax(val_f1_avg))
+
+        all_results_list.append(np.array(seed_results_list))
+    print(np.mean(np.stack(all_results_list),axis=0))
+    print(np.std(np.stack(all_results_list),axis=0))
 
     # Get preds on all tokens
     # if args.responses_file_name=='' and args.dataset_name=='tqa_gen':
