@@ -251,7 +251,7 @@ def main():
     if 'sampled' in args.probes_file_name and args.plot_aug:
         X_tsneplot = X_tsne
     elif 'sampled' in args.probes_file_name and args.plot_aug==False:
-        greedy_idxs = np.array([k*num_samples for k in range(int(args.len_dataset/num_samples))])
+        greedy_idxs = np.array([k*num_samples for k in range(int(args.len_dataset/num_samples))] + [len(my_train_embs)+k for k in range(len(my_test_embs))])
         X_tsneplot = X_tsne[greedy_idxs]
         print(X_tsneplot.shape)
         my_plot_labels_colors = np.array(my_plot_labels_colors)[greedy_idxs]
