@@ -236,8 +236,17 @@ def main():
         my_embs = np.concatenate([my_train_embs.numpy(),my_test_embs.numpy()],axis=0)
         
     print(my_embs.shape)
-    my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels]
-    my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'test_NH',3:'test_H'}
+    if 'sampled' in args.probes_file_name and args.plot_aug:
+        my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels]
+        my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'test_NH',3:'test_H'}
+        my_cmap = colors.ListedColormap(['lightgreen','lightblue','darkgreen','darkblue'])
+    else:
+        train_labels_aug = []
+        for k,l in enumerate(labels):
+            train_labels_aug = 0 if (k%num_samples==0 and l==0) else 1 if (k%num_samples==0 and l==1) else 2 if (k%num_samples!=0 and l==0) else 3
+        my_plot_labels = train_labels_aug + [4 if l==0 else 5 for l in test_labels]
+        my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'train_NH_aug',3:'train_H_aug',4:'test_NH',5:'test_H'}
+        my_cmap = colors.ListedColormap(['lightgreen','lightblue','orange','violet','darkgreen','darkblue'])
     my_plot_labels_name = [my_plot_labels_dict[l] for l in my_plot_labels]
     # my_plot_labels_cdict = {0:,1:,2:,3:}
     my_plot_labels_colors = my_plot_labels # [my_plot_labels_cdict[l] for l in my_plot_labels]
@@ -258,7 +267,7 @@ def main():
         my_plot_labels_name = np.array(my_plot_labels_name)[greedy_idxs]
     else:
         X_tsneplot = X_tsne
-    sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], c=my_plot_labels_colors, cmap= colors.ListedColormap(['lightgreen','lightblue','darkgreen','darkblue'])) #label=my_plot_labels_name)
+    sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], c=my_plot_labels_colors, cmap= my_cmap) #label=my_plot_labels_name)
     handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
