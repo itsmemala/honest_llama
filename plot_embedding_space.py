@@ -229,11 +229,11 @@ def main():
         my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
     else:
         nlinear_model.eval()
-        my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
+        my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu()
         if 'supcon' in args.probes_file_name: my_train_embs = F.normalize(my_train_embs, p=2, dim=-1)
-        my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu().numpy()
+        my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu()
         if 'supcon' in args.probes_file_name: my_test_embs = F.normalize(my_test_embs, p=2, dim=-1)
-        my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
+        my_embs = np.concatenate([my_train_embs.numpy(),my_test_embs.numpy()],axis=0)
         
     print(my_embs.shape)
     my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels]
