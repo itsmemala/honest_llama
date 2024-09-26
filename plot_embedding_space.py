@@ -243,7 +243,7 @@ def main():
     else:
         train_labels_aug = []
         for k,l in enumerate(labels):
-            train_labels_aug = 0 if (k%num_samples==0 and l==0) else 1 if (k%num_samples==0 and l==1) else 2 if (k%num_samples!=0 and l==0) else 3
+            train_labels_aug.append(0 if (k%num_samples==0 and l==0) else 1 if (k%num_samples==0 and l==1) else 2 if (k%num_samples!=0 and l==0) else 3)
         my_plot_labels = train_labels_aug + [4 if l==0 else 5 for l in test_labels]
         my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'train_NH_aug',3:'train_H_aug',4:'test_NH',5:'test_H'}
         my_cmap = colors.ListedColormap(['lightgreen','lightblue','orange','violet','darkgreen','darkblue'])
