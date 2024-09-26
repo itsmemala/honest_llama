@@ -272,7 +272,7 @@ def main():
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
     # fig.savefig(f'{args.save_path}/plotemb.png')
-    fig.savefig(f'{args.save_path}/tsne_plots/{args.plot_name}.png')
+    fig.savefig(f'{args.save_path}/tsne_plots/{args.model_name}_{args.dataset_name}/{args.plot_name}.png')
 
 
 if __name__ == '__main__':
