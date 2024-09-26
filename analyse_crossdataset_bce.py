@@ -481,8 +481,8 @@ def main():
         print(np.argmax(val_f1_avg))
 
         all_results_list.append(np.array(seed_results_list))
-    print(np.mean(np.stack(all_results_list),axis=0).tolist())
-    print(np.std(np.stack(all_results_list),axis=0).tolist())
+    print(np.mean(np.stack(all_results_list)*100,axis=0).tolist())
+    print(np.std(np.stack(all_results_list)*100,axis=0).tolist())
 
     # Get preds on all tokens
     # if args.responses_file_name=='' and args.dataset_name=='tqa_gen':
