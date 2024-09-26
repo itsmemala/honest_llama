@@ -225,7 +225,7 @@ def main():
         # TODO: norm input
         my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
         my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-        # print(my_train_acts.shape)
+        print(my_test_acts.shape)
         my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
     else:
         nlinear_model.eval()
@@ -251,7 +251,7 @@ def main():
     if 'sampled' in args.probes_file_name and args.plot_aug:
         X_tsneplot = X_tsne
     elif 'sampled' in args.probes_file_name and args.plot_aug==False:
-        greedy_idxs = np.array([k*num_samples for k in range(int(args.len_dataset/num_samples))] + [len(my_train_embs)+k for k in range(len(my_test_embs))])
+        greedy_idxs = np.array([k*num_samples for k in range(int(args.len_dataset/num_samples))] + [len(my_train_embs)+k for k in range(len(my_test_acts))])
         X_tsneplot = X_tsne[greedy_idxs]
         print(X_tsneplot.shape)
         my_plot_labels_colors = np.array(my_plot_labels_colors)[greedy_idxs]
