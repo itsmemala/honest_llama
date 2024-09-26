@@ -55,6 +55,8 @@ def main():
     parser.add_argument("--test_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--train_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
+    parser.add_argument('--plot_act',type=bool, default=False)
+    parser.add_argument('--plot_aug',type=bool, default=False)
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--plot_name',type=str, default=None)
     args = parser.parse_args()
@@ -219,16 +221,20 @@ def main():
         # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
     my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
 
-    # TODO: norm input
-    # my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-    # my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-    # print(my_train_acts.shape)
-    # my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
-    nlinear_model.eval()
-    my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
-    my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu().numpy()
-    my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
-    
+    if args.plot_act:
+        # TODO: norm input
+        my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+        my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+        # print(my_train_acts.shape)
+        my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
+    else:
+        nlinear_model.eval()
+        my_train_embs = nlinear_model.forward_upto_classifier(my_train_acts).detach().cpu().numpy()
+        if 'supcon' in args.probes_file_name: my_train_embs = F.normalize(my_train_embs, p=2, dim=-1)
+        my_test_embs = nlinear_model.forward_upto_classifier(my_test_acts).detach().cpu().numpy()
+        if 'supcon' in args.probes_file_name: my_test_embs = F.normalize(my_test_embs, p=2, dim=-1)
+        my_embs = np.concatenate([my_train_embs,my_test_embs],axis=0)
+        
     print(my_embs.shape)
     my_plot_labels = labels + [2 if l==0 else 3 for l in test_labels]
     my_plot_labels_dict = {0:'train_NH',1:'train_H',2:'test_NH',3:'test_H'}
@@ -242,7 +248,12 @@ def main():
     X_tsne = tsne.fit_transform(my_embs)
     print(tsne.kl_divergence_)
     fig, axs = plt.subplots(1,1)
-    sc = axs.scatter(x=X_tsne[:, 0], y=X_tsne[:, 1], c=my_plot_labels_colors, cmap= colors.ListedColormap(['lightgreen','lightblue','darkgreen','darkblue'])) #label=my_plot_labels_name)
+    if 'sampled' in args.probes_file_name and args.plot_aug:
+        X_tsneplot = X_tsne
+    else:
+        X_tsneplot = X_tsne[np.array([k*num_samples for k in range(int(len_dataset/num_samples))])]
+        print(X_tsneplot.shape)
+    sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], c=my_plot_labels_colors, cmap= colors.ListedColormap(['lightgreen','lightblue','darkgreen','darkblue'])) #label=my_plot_labels_name)
     handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
