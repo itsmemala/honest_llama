@@ -250,9 +250,11 @@ def main():
     fig, axs = plt.subplots(1,1)
     if 'sampled' in args.probes_file_name and args.plot_aug:
         X_tsneplot = X_tsne
-    else:
-        X_tsneplot = X_tsne[np.array([k*num_samples for k in range(int(len_dataset/num_samples))])]
+    elif 'sampled' in args.probes_file_name and args.plot_aug==False:
+        X_tsneplot = X_tsne[np.array([k*num_samples for k in range(int(args.len_dataset/num_samples))])]
         print(X_tsneplot.shape)
+    else:
+        X_tsneplot = X_tsne
     sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], c=my_plot_labels_colors, cmap= colors.ListedColormap(['lightgreen','lightblue','darkgreen','darkblue'])) #label=my_plot_labels_name)
     handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
     labels = [l for c,l in clset]
