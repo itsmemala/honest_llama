@@ -136,105 +136,114 @@ def main():
     #         all_preds = np.stack(all_preds)
     #         np.save(f'{args.save_path}/probes/{args.probes_file_name}_{args.responses_file_name}.npy',all_preds)
 
+    all_results_list = []
 
-    def results_at_best_lr(model):
-        if args.lr_list is not None:
-            probes_file_name_list, auc_by_lr = [], []
-            for lr in args.lr_list:
-                probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
-                probes_file_name_list.append(probes_file_name)
-                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
-                print(all_val_pred.shape)
-                auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
-            best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
-        else:
-            best_probes_file_name = args.probes_file_name
-        
-        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
-        if args.best_threshold:
-            best_val_perf, best_t = 0, 0.5
-            thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='auto') if 'knn' in args.probes_file_name else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
-            for t in thresholds:
-                val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-                if 'knn' in args.probes_file_name:
-                    val_pred_model[val_pred_model<t] = 1
-                    val_pred_model[val_pred_model>=t] = 0
-                else:
-                    val_pred_model[val_pred_model>t] = 1
-                    val_pred_model[val_pred_model<=t] = 0
-                cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
-                cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
-                perf = np.mean((cls1_f1,cls0_f1))
-                if perf>best_val_perf:
-                    best_val_perf, best_t = perf, t
-        else:
-            best_t = 0.5
-        return best_probes_file_name, all_val_pred, all_val_true, best_t
+    for seed in args.seed_list:
+        args.probes_file_name = 'NLSC'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
+        seed_results_list = []
 
-    # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
-    fold = 0
-    test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
-    best_probes_per_model, layer_pred_thresholds = [], []
-    excl_layers, incl_layers = [], []
-    aupr_by_layer, auroc_by_layer = [], []
-    num_models = 1 # 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
-    print(num_models)
-    all_preds = []
-    for model in tqdm(range(num_models)):
-        best_probes_file_name, all_val_pred, all_val_true, best_t = results_at_best_lr(model)
-        best_probes_per_model.append(best_probes_file_name)
-        layer_pred_thresholds.append(best_t)
-        test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
-        labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
-        all_preds.append(test_preds[model])
+        def results_at_best_lr(model):
+            if args.lr_list is not None:
+                probes_file_name_list, auc_by_lr = [], []
+                for lr in args.lr_list:
+                    probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
+                    probes_file_name_list.append(probes_file_name)
+                    all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
+                    print(all_val_pred.shape)
+                    auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
+                best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
+            else:
+                best_probes_file_name = args.probes_file_name
+            
+            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
+            if args.best_threshold:
+                best_val_perf, best_t = 0, 0.5
+                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='auto') if 'knn' in args.probes_file_name else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+                for t in thresholds:
+                    val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
+                    if 'knn' in args.probes_file_name:
+                        val_pred_model[val_pred_model<t] = 1
+                        val_pred_model[val_pred_model>=t] = 0
+                    else:
+                        val_pred_model[val_pred_model>t] = 1
+                        val_pred_model[val_pred_model<=t] = 0
+                    cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
+                    cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
+                    perf = np.mean((cls1_f1,cls0_f1))
+                    if perf>best_val_perf:
+                        best_val_perf, best_t = perf, t
+            else:
+                best_t = 0.5
+            return best_probes_file_name, all_val_pred, all_val_true, best_t
 
-        val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-        if 'knn' in args.probes_file_name:
-            val_pred_model[val_pred_model<best_t] = 1
-            val_pred_model[val_pred_model>=best_t] = 0
-        else:
-            val_pred_model[val_pred_model>best_t] = 1
-            val_pred_model[val_pred_model<=best_t] = 0
-        cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
-        cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
-        val_f1_cls0.append(cls0_f1)
-        val_f1_cls1.append(cls1_f1)
-        val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
-        if cls0_f1==0 or cls1_f1==0:
-            excl_layers.append(model)
-        else:
-            incl_layers.append(model)
-        
-        test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-        if 'knn' in args.probes_file_name:
-            test_pred_model[test_pred_model<best_t] = 1
-            test_pred_model[test_pred_model>=best_t] = 0
-        else:
-            test_pred_model[test_pred_model>best_t] = 1
-            test_pred_model[test_pred_model<=best_t] = 0
-        cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
-        cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
-        test_f1_cls0.append(cls0_f1)
-        test_f1_cls1.append(cls1_f1)
-        test_recall_cls0.append(cls0_re)
-        test_recall_cls1.append(cls1_re)
-        precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model,:,:]))
-        aupr_by_layer.append(auc(recall,precision))
-        auroc_by_layer.append(roc_auc_score(labels, np.squeeze(test_preds[model,:,:])))
-    # print('\nValidation performance:\n',val_f1_avg)
-    incl_layers = np.array(incl_layers)
-    print('\nExcluded layers:',excl_layers)
-    # print(incl_layers)
-    # if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
-    # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
-    # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
-    # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
-    print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
-    print(np.mean(test_recall_cls1)) # H
-    print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
-    print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-    # print(auroc_by_layer)
-    all_preds = np.stack(all_preds, axis=0)
+        # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
+        fold = 0
+        test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
+        best_probes_per_model, layer_pred_thresholds = [], []
+        excl_layers, incl_layers = [], []
+        aupr_by_layer, auroc_by_layer = [], []
+        num_models = 1 # 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+        print(num_models)
+        all_preds = []
+        for model in tqdm(range(num_models)):
+            best_probes_file_name, all_val_pred, all_val_true, best_t = results_at_best_lr(model)
+            best_probes_per_model.append(best_probes_file_name)
+            layer_pred_thresholds.append(best_t)
+            test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
+            labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
+            all_preds.append(test_preds[model])
+
+            val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
+            if 'knn' in args.probes_file_name:
+                val_pred_model[val_pred_model<best_t] = 1
+                val_pred_model[val_pred_model>=best_t] = 0
+            else:
+                val_pred_model[val_pred_model>best_t] = 1
+                val_pred_model[val_pred_model<=best_t] = 0
+            cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
+            cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
+            val_f1_cls0.append(cls0_f1)
+            val_f1_cls1.append(cls1_f1)
+            val_f1_avg.append(np.mean((cls1_f1,cls0_f1)))
+            if cls0_f1==0 or cls1_f1==0:
+                excl_layers.append(model)
+            else:
+                incl_layers.append(model)
+            
+            test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
+            if 'knn' in args.probes_file_name:
+                test_pred_model[test_pred_model<best_t] = 1
+                test_pred_model[test_pred_model>=best_t] = 0
+            else:
+                test_pred_model[test_pred_model>best_t] = 1
+                test_pred_model[test_pred_model<=best_t] = 0
+            cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
+            cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
+            test_f1_cls0.append(cls0_f1)
+            test_f1_cls1.append(cls1_f1)
+            test_recall_cls0.append(cls0_re)
+            test_recall_cls1.append(cls1_re)
+            precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model,:,:]))
+            aupr_by_layer.append(auc(recall,precision))
+            auroc_by_layer.append(roc_auc_score(labels, np.squeeze(test_preds[model,:,:])))
+        # print('\nValidation performance:\n',val_f1_avg)
+        incl_layers = np.array(incl_layers)
+        print('\nExcluded layers:',excl_layers)
+        # print(incl_layers)
+        # if 'hallu_pos' in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls0),np.mean(test_f1_cls1),'\n') # NH, H
+        # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
+        # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
+        # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
+        seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+        seed_results_list.append(np.mean(test_recall_cls1)) # print(np.mean(test_recall_cls1)) # H
+        seed_results_list.append(np.mean(aupr_by_layer)) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
+        seed_results_list.append(np.mean(auroc_by_layer)) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
+        # print(auroc_by_layer)
+        all_preds = np.stack(all_preds, axis=0)
+
+        all_results_list.append(np.array(seed_results_list))
+    print(np.mean(np.stack(all_results_list)*100,axis=0).tolist())
+    print(np.std(np.stack(all_results_list)*100,axis=0).tolist())
 
 if __name__ == '__main__':
     main()
