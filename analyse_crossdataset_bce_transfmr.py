@@ -151,7 +151,8 @@ def main():
                     probes_file_name_list.append(probes_file_name)
                     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                     print(all_val_pred.shape)
-                    auc_by_lr.append(roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
+                    auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if 'knn' in args.probes_file_name else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
+                    auc_by_lr.append(auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
             else:
                 best_probes_file_name = args.probes_file_name
@@ -226,7 +227,8 @@ def main():
             test_recall_cls1.append(cls1_re)
             precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model,:,:]))
             aupr_by_layer.append(auc(recall,precision))
-            auroc_by_layer.append(roc_auc_score(labels, np.squeeze(test_preds[model,:,:])))
+            auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model,:,:])]) if 'knn' in args.probes_file_name else roc_auc_score(labels, np.squeeze(test_preds[model,:,:]))
+            auroc_by_layer.append(auc_val)
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
         print('\nExcluded layers:',excl_layers)
