@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
+    parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
