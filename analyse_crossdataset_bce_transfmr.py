@@ -140,7 +140,7 @@ def main():
     all_results_list = []
 
     for seed in args.seed_list:
-        args.probes_file_name = 'NLSC'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
+        args.probes_file_name = 'T'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
         seed_results_list = []
 
         def results_at_best_lr(model):
