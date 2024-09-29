@@ -178,6 +178,7 @@ def main():
     train_idxs = np.arange(args.len_dataset)
 
     # Load acts
+    device_id, device = 0, 'cuda:0' # start with first gpu
     my_train_acts, my_test_acts = [], []
     for idx in train_idxs:
         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
@@ -238,6 +239,7 @@ def main():
     print(my_embs.shape)
     if 'sampled' in args.probes_file_name and args.plot_aug:
         train_labels_aug = []
+        print(len(labels))
         for k,l in enumerate(labels):
             train_labels_aug.append(0 if (k%num_samples==0 and l==0) else 1 if (k%num_samples==0 and l==1) else 2 if (k%num_samples!=0 and l==0) else 3)
         my_plot_labels = train_labels_aug + [4 if l==0 else 5 for l in test_labels]
