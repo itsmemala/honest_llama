@@ -25,6 +25,7 @@ from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
+from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
 
@@ -88,7 +89,7 @@ def combine_acts(idx,file_name,args):
 
 def get_best_threshold(val_true, val_preds, is_knn=False):
     best_val_perf, best_t = 0, 0.5
-    thresholds = np.histogram_bin_edges(val_preds, bins='doane') if is_knn else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+    thresholds = np.histogram_bin_edges(val_preds, bins='sqrt') if is_knn else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
     print(np.histogram(val_preds, bins=thresholds))
     for t in thresholds:
         val_pred_at_thres = deepcopy(val_preds) # Deep copy so as to not touch orig values
@@ -118,6 +119,13 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
     elif metrics=='mahalonobis':
         pass
+        for o in outputs:
+            o_dist = []
+            for t in train_outputs:
+                iv = torch.inv(torch.cov()).numpy()
+                print(o.shape, t.shape, iv.shape)
+                o_dist.append(mahalanobis(o.numpy(), t.numpy(), iv))
+                sys.exit()
     else:
         raise ValueError('Metric not implemented.')
     dist = torch.stack(dist)

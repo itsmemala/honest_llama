@@ -25,6 +25,7 @@ from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
+from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
 
