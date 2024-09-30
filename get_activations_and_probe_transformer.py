@@ -120,7 +120,7 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
         for o in outputs:
             o_dist = []
             for t in train_outputs:
-                iv = torch.inv(torch.cov(torch.cat((o,v),dim=1))).numpy()
+                iv = torch.inverse(torch.cov(torch.cat((o,v),dim=1))).numpy()
                 print(o.shape, t.shape, iv.shape)
                 o_dist.append(mahalanobis(o.numpy(), t.numpy(), iv))
                 sys.exit()
