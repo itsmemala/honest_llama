@@ -116,6 +116,7 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
             o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
             # dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+        dist = torch.stack(dist)
     elif metric=='mahalanobis':
         for o in outputs:
             o_dist = []
@@ -125,10 +126,10 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
                 # print(iv.shape) # iv is (num_features,num_features)
                 o_dist.append(mahalanobis(o.detach().cpu().numpy(), t.detach().cpu().numpy(), iv))
             o_dist = np.array(o_dist)
-            dist.append(torch.from_numpy(o_dist[np.argsort(o_dist)[top_k-1]]))
+            dist.append(o_dist[np.argsort(o_dist)[top_k-1]])
+        dist = torch.Tensor(dist)
     else:
         raise ValueError('Metric not implemented.')
-    dist = torch.stack(dist)
     return dist
 
 def main(): 
