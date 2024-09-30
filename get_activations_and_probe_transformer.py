@@ -121,7 +121,7 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
             o_dist = []
             for t in train_outputs:
                 # print(o.shape, t.shape) # o,t are 1-D tensors
-                iv = torch.inverse(torch.cov(torch.stack((o,t),dim=1))).detach().cpu().numpy()
+                iv = torch.linalg.pinv(torch.cov(torch.stack((o,t),dim=1))).detach().cpu().numpy()
                 # print(iv.shape) # iv is (num_features,num_features)
                 o_dist.append(mahalanobis(o.detach().cpu().numpy(), t.detach().cpu().numpy(), iv))
     else:
