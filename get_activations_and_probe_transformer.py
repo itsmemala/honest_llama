@@ -124,6 +124,8 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
                 iv = torch.linalg.pinv(torch.cov(torch.stack((o,t),dim=1))).detach().cpu().numpy()
                 # print(iv.shape) # iv is (num_features,num_features)
                 o_dist.append(mahalanobis(o.detach().cpu().numpy(), t.detach().cpu().numpy(), iv))
+            o_dist = np.array(o_dist)
+            dist.append(o_dist[torch.argsort(o_dist)[top_k-1]])
     else:
         raise ValueError('Metric not implemented.')
     dist = torch.stack(dist)
