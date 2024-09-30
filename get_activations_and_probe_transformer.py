@@ -88,7 +88,7 @@ def combine_acts(idx,file_name,args):
 
 def get_best_threshold(val_true, val_preds, is_knn=False):
     best_val_perf, best_t = 0, 0.5
-    thresholds = np.histogram_bin_edges(val_preds, bins='auto') if is_knn else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+    thresholds = np.histogram_bin_edges(val_preds, bins='rice') if is_knn else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
     print(np.histogram(val_preds, bins=thresholds))
     for t in thresholds:
         val_pred_at_thres = deepcopy(val_preds) # Deep copy so as to not touch orig values
@@ -107,14 +107,19 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
     sys.exit()
     return best_t
 
-def compute_knn_dist(outputs,train_outputs,top_k=5):
-    outputs = F.normalize(outputs, p=2, dim=-1)
-    train_outputs = F.normalize(train_outputs, p=2, dim=-1)
+def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
     dist = []
-    for o in outputs:
-        o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
-        # dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
-        dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+    if metric=='euclidean':
+        outputs = F.normalize(outputs, p=2, dim=-1)
+        train_outputs = F.normalize(train_outputs, p=2, dim=-1)
+        for o in outputs:
+            o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
+            # dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+            dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+    elif metrics=='mahalonobis':
+        pass
+    else:
+        raise ValueError('Metric not implemented.')
     dist = torch.stack(dist)
     return dist
 
@@ -147,6 +152,7 @@ def main():
     parser.add_argument('--sc1_wgt',type=float, default=1)
     parser.add_argument('--sc2_wgt',type=float, default=1)
     parser.add_argument('--top_k',type=int, default=5)
+    parser.add_argument('--dist_metric',type=str, default='euclidean')
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -423,7 +429,7 @@ def main():
 
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
     method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
-    method_concat = method_concat + '_' + str(args.top_k) if 'knn' in args.method else method_concat
+    method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if 'knn' in args.method else method_concat
 
     for lr in args.lr_list:
         print('Training lr',lr)
@@ -702,7 +708,7 @@ def main():
                             epoch_val_loss += 0
                             train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k)
                         else:
                             outputs = nlinear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -790,7 +796,7 @@ def main():
                             epoch_val_loss += 0
                             train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k)
                             predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                         else:
                             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
@@ -857,7 +863,7 @@ def main():
                                 epoch_val_loss += 0
                                 train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                 train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k)
+                                test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k)
                                 predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                             else:
                                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension

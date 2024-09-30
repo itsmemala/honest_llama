@@ -76,7 +76,7 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
             best_val_perf, best_t = perf, t
     return best_t
 
-def compute_knn_dist(outputs,train_outputs,top_k=5):
+def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
     outputs = F.normalize(outputs, p=2, dim=-1)
     train_outputs = F.normalize(train_outputs, p=2, dim=-1)
     dist = []
@@ -112,6 +112,7 @@ def main():
     parser.add_argument('--spl_knn',type=int, default=5)
     parser.add_argument('--excl_ce',type=bool, default=False)
     parser.add_argument('--top_k',type=int, default=5)
+    parser.add_argument('--dist_metric',type=str, default='euclidean')
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
@@ -393,7 +394,7 @@ def main():
     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_knn) if 'orthogonal' in args.method and args.excl_ce else method_concat
     method_concat = method_concat + '_excl_ce' if args.excl_ce else method_concat
-    method_concat = method_concat + '_' + str(args.top_k) if 'knn' in args.method else method_concat
+    method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if 'knn' in args.method else method_concat
 
     for lr in args.lr_list:
         print('Training lr',lr)
@@ -800,7 +801,7 @@ def main():
                                     epoch_val_loss += 0
                                     train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k) if args.token in single_token_types else None
+                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k) if args.token in single_token_types else None
                                 else:
                                     outputs = nlinear_model(inputs)
                                     epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -914,7 +915,7 @@ def main():
                                     epoch_val_loss += 0
                                     train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k) if args.token in single_token_types else None
+                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k) if args.token in single_token_types else None
                                     predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                 else:
                                     predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
@@ -973,7 +974,7 @@ def main():
                                         epoch_val_loss += 0
                                         train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                         train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                        test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.top_k) if args.token in single_token_types else None
+                                        test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k) if args.token in single_token_types else None
                                         predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                                     else:
                                         predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
