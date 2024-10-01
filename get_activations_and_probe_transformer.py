@@ -128,6 +128,16 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
             o_dist = np.array(o_dist)
             dist.append(o_dist[np.argsort(o_dist)[top_k-1]])
         dist = torch.Tensor(dist)
+    elif metric=='cosine':
+        outputs = F.normalize(outputs, p=2, dim=-1)
+        train_outputs = F.normalize(train_outputs, p=2, dim=-1)
+        for o in outputs:
+            o_dist = 1-F.cosine_similarity(o, train_outputs, dim=-1) # cosine distance to training data
+            print(o.shape, train_outputs.shape, o_dist.shape)
+            print(np.histogram(o_dist.numpy()))
+            sys.exit()
+            dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+        dist = torch.stack(dist)
     else:
         raise ValueError('Metric not implemented.')
     return dist
