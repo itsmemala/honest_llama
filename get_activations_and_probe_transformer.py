@@ -118,13 +118,15 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
         dist = torch.stack(dist)
     elif metric=='mahalanobis':
+        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        outputs = outputs.detach().cpu().numpy()
+        train_outputs = train_outputs.detach().cpu().numpy()
         for o in outputs:
             o_dist = []
             for t in train_outputs:
                 # print(o.shape, t.shape) # o,t are 1-D tensors
-                iv = torch.linalg.pinv(torch.cov(torch.stack((o,t),dim=1))).detach().cpu().numpy()
                 # print(iv.shape) # iv is (num_features,num_features)
-                o_dist.append(mahalanobis(o.detach().cpu().numpy(), t.detach().cpu().numpy(), iv))
+                o_dist.append(mahalanobis(o, t, iv))
             o_dist = np.array(o_dist)
             dist.append(o_dist[np.argsort(o_dist)[top_k-1]])
         dist = torch.Tensor(dist)
