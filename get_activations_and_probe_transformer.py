@@ -134,7 +134,7 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
         for o in outputs:
             o_dist = 1-F.cosine_similarity(o, train_outputs, dim=-1) # cosine distance to training data
             print(o.shape, train_outputs.shape, o_dist.shape)
-            print(np.histogram(o_dist.numpy()))
+            print(np.histogram(o_dist.detach().cpu().numpy()))
             sys.exit()
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
         dist = torch.stack(dist)
