@@ -256,7 +256,6 @@ def main():
     my_plot_labels_colors = my_plot_labels # [my_plot_labels_cdict[l] for l in my_plot_labels]
     clset = set(zip(my_plot_labels_colors, my_plot_labels_name))
 
-
     if args.plot_pca:
         pca = PCA(n_components=2) if args.plot_3d==False else PCA(n_components=3)
         X_transformed = pca.fit_transform(my_embs)
@@ -264,7 +263,7 @@ def main():
         tsne = TSNE(n_components=2, random_state=42) if args.plot_3d==False else TSNE(n_components=3, random_state=42)
         X_transformed = tsne.fit_transform(my_embs)
         print(tsne.kl_divergence_)
-    fig, axs = plt.subplots(1,1) if args.plot_3d==False else plt.subplots(1,1,projection='3d')
+    fig, axs = plt.subplots(1,1) if args.plot_3d==False else plt.subplots(1,1,subplot_kw={'projection': '3d'})
     if 'sampled' in args.probes_file_name and args.plot_aug:
         X_plot = X_transformed
     elif 'sampled' in args.probes_file_name and args.plot_aug==False:
