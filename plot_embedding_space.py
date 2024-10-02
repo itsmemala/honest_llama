@@ -57,6 +57,7 @@ def main():
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--plot_act',type=bool, default=False)
     parser.add_argument('--plot_aug',type=bool, default=False)
+    parser.add_argument('--plot_3d',type=bool, default=False)
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--plot_name',type=str, default=None)
     args = parser.parse_args()
@@ -255,10 +256,10 @@ def main():
     clset = set(zip(my_plot_labels_colors, my_plot_labels_name))
 
 
-    tsne = TSNE(n_components=2, random_state=42)
+    tsne = TSNE(n_components=2, random_state=42) if args.plot_3d==False else TSNE(n_components=3, random_state=42)
     X_tsne = tsne.fit_transform(my_embs)
     print(tsne.kl_divergence_)
-    fig, axs = plt.subplots(1,1)
+    fig, axs = plt.subplots(1,1) if args.plot_3d==False else plt.subplots(1,1,projection='3d')
     if 'sampled' in args.probes_file_name and args.plot_aug:
         X_tsneplot = X_tsne
     elif 'sampled' in args.probes_file_name and args.plot_aug==False:
@@ -269,11 +270,15 @@ def main():
         my_plot_labels_name = np.array(my_plot_labels_name)[greedy_idxs]
     else:
         X_tsneplot = X_tsne
-    sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], c=my_plot_labels_colors, cmap= my_cmap) #label=my_plot_labels_name)
+    if args.plot_3d==False:
+        sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], c=my_plot_labels_colors, cmap= my_cmap) #label=my_plot_labels_name)
+    else:
+        sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], z=X_tsneplot[:, 2], c=my_plot_labels_colors, cmap= my_cmap)
     handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
     # fig.savefig(f'{args.save_path}/plotemb.png')
+    args.plot_name += '_3d' if args.plot_3d else ''
     fig.savefig(f'{args.save_path}/tsne_plots/{args.model_name}_{args.dataset_name}/{args.plot_name}.png')
 
 
