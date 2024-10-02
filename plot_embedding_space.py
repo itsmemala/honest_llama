@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--plot_act',type=bool, default=False)
     parser.add_argument('--plot_aug',type=bool, default=False)
     parser.add_argument('--plot_3d',type=bool, default=False)
+    parser.add_argument('--plot_pca',type=bool, default=False)
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--plot_name',type=str, default=None)
     args = parser.parse_args()
@@ -256,24 +257,28 @@ def main():
     clset = set(zip(my_plot_labels_colors, my_plot_labels_name))
 
 
-    tsne = TSNE(n_components=2, random_state=42) if args.plot_3d==False else TSNE(n_components=3, random_state=42)
-    X_tsne = tsne.fit_transform(my_embs)
-    print(tsne.kl_divergence_)
+    if args.plot_pca:
+        pca = PCA(n_components=2) if args.plot_3d==False else PCA(n_components=3)
+        X_transformed = pca.fit_transform(my_embs)
+    else:
+        tsne = TSNE(n_components=2, random_state=42) if args.plot_3d==False else TSNE(n_components=3, random_state=42)
+        X_transformed = tsne.fit_transform(my_embs)
+        print(tsne.kl_divergence_)
     fig, axs = plt.subplots(1,1) if args.plot_3d==False else plt.subplots(1,1,projection='3d')
     if 'sampled' in args.probes_file_name and args.plot_aug:
-        X_tsneplot = X_tsne
+        X_plot = X_transformed
     elif 'sampled' in args.probes_file_name and args.plot_aug==False:
         greedy_idxs = np.array([(k*num_samples)+(num_samples-1) for k in range(int(args.len_dataset/num_samples))] + [len(my_train_acts)+k for k in range(len(my_test_acts))])
-        X_tsneplot = X_tsne[greedy_idxs]
-        print(X_tsneplot.shape)
+        X_plot = X_transformed[greedy_idxs]
+        print(X_plot.shape)
         my_plot_labels_colors = np.array(my_plot_labels_colors)[greedy_idxs]
         my_plot_labels_name = np.array(my_plot_labels_name)[greedy_idxs]
     else:
-        X_tsneplot = X_tsne
+        X_plot = X_transformed
     if args.plot_3d==False:
-        sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], c=my_plot_labels_colors, cmap= my_cmap) #label=my_plot_labels_name)
+        sc = axs.scatter(x=X_plot[:, 0], y=X_plot[:, 1], c=my_plot_labels_colors, cmap= my_cmap) #label=my_plot_labels_name)
     else:
-        sc = axs.scatter(x=X_tsneplot[:, 0], y=X_tsneplot[:, 1], z=X_tsneplot[:, 2], c=my_plot_labels_colors, cmap= my_cmap)
+        sc = axs.scatter(x=X_plot[:, 0], y=X_plot[:, 1], z=X_plot[:, 2], c=my_plot_labels_colors, cmap= my_cmap)
     handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
