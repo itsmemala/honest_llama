@@ -107,7 +107,7 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
     print(best_val_perf,best_t)
     return best_t
 
-def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
+def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',top_k=5):
     dist = []
     if metric=='euclidean':
         outputs = F.normalize(outputs, p=2, dim=-1)
@@ -129,6 +129,18 @@ def compute_knn_dist(outputs,train_outputs,metric='euclidean',top_k=5):
                 o_dist.append(mahalanobis(o, t, iv))
             o_dist = np.array(o_dist)
             dist.append(o_dist[np.argsort(o_dist)[top_k-1]])
+        dist = torch.Tensor(dist)
+    elif metric=='mahalanobis_wgtd':
+        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        outputs = outputs.detach().cpu().numpy()
+        train_outputs = train_outputs.detach().cpu().numpy()
+        for o in outputs:
+            o_dist = []
+            for t in train_outputs:
+                o_dist.append(mahalanobis(o, t, iv))
+            o_dist = np.array(o_dist)
+            sum(train_labels[np.argsort(o_dist)[:top_k]])
+            dist.append()
         dist = torch.Tensor(dist)
     elif metric=='cosine':
         outputs = F.normalize(outputs, p=2, dim=-1)
@@ -646,7 +658,10 @@ def main():
                             if 'supconv2' in args.method:
                                 if (use_supcon_pos) and (sc_num_samples is not None):
                                     greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
-                                    supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
+                                    if 'wp_all' in args.method:
+                                        supcon1_loss = criterion_supcon1(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates on all samples
+                                    else:
+                                        supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
                                     supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
                                     supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
                                 else:
@@ -724,9 +739,14 @@ def main():
                         if 'knn' in args.method:
                             outputs = nlinear_model.forward_upto_classifier(inputs)
                             epoch_val_loss += 0
-                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                            if ('maj' in args.method) or ('wgtd' in args.method):
+                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                            else:
+                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                train_labels = None
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
                         else:
                             outputs = nlinear_model(inputs)
                             epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
@@ -812,9 +832,14 @@ def main():
                         if 'knn' in args.method:
                             outputs = nlinear_model.forward_upto_classifier(inputs)
                             epoch_val_loss += 0
-                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                            if ('maj' in args.method) or ('wgtd' in args.method):
+                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                            else:
+                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                train_labels= None
                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k)
+                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
                             predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                         else:
                             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
@@ -879,9 +904,14 @@ def main():
                             if 'knn' in args.method:
                                 outputs = nlinear_model.forward_upto_classifier(inputs)
                                 epoch_val_loss += 0
-                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                if ('maj' in args.method) or ('wgtd' in args.method):
+                                    train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                    train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                                else:
+                                    train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                    train_labels = None
                                 train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,args.dist_metric,args.top_k)
+                                test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
                                 predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                             else:
                                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
