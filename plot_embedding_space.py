@@ -282,7 +282,7 @@ def main():
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
     # fig.savefig(f'{args.save_path}/plotemb.png')
-    args.plo_name += '_pca' if args.plot_pca else ''
+    args.plot_name += '_pca' if args.plot_pca else ''
     args.plot_name += '_3d' if args.plot_3d else ''
     fig.savefig(f'{args.save_path}/tsne_plots/{args.model_name}_{args.dataset_name}/{args.plot_name}.png')
 
