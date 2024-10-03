@@ -744,7 +744,7 @@ def main():
                         if 'knn' in args.method:
                             outputs = nlinear_model.forward_upto_classifier(inputs)
                             epoch_val_loss += 0
-                            if ('maj' in args.method) or ('wgtd' in args.method):
+                            if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
                                 train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
                                 train_labels = np.array([labels[idx] for idx in train_set_idxs])
                             else:
@@ -837,7 +837,7 @@ def main():
                         if 'knn' in args.method:
                             outputs = nlinear_model.forward_upto_classifier(inputs)
                             epoch_val_loss += 0
-                            if ('maj' in args.method) or ('wgtd' in args.method):
+                            if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
                                 train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
                                 train_labels = np.array([labels[idx] for idx in train_set_idxs])
                             else:
@@ -909,7 +909,7 @@ def main():
                             if 'knn' in args.method:
                                 outputs = nlinear_model.forward_upto_classifier(inputs)
                                 epoch_val_loss += 0
-                                if ('maj' in args.method) or ('wgtd' in args.method):
+                                if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
                                     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
                                     train_labels = np.array([labels[idx] for idx in train_set_idxs])
                                 else:
