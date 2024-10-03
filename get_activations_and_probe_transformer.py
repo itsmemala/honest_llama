@@ -144,7 +144,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
         weights = 'uniform' if 'maj' in metric else 'distance'
         knn = KNeighborsClassifier(n_neighbors = top_k, metric='precomputed',weights=weights)
-        knn.fit(np.ones((train_outputs.shape[0],train_outputs.shape[0]),train_labels)) # dummy but required otherwise sklearn throws err
+        knn.fit(np.ones((train_outputs.shape[0],train_outputs.shape[0])),train_labels) # dummy but required otherwise sklearn throws err
         dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
         dist = torch.from_numpy(dist)
     elif metric=='cosine':
