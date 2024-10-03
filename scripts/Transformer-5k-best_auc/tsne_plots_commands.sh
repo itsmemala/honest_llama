@@ -20,7 +20,7 @@
 
 # python plot_embedding_space.py hl_llama_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --using_act layer --token answer_last --len_dataset 16479 --save_path ~/Desktop/honest_llama_data --probes_file_name T42_hl_llama_7B_strqa_sampledplus_responses_train_16479_1_layerFalse_answer_last_transformer_supconv2_hallu_pos_bs256_epochs500_5e-05_Falseba_model0 --plot_name hl_strqa_tr_sc_naug_plotaugemb --plot_aug True
 # python plot_embedding_space.py hl_llama_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --using_act layer --token answer_last --len_dataset 16479 --save_path ~/Desktop/honest_llama_data --probes_file_name T42_hl_llama_7B_strqa_sampledplus_responses_train_16479_1_layerFalse_answer_last_transformer_supconv2_hallu_pos_bs288_epochs500_5e-05_Falseba_model0 --plot_name hl_strqa_tr_sc_naugb_plotaugemb --plot_aug True
-################################# transformer n 1 layer : supcon ##########################
+################################# transformer n 1 layer : supcon+ ##########################
 # python plot_embedding_space.py hl_llama_7B strqa --train_file_name strqa_baseline_responses_train --test_file_name strqa_baseline_responses_test --using_act layer --token answer_last --len_dataset 1832 --save_path ~/Desktop/honest_llama_data --probes_file_name T42_hl_llama_7B_strqa_baseline_responses_train_1832_1_layerFalse_answer_last_transformer_supconv2_pos_hallu_pos_bs256_epochs500_5e-05_Falseba_model0 --plot_name hl_strqa_tr_scp_n_plotemb
 
 ################################# transformer n*aug 1 layer : supcon+ ##########################

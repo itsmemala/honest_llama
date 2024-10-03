@@ -25,6 +25,7 @@ from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
+from sklearn.neighbors import KNeighborsClassifier
 from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
@@ -130,18 +131,21 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             o_dist = np.array(o_dist)
             dist.append(o_dist[np.argsort(o_dist)[top_k-1]])
         dist = torch.Tensor(dist)
-    elif metric=='mahalanobis_wgtd':
+    elif metric=='mahalanobis_wgtd' or metric=='mahalanobis_maj':
         iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         outputs = outputs.detach().cpu().numpy()
         train_outputs = train_outputs.detach().cpu().numpy()
+        o_matrix = []
         for o in outputs:
             o_dist = []
             for t in train_outputs:
                 o_dist.append(mahalanobis(o, t, iv))
-            o_dist = np.array(o_dist)
-            sum(train_labels[np.argsort(o_dist)[:top_k]])
-            dist.append()
-        dist = torch.Tensor(dist)
+            o_matrix.append(np.array(o_dist))
+        o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
+        weights = 'uniform' if 'maj' in metric else 'distance'
+        knn = KNeighborsClassifier(n_neighbors = top_k, metric='precomputed',weights=weights)
+        dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
+        dist = torch.from_numpy(dist)
     elif metric=='cosine':
         outputs = F.normalize(outputs, p=2, dim=-1)
         train_outputs = F.normalize(train_outputs, p=2, dim=-1)
