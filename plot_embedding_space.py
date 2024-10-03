@@ -277,7 +277,7 @@ def main():
     if args.plot_3d==False:
         sc = axs.scatter(x=X_plot[:, 0], y=X_plot[:, 1], c=my_plot_labels_colors, cmap= my_cmap) #label=my_plot_labels_name)
     else:
-        sc = axs.scatter(x=X_plot[:, 0], y=X_plot[:, 1], z=X_plot[:, 2], c=my_plot_labels_colors, cmap= my_cmap)
+        sc = axs.scatter(X_plot[:, 0], X_plot[:, 1], X_plot[:, 2], c=my_plot_labels_colors, cmap= my_cmap)
     handles = [plt.plot([],color=sc.get_cmap()(sc.norm(c)),ls="", marker="o")[0] for c,l in clset ]
     labels = [l for c,l in clset]
     axs.legend(handles, labels)
