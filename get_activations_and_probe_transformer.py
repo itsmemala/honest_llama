@@ -464,7 +464,7 @@ def main():
 
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
     method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
-    method_concat = method_concat + '_' + args.supcon_temp if ('supcon' in args.method) and (args.supcon_temp!=0.1) else method_concat
+    method_concat = method_concat + '_' + str(args.supcon_temp) if ('supcon' in args.method) and (args.supcon_temp!=0.1) else method_concat
     method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if 'knn' in args.method else method_concat
 
     for lr in args.lr_list:
