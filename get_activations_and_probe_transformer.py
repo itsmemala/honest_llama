@@ -24,6 +24,8 @@ from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from sklearn.model_selection import train_test_split
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from sklearn.neighbors import KNeighborsClassifier
 from scipy.spatial.distance import mahalanobis
@@ -145,6 +147,42 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         weights = 'uniform' if 'maj' in metric else 'distance'
         knn = KNeighborsClassifier(n_neighbors = top_k, metric='precomputed',weights=weights)
         knn.fit(np.ones((train_outputs.shape[0],train_outputs.shape[0])),train_labels) # dummy but required otherwise sklearn throws err
+        dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
+        dist = torch.from_numpy(dist)
+    elif metric=='mahalanobis_wgtd_centers' or metric=='mahalanobis_maj_centers':
+        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        outputs = outputs.detach().cpu().numpy()
+        train_outputs = train_outputs.detach().cpu().numpy()
+        cluster_centers, cluster_centers_labels = [], []
+        # fig, ax = 
+        for set_id in [0,1]:
+            data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
+            silhouette_avg = []
+            range_k = list(range(2,top_k+1,1))
+            for num_clusters in range_k:
+                kmeans = KMeans(n_clusters=num_clusters)
+                kmeans.fit(data)
+                cluster_labels = kmeans.labels_
+                silhouette_avg.append(silhouette_score(data, cluster_labels))
+                # ax.plot(range_n_clusters,silhouette_avg,’bx-’)
+            best_k = range_k[np.argmax(silhouette_avg)]
+            kmeans = KMeans(n_clusters=best_k)
+            kmeans.fit(data)
+            cluster_centers.append(kmeans.cluster_centers_)
+            cluster_centers_labels += [set_id for j in range(best_k)]
+        cluster_centers = np.concatenate(cluster_centers, axis=0)
+        print(cluster_centers.shape)
+        sys.exit()
+        o_matrix = []
+        for o in outputs:
+            o_dist = []
+            for t in cluster_centers:
+                o_dist.append(mahalanobis(o, t, iv))
+            o_matrix.append(np.array(o_dist))
+        o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
+        weights = 'uniform' if 'maj' in metric else 'distance'
+        knn = KNeighborsClassifier(n_neighbors = 1, metric='precomputed',weights=weights)
+        knn.fit(np.ones((cluster_centers.shape[0],cluster_centers.shape[0])),cluster_centers_labels) # dummy but required otherwise sklearn throws err
         dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
         dist = torch.from_numpy(dist)
     elif metric=='cosine':
@@ -465,7 +503,7 @@ def main():
     method_concat = args.method + '_dropout' if args.use_dropout else args.method
     method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
     method_concat = method_concat + '_' + str(args.supcon_temp) if ('supcon' in args.method) and (args.supcon_temp!=0.1) else method_concat
-    method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if 'knn' in args.method else method_concat
+    method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if ('knn' in args.method) or ('kmeans' in args.method) else method_concat
 
     for lr in args.lr_list:
         print('Training lr',lr)
@@ -683,7 +721,7 @@ def main():
                             supcon_loss.backward()
                             # supcon_train_loss.append(supcon_loss.item())
                             # CE backward
-                            if 'knn' in args.method:
+                            if ('knn' in args.method) or ('kmeans' in args.method):
                                 loss = torch.Tensor([0])
                             else:
                                 emb = nlinear_model.forward_upto_classifier(inputs).detach()
@@ -742,7 +780,7 @@ def main():
                         # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                         targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                        if 'knn' in args.method:
+                        if ('knn' in args.method) or ('kmeans' in args.method):
                             outputs = nlinear_model.forward_upto_classifier(inputs)
                             epoch_val_loss += 0
                             if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
@@ -835,7 +873,7 @@ def main():
                             inputs = torch.stack(activations,axis=0)
                         # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                         # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                        if 'knn' in args.method:
+                        if ('knn' in args.method) or ('kmeans' in args.method):
                             outputs = nlinear_model.forward_upto_classifier(inputs)
                             epoch_val_loss += 0
                             if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
@@ -907,7 +945,7 @@ def main():
                                 inputs = torch.stack(activations,axis=0)
                             # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                            if 'knn' in args.method:
+                            if ('knn' in args.method) or ('kmeans' in args.method):
                                 outputs = nlinear_model.forward_upto_classifier(inputs)
                                 epoch_val_loss += 0
                                 if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):

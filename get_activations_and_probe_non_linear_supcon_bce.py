@@ -24,6 +24,8 @@ from transformers import BitsAndBytesConfig, GenerationConfig
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from sklearn.model_selection import train_test_split
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
@@ -397,7 +399,7 @@ def main():
     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
     method_concat = method_concat + '_' + str(args.spl_knn) if 'orthogonal' in args.method and args.excl_ce else method_concat
     method_concat = method_concat + '_excl_ce' if args.excl_ce else method_concat
-    method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if 'knn' in args.method else method_concat
+    method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if ('knn' in args.method) or ('kmeans' in args.method) else method_concat
 
     for lr in args.lr_list:
         print('Training lr',lr)
@@ -671,7 +673,7 @@ def main():
                                     supcon_loss.backward()
                                     # supcon_train_loss.append(supcon_loss.item())
                                     # CE backward
-                                    if 'knn' in args.method:
+                                    if ('knn' in args.method) or ('kmeans' in args.method):
                                         loss = torch.Tensor([0])
                                     else:
                                         emb = nlinear_model.forward_upto_classifier(inputs).detach()
@@ -799,7 +801,7 @@ def main():
                                     targets = torch.cat([torch.Tensor([y_label for j in range(activations[b_idx].shape[0])]) for b_idx,(idx,y_label) in enumerate(zip(batch['inputs_idxs'],batch['labels']))],dim=0).type(torch.LongTensor)
                                 # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
-                                if 'knn' in args.method:
+                                if ('knn' in args.method) or ('kmeans' in args.method):
                                     outputs = nlinear_model.forward_upto_classifier(inputs)
                                     epoch_val_loss += 0
                                     if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
@@ -918,7 +920,7 @@ def main():
                                 inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                                 # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                 # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
-                                if 'knn' in args.method:
+                                if ('knn' in args.method) or ('kmeans' in args.method):
                                     outputs = nlinear_model.forward_upto_classifier(inputs)
                                     epoch_val_loss += 0
                                     if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
@@ -982,7 +984,7 @@ def main():
                                     inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                                     # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
                                     # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-1).unsqueeze(-1))/torch.std(inputs, dim=-1).unsqueeze(-1) # mean normalise
-                                    if 'knn' in args.method:
+                                    if ('knn' in args.method) or ('kmeans' in args.method):
                                         outputs = nlinear_model.forward_upto_classifier(inputs)
                                         epoch_val_loss += 0
                                         if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
