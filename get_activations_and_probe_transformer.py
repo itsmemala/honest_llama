@@ -157,6 +157,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         # fig, ax = 
         for set_id in [0,1]:
             data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
+            print(data.shape)
             silhouette_avg = []
             range_k = list(range(2,top_k+1,1))
             for num_clusters in range_k:
