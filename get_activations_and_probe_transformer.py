@@ -157,7 +157,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         # fig, ax = 
         for set_id in [0,1]:
             data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
-            print(data.shape)
+            # print(data.shape)
             silhouette_avg = []
             range_k = list(range(2,top_k+1,1))
             for num_clusters in range_k:
@@ -165,7 +165,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
                 kmeans.fit(data)
                 cluster_labels = kmeans.labels_
                 print(np.unique(cluster_labels))
-                if np.unique(cluster_labels)==[1]: # if we can form only one cluster then exit loop and set best_k=1
+                if np.unique(cluster_labels)==[0]: # if we can form only one cluster then exit loop and set best_k=1
                     break
                 else:
                     silhouette_avg.append(silhouette_score(data, cluster_labels))
