@@ -178,8 +178,8 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             cluster_centers.append(kmeans.cluster_centers_)
             cluster_centers_labels += [set_id for j in range(best_k)]
         cluster_centers = np.concatenate(cluster_centers, axis=0)
-        print(cluster_centers.shape)
-        sys.exit()
+        # print(cluster_centers.shape)
+        # sys.exit()
         o_matrix = []
         for o in outputs:
             o_dist = []
