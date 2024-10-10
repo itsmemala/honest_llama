@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -155,43 +156,49 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         train_outputs = train_outputs.detach().cpu().numpy()
         cluster_centers, cluster_centers_labels = [], []
         # fig, ax = 
-        for set_id in [0,1]:
-            data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
-            # print(data.shape)
-            silhouette_avg = []
-            range_k = list(range(2,top_k+1,1))
-            for num_clusters in range_k:
-                kmeans = KMeans(n_clusters=num_clusters)
-                kmeans.fit(data)
-                cluster_labels = kmeans.labels_
-                if len(np.unique(cluster_labels))==1: # if we can form only one cluster then exit loop and set best_k=1
-                    break
+        with warnings.catch_warnings(action="ignore"): # we do not want to see warnings when only one cluster is formed
+            for set_id in [0,1]:
+                data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
+                # print(data.shape)
+                silhouette_avg = []
+                range_k = list(range(2,top_k+1,1))
+                for num_clusters in range_k:
+                    kmeans = KMeans(n_clusters=num_clusters)
+                    kmeans.fit(data)
+                    cluster_labels = kmeans.labels_
+                    if len(np.unique(cluster_labels))==1: # if we can form only one cluster then exit loop and set best_k=1
+                        break
+                    else:
+                        silhouette_avg.append(silhouette_score(data, cluster_labels))
+                    # ax.plot(range_n_clusters,silhouette_avg,’bx-’)
+                if len(np.unique(cluster_labels))==1:
+                    best_k = 1
                 else:
-                    silhouette_avg.append(silhouette_score(data, cluster_labels))
-                # ax.plot(range_n_clusters,silhouette_avg,’bx-’)
-            if len(np.unique(cluster_labels))==1:
-                best_k = 1
-            else:
-                best_k = range_k[np.argmax(silhouette_avg)]
-            kmeans = KMeans(n_clusters=best_k)
-            kmeans.fit(data)
-            cluster_centers.append(kmeans.cluster_centers_)
-            cluster_centers_labels += [set_id for j in range(best_k)]
+                    best_k = range_k[np.argmax(silhouette_avg)]
+                kmeans = KMeans(n_clusters=best_k)
+                kmeans.fit(data)
+                cluster_centers.append(kmeans.cluster_centers_)
+                cluster_centers_labels += [set_id for j in range(best_k)]
         cluster_centers = np.concatenate(cluster_centers, axis=0)
         # print(cluster_centers.shape)
         # sys.exit()
-        o_matrix = []
+        # o_matrix = []
+        dist = []
         for o in outputs:
             o_dist = []
             for t in cluster_centers:
                 o_dist.append(mahalanobis(o, t, iv))
-            o_matrix.append(np.array(o_dist))
-        o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
-        weights = 'uniform' if 'maj' in metric else 'distance'
-        knn = KNeighborsClassifier(n_neighbors = 1, metric='precomputed',weights=weights)
-        knn.fit(np.ones((cluster_centers.shape[0],cluster_centers.shape[0])),cluster_centers_labels) # dummy but required otherwise sklearn throws err
-        dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
-        dist = torch.from_numpy(dist)
+            cur_sample_label = cluster_centers_labels[np.argmin(o_dist)]
+            prob_score = cur_sample_label
+            dist.append(-1 * prob_score)
+        #     o_matrix.append(np.array(o_dist))
+        # o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
+        # weights = 'uniform' if 'maj' in metric else 'distance'
+        # knn = KNeighborsClassifier(n_neighbors = 1, metric='precomputed',weights=weights)
+        # knn.fit(np.ones((cluster_centers.shape[0],cluster_centers.shape[0])),cluster_centers_labels) # dummy but required otherwise sklearn throws err
+        # dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
+        # dist = torch.from_numpy(dist)
+        dist = torch.Tensor(dist)
     elif metric=='cosine':
         outputs = F.normalize(outputs, p=2, dim=-1)
         train_outputs = F.normalize(train_outputs, p=2, dim=-1)
