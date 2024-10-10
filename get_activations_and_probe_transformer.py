@@ -190,9 +190,10 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             for t in cluster_centers:
                 o_dist.append(mahalanobis(o, t, iv))
             cur_sample_label = cluster_centers_labels[np.argmin(o_dist)]
-            prob_score = 1 if cur_sample_label==1 else 1e-7
-            dist.append(1 / prob_score)
-            # dist.append(-1 * prob_score)
+            # prob_score = 1 if cur_sample_label==1 else 1e-7
+            # dist.append(1 / prob_score)
+            prob_score = cur_sample_label
+            dist.append(-1 * prob_score)
         #     o_matrix.append(np.array(o_dist))
         # o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
         # weights = 'uniform' if 'maj' in metric else 'distance'
@@ -814,7 +815,7 @@ def main():
                         val_preds += val_preds_batch.tolist()
                         val_true += targets.tolist()
                     epoch_val_loss = epoch_val_loss/(step+1)
-                    epoch_val_auc = roc_auc_score(val_true, [-v for v in val_preds]) if 'knn' in args.method else roc_auc_score(val_true, val_preds)
+                    epoch_val_auc = roc_auc_score(val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(val_true, val_preds)
                     supcon_train_loss.append(epoch_supcon_loss)
                     supcon1_train_loss.append(epoch_supcon1_loss)
                     supcon2_train_loss.append(epoch_supcon2_loss)
@@ -915,14 +916,14 @@ def main():
                 all_val_logits[i].append(torch.cat(val_logits))
                 print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
                 print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
-                best_val_t = get_best_threshold(y_val_true, val_preds, True if 'knn' in args.method else False)
-                if 'knn' in args.method:
+                best_val_t = get_best_threshold(y_val_true, val_preds, True if ('knn' in args.method) or ('kmeans' in args.method) else False)
+                if ('knn' in args.method) or ('kmeans' in args.method):
                     y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
                 else:
                     y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
                 log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
                 log_val_recall = recall_score(y_val_true,y_val_pred_opt)
-                log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if 'knn' in args.method else roc_auc_score(y_val_true, val_preds)
+                log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_val_true, val_preds)
                 pred_correct = 0
                 y_test_pred, y_test_true = [], []
                 test_preds = []
@@ -990,13 +991,13 @@ def main():
                     print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
                     print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
                     print('Samples:',num_test_samples_used)
-                    if 'knn' in args.method:
+                    if ('knn' in args.method) or ('kmeans' in args.method):
                         y_test_pred_opt = [1 if v<best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
                     else:
                         y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
                     log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
                     log_test_recall = recall_score(y_test_true, y_test_pred_opt)
-                    log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if 'knn' in args.method else roc_auc_score(y_test_true, test_preds)
+                    log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_test_true, test_preds)
                     all_test_logits[i].append(torch.cat(test_logits))
 
                     # # Get preds on all tokens
