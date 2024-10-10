@@ -156,7 +156,8 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         train_outputs = train_outputs.detach().cpu().numpy()
         cluster_centers, cluster_centers_labels = [], []
         # fig, ax = 
-        with warnings.catch_warnings(action="ignore"): # we do not want to see warnings when only one cluster is formed
+        with warnings.catch_warnings(): # we do not want to see warnings when only one cluster is formed
+            warnings.simplefilter("ignore")
             for set_id in [0,1]:
                 data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
                 # print(data.shape)
