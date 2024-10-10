@@ -164,13 +164,12 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
                 kmeans = KMeans(n_clusters=num_clusters)
                 kmeans.fit(data)
                 cluster_labels = kmeans.labels_
-                print(np.unique(cluster_labels))
                 if len(np.unique(cluster_labels))==1: # if we can form only one cluster then exit loop and set best_k=1
                     break
                 else:
                     silhouette_avg.append(silhouette_score(data, cluster_labels))
                 # ax.plot(range_n_clusters,silhouette_avg,’bx-’)
-            if np.unique(cluster_labels)==1:
+            if len(np.unique(cluster_labels))==1:
                 best_k = 1
             else:
                 best_k = range_k[np.argmax(silhouette_avg)]
