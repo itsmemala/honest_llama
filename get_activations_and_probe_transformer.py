@@ -190,7 +190,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             for t in cluster_centers:
                 o_dist.append(mahalanobis(o, t, iv))
             cur_sample_label = cluster_centers_labels[np.argmin(o_dist)]
-            prob_score = cur_sample_label
+            prob_score = 1 if cur_sample_label==1 else 1e-7
             dist.append(-1 * prob_score)
         #     o_matrix.append(np.array(o_dist))
         # o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
