@@ -165,7 +165,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
                 kmeans.fit(data)
                 cluster_labels = kmeans.labels_
                 print(np.unique(cluster_labels))
-                if np.unique(cluster_labels)==[0]: # if we can form only one cluster then exit loop and set best_k=1
+                if len(np.unique(cluster_labels))==1: # if we can form only one cluster then exit loop and set best_k=1
                     break
                 else:
                     silhouette_avg.append(silhouette_score(data, cluster_labels))
