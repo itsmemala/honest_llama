@@ -6,7 +6,7 @@
 
 ################################### transformer n*aug 1 layer ####################################
 
-# python get_activations.py alpaca_7B strqa --token answer_last --file_name strqa_sampledplus_responses_train  --device 0 --save_path ~/Desktop/honest_llama_data
+python get_activations.py alpaca_7B strqa --token answer_last --file_name strqa_sampledplus_responses_train  --device 0 --save_path ~/Desktop/honest_llama_data
 # python get_activations.py alpaca_7B strqa --token answer_last --file_name strqa_greedy_responses_validation1800  --device 0 --save_path ~/Desktop/honest_llama_data
 
 python get_activations_and_probe_transformer.py alpaca_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 16479 --num_folds 1 --using_act layer --token answer_last --method transformer_hallu_pos --bs 128 --epochs 50 --lr_list 0.00005,0.0005,0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --plot_name transformer-n*aug --tag main-transformer-5kbestauc --use_best_val_t True  --seed_list 42,101,2650 --best_using_auc True
