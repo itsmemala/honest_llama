@@ -163,7 +163,7 @@ def main():
                         probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                         probes_file_name_list.append(probes_file_name)
                         all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
-                        print(all_val_pred.shape)
+                        # print(all_val_pred.shape)
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if 'knn' in args.probes_file_name else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
                         auc_by_lr.append(auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
