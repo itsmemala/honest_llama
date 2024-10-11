@@ -159,7 +159,7 @@ def main():
                             fn_left_text = args.probes_file_name.split('hallu_pos_',1)[0] + 'hallu_pos_'
                             fn_right_text = args.probes_file_name.split('hallu_pos_',1)[1].split('_',1)[1]
                             probes_file_name = fn_left_text + temp + fn_right_text
-                            print(probes_file_name)
+                            # print(probes_file_name)
                         probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                         probes_file_name_list.append(probes_file_name)
                         all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
