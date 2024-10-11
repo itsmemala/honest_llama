@@ -50,6 +50,7 @@ def main():
     parser.add_argument("--probes_file_name_concat", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
+    parser.add_argument('--sc_temp_list',default=0,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
@@ -147,13 +148,23 @@ def main():
             if args.lr_list is not None:
                 probes_file_name_list, auc_by_lr = [], []
                 for lr in args.lr_list:
-                    probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
-                    probes_file_name_list.append(probes_file_name)
-                    all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
-                    print(all_val_pred.shape)
-                    auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if 'knn' in args.probes_file_name else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
-                    auc_by_lr.append(auc_val)
+                    for temp in args.sc_temp_list:
+                        if temp==0:
+                            probes_file_name = args.probes_file_name
+                        else:
+                            if temp==0.1: temp=''
+                            fn_left_text = args.probes_file_name.split('hallu_pos_',1)[0] + 'hallu_pos_'
+                            fn_right_text = '_' + args.probes_file_name.split('hallu_pos_',1)[1].split('_',1)[1]
+                            probes_file_name = fn_left_text + str(temp) + fn_right_text
+                            print(probes_file_name)
+                        probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
+                        probes_file_name_list.append(probes_file_name)
+                        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
+                        print(all_val_pred.shape)
+                        auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if 'knn' in args.probes_file_name else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
+                        auc_by_lr.append(auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
+                print(best_probes_file_name)
             else:
                 best_probes_file_name = args.probes_file_name
             
