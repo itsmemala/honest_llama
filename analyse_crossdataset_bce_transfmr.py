@@ -152,10 +152,13 @@ def main():
                         if temp==0:
                             probes_file_name = args.probes_file_name
                         else:
-                            if temp==0.1: temp=''
+                            if temp==0.1: 
+                                temp=''
+                            else:
+                                temp = str(temp) + '_'
                             fn_left_text = args.probes_file_name.split('hallu_pos_',1)[0] + 'hallu_pos_'
-                            fn_right_text = '_' + args.probes_file_name.split('hallu_pos_',1)[1].split('_',1)[1]
-                            probes_file_name = fn_left_text + str(temp) + fn_right_text
+                            fn_right_text = args.probes_file_name.split('hallu_pos_',1)[1].split('_',1)[1]
+                            probes_file_name = fn_left_text + temp + fn_right_text
                             print(probes_file_name)
                         probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                         probes_file_name_list.append(probes_file_name)
