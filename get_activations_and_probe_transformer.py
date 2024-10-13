@@ -979,7 +979,7 @@ def main():
                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                             if ('knn' in args.method) or ('kmeans' in args.method):
                                 outputs = nlinear_model.forward_upto_classifier(inputs)
-                                epoch_val_loss += 0
+                                # epoch_val_loss += 0
                                 if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
                                     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
                                     train_labels = np.array([labels[idx] for idx in train_set_idxs])
