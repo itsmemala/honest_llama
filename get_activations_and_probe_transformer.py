@@ -864,8 +864,11 @@ def main():
                         probes_saved.append(probe_save_path)
                 
                 if args.skip_train:
+                    prior_probes_file_name = probes_file_name.replace('knn_','').replace(args.dist_metric+str(args.top_k)+'_','')
+                    prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
+                    nlinear_model = torch.load(prior_save_path)
                     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
-                    nlinear_model = torch.load(probe_save_path)
+                    torch.save(nlinear_model, probe_save_path)
 
                 # Val and Test performance
                 print('\n\nStart time of val and test perf:',datetime.datetime.now(),'\n\n')
