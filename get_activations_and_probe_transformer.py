@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from pytorch_metric_learning.losses import NTXentLoss
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import WeightedRandomSampler, RandomSampler
+import datetime
 import datasets
 from datasets import load_dataset, Dataset
 from tqdm import tqdm
@@ -272,9 +273,12 @@ def main():
     parser.add_argument('--fast_mode',type=bool, default=False) # use when GPU space is free, dataset is small and using only 1 token per sample
     # parser.add_argument('--seed',type=int, default=42)
     parser.add_argument('--seed_list',default=42,type=list_of_ints,required=False,help='(default=%(default)s)')
+    parser.add_argument('--skip_train', type=bool, default=False)
     parser.add_argument('--plot_name',type=str, default=None) # Wandb args
     parser.add_argument('--tag',type=str, default=None) # Wandb args
     args = parser.parse_args()
+
+    print('\n\nStart time of main:',datetime.datetime.now(),'\n\n')
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
 
@@ -654,210 +658,217 @@ def main():
                         my_train_acts[:,layer,:] = (my_train_acts[:,layer,:]-transform_mean)/transform_std
                         my_test_acts[:,layer,:] = (my_test_acts[:,layer,:]-transform_mean)/transform_std
 
-                # Training
-                supcon_train_loss, supcon1_train_loss, supcon2_train_loss, train_loss, val_loss, val_auc = [], [], [], [], [], []
-                best_val_loss, best_val_auc = torch.inf, 0
-                best_model_state = deepcopy(nlinear_model.state_dict())
-                no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-                named_params = list(nlinear_model.named_parameters())
-                optimizer_grouped_parameters = [
-                    {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
-                    {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
-                ]
-                optimizer = torch.optim.AdamW(optimizer_grouped_parameters) #torch.optim.AdamW(optimizer_grouped_parameters)
-                # optimizer = torch.optim.Adam(nlinear_model.parameters())
-                steps_per_epoch = int(len(train_set_idxs)/args.bs)  # number of steps in an epoch
-                warmup_period = steps_per_epoch * 5
-                T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
-                scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
-                scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
-                scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1) if args.scheduler=='static' else torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
-                # if 'supcon' in args.method:
-                #     T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
-                #     scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
-                #     scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=10,total_iters=steps_per_epoch*0.1*args.epochs)
-                #     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
-                # for epoch in tqdm(range(args.epochs)):
-                for epoch in range(args.epochs):
-                    num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss, epoch_supcon1_loss, epoch_supcon2_loss = 0, 0, 0, 0, 0, 0
-                    nlinear_model.train()
-                    for step,batch in enumerate(ds_train):
-                        optimizer.zero_grad()
-                        activations, batch_target_idxs = [], []
-                        for k,idx in enumerate(batch['inputs_idxs']):
-                            if 'tagged_tokens' in args.token: 
-                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                                # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                                # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                                if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-                                if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                                if args.no_sep==False:
-                                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                                    act = torch.cat((act,sep_token), dim=1)
-                                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-                                batch_target_idxs.append(k)
-                            else:
-                                act = my_train_acts[idx].to(device)
-                            activations.append(act)
-                        if len(activations)==0: continue
-                        num_samples_used += len(batch_target_idxs)
-                        if 'tagged_tokens' in args.token:
-                            inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
-                        else:
-                            inputs = torch.stack(activations,axis=0)
-                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                        # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                        targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                        if 'supcon' in args.method:
-                            # SupCon backward
-                            emb = nlinear_model.forward_upto_classifier(inputs)
-                            norm_emb = F.normalize(emb, p=2, dim=-1)
-                            emb_projection = nlinear_model.projection(norm_emb)
-                            emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
-                            if 'supconv2' in args.method:
-                                if (use_supcon_pos) and (sc_num_samples is not None):
-                                    greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
-                                    if 'wp_all' in args.method:
-                                        supcon1_loss = criterion_supcon1(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates on all samples
-                                    else:
-                                        supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
-                                    supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
-                                    supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
+                if args.skip_train==False:
+                    # Training
+                    print('\n\nStart time of train:',datetime.datetime.now(),'\n\n')
+                    supcon_train_loss, supcon1_train_loss, supcon2_train_loss, train_loss, val_loss, val_auc = [], [], [], [], [], []
+                    best_val_loss, best_val_auc = torch.inf, 0
+                    best_model_state = deepcopy(nlinear_model.state_dict())
+                    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+                    named_params = list(nlinear_model.named_parameters())
+                    optimizer_grouped_parameters = [
+                        {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
+                        {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
+                    ]
+                    optimizer = torch.optim.AdamW(optimizer_grouped_parameters) #torch.optim.AdamW(optimizer_grouped_parameters)
+                    # optimizer = torch.optim.Adam(nlinear_model.parameters())
+                    steps_per_epoch = int(len(train_set_idxs)/args.bs)  # number of steps in an epoch
+                    warmup_period = steps_per_epoch * 5
+                    T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
+                    scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
+                    scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
+                    scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1) if args.scheduler=='static' else torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
+                    # if 'supcon' in args.method:
+                    #     T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
+                    #     scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
+                    #     scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=10,total_iters=steps_per_epoch*0.1*args.epochs)
+                    #     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
+                    # for epoch in tqdm(range(args.epochs)):
+                    for epoch in range(args.epochs):
+                        num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss, epoch_supcon1_loss, epoch_supcon2_loss = 0, 0, 0, 0, 0, 0
+                        nlinear_model.train()
+                        for step,batch in enumerate(ds_train):
+                            optimizer.zero_grad()
+                            activations, batch_target_idxs = [], []
+                            for k,idx in enumerate(batch['inputs_idxs']):
+                                if 'tagged_tokens' in args.token: 
+                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                                    # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                                    if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                                    if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                                    if args.no_sep==False:
+                                        sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                                        act = torch.cat((act,sep_token), dim=1)
+                                    act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                                    batch_target_idxs.append(k)
                                 else:
-                                    supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
+                                    act = my_train_acts[idx].to(device)
+                                activations.append(act)
+                            if len(activations)==0: continue
+                            num_samples_used += len(batch_target_idxs)
+                            if 'tagged_tokens' in args.token:
+                                inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                             else:
-                                logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
-                                supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
-                            # print(supcon_loss.item())
-                            epoch_supcon_loss += supcon_loss.item()
-                            if (use_supcon_pos) and (sc_num_samples is not None):
-                                epoch_supcon1_loss += supcon1_loss.item()
-                                epoch_supcon2_loss += supcon2_loss.item()
-                            supcon_loss.backward()
-                            # supcon_train_loss.append(supcon_loss.item())
-                            # CE backward
-                            # if ('knn' in args.method) or ('kmeans' in args.method):
-                            #     loss = torch.Tensor([0])
-                            # else:
-                            emb = nlinear_model.forward_upto_classifier(inputs).detach()
-                            norm_emb = F.normalize(emb, p=2, dim=-1)
-                            outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
-                            loss = criterion(outputs, targets.to(device).float())
-                            loss.backward()
-                        else:
-                            outputs = nlinear_model(inputs)
-                            loss = criterion(outputs, targets.to(device).float())
-                            try:
+                                inputs = torch.stack(activations,axis=0)
+                            # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                            # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
+                            targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
+                            if 'supcon' in args.method:
+                                # SupCon backward
+                                emb = nlinear_model.forward_upto_classifier(inputs)
+                                norm_emb = F.normalize(emb, p=2, dim=-1)
+                                emb_projection = nlinear_model.projection(norm_emb)
+                                emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
+                                if 'supconv2' in args.method:
+                                    if (use_supcon_pos) and (sc_num_samples is not None):
+                                        greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
+                                        if 'wp_all' in args.method:
+                                            supcon1_loss = criterion_supcon1(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates on all samples
+                                        else:
+                                            supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
+                                        supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
+                                        supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
+                                    else:
+                                        supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
+                                else:
+                                    logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
+                                    supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
+                                # print(supcon_loss.item())
+                                epoch_supcon_loss += supcon_loss.item()
+                                if (use_supcon_pos) and (sc_num_samples is not None):
+                                    epoch_supcon1_loss += supcon1_loss.item()
+                                    epoch_supcon2_loss += supcon2_loss.item()
+                                supcon_loss.backward()
+                                # supcon_train_loss.append(supcon_loss.item())
+                                # CE backward
+                                # if ('knn' in args.method) or ('kmeans' in args.method):
+                                #     loss = torch.Tensor([0])
+                                # else:
+                                emb = nlinear_model.forward_upto_classifier(inputs).detach()
+                                norm_emb = F.normalize(emb, p=2, dim=-1)
+                                outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
+                                loss = criterion(outputs, targets.to(device).float())
                                 loss.backward()
-                            except torch.cuda.OutOfMemoryError:
-                                print('Num of tokens in input:',activations[0].shape[0])
-                        optimizer.step()
-                        scheduler.step()
-                        epoch_train_loss += loss.item()
-                        # train_loss.append(loss.item())
-                        # break
-                    # scheduler.step()
-                    if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
-                    epoch_supcon1_loss = epoch_supcon1_loss/(step+1)
-                    epoch_supcon2_loss = epoch_supcon2_loss/(step+1)
-                    epoch_train_loss = epoch_train_loss/(step+1)
-
-                    # Get val loss
-                    nlinear_model.eval()
-                    epoch_val_loss = 0
-                    val_preds, val_true = [], []
-                    for step,batch in enumerate(ds_val):
-                        optimizer.zero_grad()
-                        activations, batch_target_idxs = [], []
-                        for k,idx in enumerate(batch['inputs_idxs']):
-                            if 'tagged_tokens' in args.token: 
-                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                                # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                                # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                                if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-                                if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                                if args.no_sep==False:
-                                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                                    act = torch.cat((act,sep_token), dim=1)
-                                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-                                batch_target_idxs.append(k)
                             else:
-                                act = my_train_acts[idx].to(device)
-                            activations.append(act)
-                        if len(activations)==0: continue
-                        num_val_samples_used += len(batch_target_idxs)
-                        if 'tagged_tokens' in args.token:
-                            inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                                outputs = nlinear_model(inputs)
+                                loss = criterion(outputs, targets.to(device).float())
+                                try:
+                                    loss.backward()
+                                except torch.cuda.OutOfMemoryError:
+                                    print('Num of tokens in input:',activations[0].shape[0])
+                            optimizer.step()
+                            scheduler.step()
+                            epoch_train_loss += loss.item()
+                            # train_loss.append(loss.item())
+                            # break
+                        # scheduler.step()
+                        if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
+                        epoch_supcon1_loss = epoch_supcon1_loss/(step+1)
+                        epoch_supcon2_loss = epoch_supcon2_loss/(step+1)
+                        epoch_train_loss = epoch_train_loss/(step+1)
+
+                        # Get val loss
+                        nlinear_model.eval()
+                        epoch_val_loss = 0
+                        val_preds, val_true = [], []
+                        for step,batch in enumerate(ds_val):
+                            optimizer.zero_grad()
+                            activations, batch_target_idxs = [], []
+                            for k,idx in enumerate(batch['inputs_idxs']):
+                                if 'tagged_tokens' in args.token: 
+                                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                    act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                                    # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                                    if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                                    if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                                    if args.no_sep==False:
+                                        sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                                        act = torch.cat((act,sep_token), dim=1)
+                                    act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                                    batch_target_idxs.append(k)
+                                else:
+                                    act = my_train_acts[idx].to(device)
+                                activations.append(act)
+                            if len(activations)==0: continue
+                            num_val_samples_used += len(batch_target_idxs)
+                            if 'tagged_tokens' in args.token:
+                                inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                            else:
+                                inputs = torch.stack(activations,axis=0)
+                            # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                            # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
+                            targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
+                            # if ('knn' in args.method) or ('kmeans' in args.method):
+                            #     outputs = nlinear_model.forward_upto_classifier(inputs)
+                            #     epoch_val_loss += 0
+                            #     if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
+                            #         train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                            #         train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                            #     else:
+                            #         train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                            #         train_labels = None
+                            #     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                            #     val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
+                            # else:
+                            outputs = nlinear_model(inputs)
+                            epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                            val_preds_batch = torch.sigmoid(outputs.data)
+                            val_preds += val_preds_batch.tolist()
+                            val_true += targets.tolist()
+                        epoch_val_loss = epoch_val_loss/(step+1)
+                        # epoch_val_auc = roc_auc_score(val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(val_true, val_preds)
+                        epoch_val_auc = roc_auc_score(val_true, val_preds)
+                        supcon_train_loss.append(epoch_supcon_loss)
+                        supcon1_train_loss.append(epoch_supcon1_loss)
+                        supcon2_train_loss.append(epoch_supcon2_loss)
+                        train_loss.append(epoch_train_loss)
+                        val_loss.append(epoch_val_loss)
+                        val_auc.append(epoch_val_auc)
+                        # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
+                        # print('Samples:',num_samples_used, num_val_samples_used)
+                        # Choose best model
+                        if args.best_using_auc:
+                            if epoch_val_auc > best_val_auc:
+                                best_val_auc = epoch_val_auc
+                                best_model_state = deepcopy(nlinear_model.state_dict())
+                        elif args.best_as_last:
+                            best_model_state = deepcopy(nlinear_model.state_dict())
                         else:
-                            inputs = torch.stack(activations,axis=0)
-                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                        # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                        targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                        # if ('knn' in args.method) or ('kmeans' in args.method):
-                        #     outputs = nlinear_model.forward_upto_classifier(inputs)
-                        #     epoch_val_loss += 0
-                        #     if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
-                        #         train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
-                        #         train_labels = np.array([labels[idx] for idx in train_set_idxs])
-                        #     else:
-                        #         train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
-                        #         train_labels = None
-                        #     train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                        #     val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
-                        # else:
-                        outputs = nlinear_model(inputs)
-                        epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
-                        val_preds_batch = torch.sigmoid(outputs.data)
-                        val_preds += val_preds_batch.tolist()
-                        val_true += targets.tolist()
-                    epoch_val_loss = epoch_val_loss/(step+1)
-                    # epoch_val_auc = roc_auc_score(val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(val_true, val_preds)
-                    epoch_val_auc = roc_auc_score(val_true, val_preds)
-                    supcon_train_loss.append(epoch_supcon_loss)
-                    supcon1_train_loss.append(epoch_supcon1_loss)
-                    supcon2_train_loss.append(epoch_supcon2_loss)
-                    train_loss.append(epoch_train_loss)
-                    val_loss.append(epoch_val_loss)
-                    val_auc.append(epoch_val_auc)
-                    # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
-                    # print('Samples:',num_samples_used, num_val_samples_used)
-                    # Choose best model
-                    if args.best_using_auc:
-                        if epoch_val_auc > best_val_auc:
-                            best_val_auc = epoch_val_auc
-                            best_model_state = deepcopy(nlinear_model.state_dict())
-                    elif args.best_as_last:
-                        best_model_state = deepcopy(nlinear_model.state_dict())
-                    else:
-                        if epoch_val_loss < best_val_loss:
-                            best_val_loss = epoch_val_loss
-                            best_model_state = deepcopy(nlinear_model.state_dict())
-                    # Early stopping
-                    # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
-                    # if len(val_loss)>=patience:
-                    #     for epoch_id in range(1,patience,1):
-                    #         val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
-                    #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
-                    #     if is_not_decreasing==patience-1: break
-                all_supcon_train_loss[i].append(np.array(supcon_train_loss))
-                all_supcon1_train_loss[i].append(np.array(supcon1_train_loss))
-                all_supcon2_train_loss[i].append(np.array(supcon2_train_loss))
-                all_train_loss[i].append(np.array(train_loss))
-                all_val_loss[i].append(np.array(val_loss))
-                all_val_auc[i].append(np.array(val_auc))
-                nlinear_model.load_state_dict(best_model_state)
+                            if epoch_val_loss < best_val_loss:
+                                best_val_loss = epoch_val_loss
+                                best_model_state = deepcopy(nlinear_model.state_dict())
+                        # Early stopping
+                        # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
+                        # if len(val_loss)>=patience:
+                        #     for epoch_id in range(1,patience,1):
+                        #         val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
+                        #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+                        #     if is_not_decreasing==patience-1: break
+                    all_supcon_train_loss[i].append(np.array(supcon_train_loss))
+                    all_supcon1_train_loss[i].append(np.array(supcon1_train_loss))
+                    all_supcon2_train_loss[i].append(np.array(supcon2_train_loss))
+                    all_train_loss[i].append(np.array(train_loss))
+                    all_val_loss[i].append(np.array(val_loss))
+                    all_val_auc[i].append(np.array(val_auc))
+                    nlinear_model.load_state_dict(best_model_state)
+                    
+                    # print(np.array(val_loss))
+                    if args.save_probes:
+                        probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
+                        torch.save(nlinear_model, probe_save_path)
+                        probes_saved.append(probe_save_path)
                 
-                # print(np.array(val_loss))
-                if args.save_probes:
+                if args.skip_train:
                     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
-                    torch.save(nlinear_model, probe_save_path)
-                    probes_saved.append(probe_save_path)
-                
+                    nlinear_model = torch.load(probe_save_path)
+
                 # Val and Test performance
+                print('\n\nStart time of val and test perf:',datetime.datetime.now(),'\n\n')
                 pred_correct = 0
                 y_val_pred, y_val_true = [], []
                 val_preds = []
