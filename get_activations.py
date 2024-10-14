@@ -260,6 +260,21 @@ def main():
                             least_likely_token_idx = predicting_token_idx
                     act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, least_likely_token_idx)
                     all_layer_wise_activations.append(act.numpy())
+                elif args.token=='after_least_likely':
+                    # print(print(tokenizer.decode(prompt[0], skip_special_tokens=True)))
+                    # print(tokenizer.decode(prompt[0], skip_special_tokens=True))
+                    least_likely_nll, least_likely_token_idx = 0, token_idx-1
+                    for next_token_idx in range(len(prompt[0][token_idx:])):
+                        predicting_token_idx = token_idx+next_token_idx-1 # -1 since prob of every next token is given by prev token
+                        predicted_token_id = prompt[0][token_idx+next_token_idx]
+                        part_prompt = prompt[:,:predicting_token_idx]
+                        # print(tokenizer.decode(part_prompt, skip_special_tokens=True))
+                        nll = get_token_nll(model, part_prompt, device, predicted_token_id)
+                        if nll > least_likely_nll:
+                            least_likely_nll = nll
+                            least_likely_token_idx = predicting_token_idx + 1 # here, we want to look at generation of token after the least likely token
+                    act = get_llama_activations_bau_custom(model, prompt, device, 'layer', -1, args.token, least_likely_token_idx)
+                    all_layer_wise_activations.append(act.numpy())
                 elif args.token=='random':
                     # if len(prompt[0][token_idx:])==0: print(tokenizer.decode(prompt[0], skip_special_tokens=True))
                     random_token_idx = token_idx-1 + np.random.choice(len(prompt[0][token_idx-1:]), 1)
