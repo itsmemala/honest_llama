@@ -645,7 +645,7 @@ def get_llama_activations_bau_custom(model, prompt, device, using_act, layer, to
         return activation[answer_token_idx-1,:]
     elif token=='maxpool_all':
         return torch.max(activation,dim=0)[0]
-    elif using_act=='layer' and token in ['least_likely','random']:
+    elif using_act=='layer' and token in ['least_likely','after_least_likely','random']:
         return layer_activation[:,answer_token_idx,:]
     elif using_act=='layer' and token=='tagged_tokens':
         tagged_token_idxs = tagged_token_idxs if len(tagged_token_idxs)>0 else [(1,layer_activation.shape[0])] # Skip the first token
