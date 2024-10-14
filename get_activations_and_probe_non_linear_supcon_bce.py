@@ -330,7 +330,7 @@ def main():
     # else:
     #     args.acts_per_file = 100
 
-    single_token_types = ['answer_last','prompt_last','maxpool_all','slt','least_likely']
+    single_token_types = ['answer_last','prompt_last','maxpool_all','slt','least_likely','after_least_likely']
 
 
     
