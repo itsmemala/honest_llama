@@ -50,6 +50,22 @@ python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_n
 
 
 
+################################# transformer n 1 layer : supcon ##########################
+# python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_baseline_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 1832 --num_folds 1 --using_act layer --token answer_last --method transformer_supconv2_hallu_pos --bs 256 --epochs 500 --lr_list 0.000005,0.00005,0.0005,0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --use_best_val_t True  --seed_list 42,101,2650 --best_using_auc True --supcon_temp_list 0.3,0.5,0.7,1.0,2.0
+
+################################# transformer n*aug 1 layer : supcon ##########################
+# python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 16479 --num_folds 1 --using_act layer --token answer_last --method transformer_supconv2_hallu_pos --bs 256 --epochs 500 --lr_list 0.000005,0.00005,0.0005,0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --use_best_val_t True   --seed_list 42,101,2650 --best_using_auc True --supcon_temp_list 0.3,0.5,0.7,1.0,2.0
+# python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 16479 --num_folds 1 --using_act layer --token answer_last --method transformer_supconv2_hallu_pos --bs 288 --epochs 500 --lr_list 0.000005,0.00005,0.0005,0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --use_best_val_t True   --seed_list 42,101,2650 --best_using_auc True  --no_batch_sampling True --supcon_temp_list 0.3,0.5,0.7,1.0,2.0
+
+################################# transformer n*aug 1 layer : supcon+ ##########################
+# python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 16479 --num_folds 1 --using_act layer --token answer_last --method transformer_supconv2_pos_hallu_pos --bs 288 --epochs 500 --lr_list 0.000005,0.00005,0.0005,0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --use_best_val_t True   --seed_list 42,101,2650 --best_using_auc True --no_batch_sampling True --supcon_temp_list 0.3,0.5,0.7,1.0,2.0
+
+################################# transformer n*aug 1 layer : supcon+* ##########################
+# python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_sampledplus_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 16479 --num_folds 1 --using_act layer --token answer_last --method transformer_supconv2_pos_wp_hallu_pos --bs 288 --epochs 500 --lr_list 0.000005,0.00005,0.0005,0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --use_best_val_t True   --seed_list 42,101,2650 --best_using_auc True  --no_batch_sampling True --supcon_temp_list 0.3,0.5,0.7,1.0,2.0
+
+
+
+
 ########################### n 2 layer : supcon #################
 python get_activations_and_probe_transformer.py hl_llama_7B strqa --train_file_name strqa_baseline_responses_train --test_file_name strqa_baseline_responses_test --len_dataset 1832 --num_folds 1 --using_act layer --token answer_last --method transformer2_supconv2_hallu_pos --bs 256 --epochs 500 --lr_list 0.000005,0.00005,0.0005,0.005 --save_probes True --save_path ~/Desktop/honest_llama_data --fast_mode True  --plot_name transformer2_supconv2-n --tag main-transformer-contrast-5kbestauc --use_best_val_t True  --seed_list 42,101,2650 --best_using_auc True --supcon_temp_list 0.3,0.5,0.7,1.0,2.0
 
