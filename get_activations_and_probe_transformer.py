@@ -715,6 +715,7 @@ def main():
                             #     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
                             # for epoch in tqdm(range(args.epochs)):
                             for epoch in range(args.epochs):
+                                # if epoch==250: break
                                 num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss, epoch_supcon1_loss, epoch_supcon2_loss = 0, 0, 0, 0, 0, 0
                                 nlinear_model.train()
                                 for step,batch in enumerate(ds_train):
