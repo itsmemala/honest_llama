@@ -51,7 +51,8 @@ def main():
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
-    parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
+    parser.add_argument("--best_threshold", type=bool, default=False, help='')
+    parser.add_argument("--best_threshold_using_recall", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -185,7 +186,8 @@ def main():
                         val_pred_model[val_pred_model<=t] = 0
                     cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                     cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
-                    perf = np.mean((cls1_f1,cls0_f1))
+                    recall = recall_score(all_val_true[fold][0],val_pred_model)
+                    perf = recall if args.best_threshold_using_recall else np.mean((cls1_f1,cls0_f1))
                     if perf>best_val_perf:
                         best_val_perf, best_t = perf, t
             else:
