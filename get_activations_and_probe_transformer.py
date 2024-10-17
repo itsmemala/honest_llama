@@ -194,6 +194,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
                 kmeans.fit(data)
                 cluster_centers.append(kmeans.cluster_centers_)
                 cluster_centers_labels += [set_id for j in range(best_k)]
+                print('\nNum clusters:',len(kmeans.cluster_centers_))
         cluster_centers = np.concatenate(cluster_centers, axis=0)
         # print(cluster_centers.shape)
         # sys.exit()
