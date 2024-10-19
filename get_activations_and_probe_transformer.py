@@ -898,7 +898,7 @@ def main():
                         if args.skip_train:
                             prior_probes_file_name = probes_file_name.replace('knn_','').replace('kmeans_','').replace(args.dist_metric+str(args.top_k)+'_','')
                             prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
-                            nlinear_model = torch.load(prior_save_path)
+                            nlinear_model = torch.load(prior_save_path).to(device)
                             probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
                             torch.save(nlinear_model, probe_save_path)
 
