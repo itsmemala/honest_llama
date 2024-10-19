@@ -477,7 +477,7 @@ def main():
         fold_idxs = np.array_split(np.arange(args.len_dataset), args.num_folds)
     
     if args.fast_mode:
-        device_id, device = 0, 'cuda:0' # start with first gpu
+        # device_id, device = 0, 'cuda:0' # start with first gpu
         print("Loading acts...")
         my_train_acts, my_test_acts = [], []
         for dataset_name,train_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.len_dataset_list):
@@ -503,13 +503,13 @@ def main():
                         act = torch.cat((act,sep_token), dim=1)
                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
-                    try:
-                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                    except torch.cuda.OutOfMemoryError:
-                        device_id += 1
-                        device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
-                        print('Loading on device',device_id)
-                        act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    # try:
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    # except torch.cuda.OutOfMemoryError:
+                    #     device_id += 1
+                    #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+                    #     print('Loading on device',device_id)
+                    #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_train_acts.append(act)
 
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
