@@ -113,7 +113,41 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
     print(best_val_perf,best_t)
     return best_t
 
-def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',top_k=5):
+def compute_kmeans(train_outputs,train_labels,top_k=5):
+    train_outputs = train_outputs.detach().cpu().numpy()
+    cluster_centers, cluster_centers_labels = [], []
+    # fig, ax = 
+    with warnings.catch_warnings(): # we do not want to see warnings when only one cluster is formed
+        warnings.simplefilter("ignore")
+        for set_id in [0,1]:
+            data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
+            # print(data.shape)
+            silhouette_avg = []
+            range_k = list(range(2,top_k+1,1))
+            for num_clusters in range_k:
+                kmeans = KMeansConstrained(n_clusters=num_clusters) # KMeans(n_clusters=num_clusters)
+                kmeans.fit(data)
+                cluster_labels = kmeans.labels_
+                # if len(np.unique(cluster_labels))==1: # if we can form only one cluster then exit loop and set best_k=1
+                #     break
+                # else:
+                silhouette_avg.append(silhouette_score(data, cluster_labels))
+                # ax.plot(range_n_clusters,silhouette_avg,’bx-’)
+            # if len(np.unique(cluster_labels))==1:
+            #     best_k = 1
+            # else:
+            best_k = range_k[np.argmax(silhouette_avg)]
+            kmeans = KMeans(n_clusters=best_k)
+            kmeans.fit(data)
+            cluster_centers.append(kmeans.cluster_centers_)
+            cluster_centers_labels += [set_id for j in range(best_k)]
+            print('\nNum clusters:',len(kmeans.cluster_centers_))
+    cluster_centers = np.concatenate(cluster_centers, axis=0)
+    # print(cluster_centers.shape)
+    # sys.exit()
+    return cluster_centers, cluster_centers_labels
+
+def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',top_k=5,cluster_centers=None,cluster_centers_labels=None):
     dist = []
     if metric=='euclidean':
         outputs = F.normalize(outputs, p=2, dim=-1)
@@ -168,37 +202,6 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
     elif metric=='mahalanobis_wgtd_centers' or metric=='mahalanobis_maj_centers':
         iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         outputs = outputs.detach().cpu().numpy()
-        train_outputs = train_outputs.detach().cpu().numpy()
-        cluster_centers, cluster_centers_labels = [], []
-        # fig, ax = 
-        with warnings.catch_warnings(): # we do not want to see warnings when only one cluster is formed
-            warnings.simplefilter("ignore")
-            for set_id in [0,1]:
-                data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
-                # print(data.shape)
-                silhouette_avg = []
-                range_k = list(range(2,top_k+1,1))
-                for num_clusters in range_k:
-                    kmeans = KMeansConstrained(n_clusters=num_clusters) # KMeans(n_clusters=num_clusters)
-                    kmeans.fit(data)
-                    cluster_labels = kmeans.labels_
-                    # if len(np.unique(cluster_labels))==1: # if we can form only one cluster then exit loop and set best_k=1
-                    #     break
-                    # else:
-                    silhouette_avg.append(silhouette_score(data, cluster_labels))
-                    # ax.plot(range_n_clusters,silhouette_avg,’bx-’)
-                # if len(np.unique(cluster_labels))==1:
-                #     best_k = 1
-                # else:
-                best_k = range_k[np.argmax(silhouette_avg)]
-                kmeans = KMeans(n_clusters=best_k)
-                kmeans.fit(data)
-                cluster_centers.append(kmeans.cluster_centers_)
-                cluster_centers_labels += [set_id for j in range(best_k)]
-                print('\nNum clusters:',len(kmeans.cluster_centers_))
-        cluster_centers = np.concatenate(cluster_centers, axis=0)
-        # print(cluster_centers.shape)
-        # sys.exit()
         # o_matrix = []
         dist = []
         for o in outputs:
@@ -949,7 +952,11 @@ def main():
                                             train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                             train_labels= None
                                         train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
+                                        if 'kmeans' in args.method:
+                                            cluster_centers, cluster_centers_labels = compute_kmeans(train_outputs.data,train_labels,args.top_k)
+                                        else:
+                                            cluster_centers, cluster_centers_labels = None, None
+                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels)
                                     predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                 else:
                                     predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
@@ -1014,14 +1021,14 @@ def main():
                                     if ('knn' in args.method) or ('kmeans' in args.method):
                                         outputs = nlinear_model.forward_upto_classifier(inputs)
                                         # epoch_val_loss += 0
-                                        if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
-                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
-                                            train_labels = np.array([labels[idx] for idx in train_set_idxs])
-                                        else:
-                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
-                                            train_labels = None
-                                        train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                        test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
+                                        # if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
+                                        #     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                        #     train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                                        # else:
+                                        #     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                        #     train_labels = None
+                                        # train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                                        test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels)
                                         predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                                     else:
                                         predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
