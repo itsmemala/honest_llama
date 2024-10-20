@@ -940,13 +940,14 @@ def main():
                                 if ('knn' in args.method) or ('kmeans' in args.method):
                                     outputs = nlinear_model.forward_upto_classifier(inputs)
                                     # epoch_val_loss += 0
-                                    if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
-                                        train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
-                                        train_labels = np.array([labels[idx] for idx in train_set_idxs])
-                                    else:
-                                        train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
-                                        train_labels= None
-                                    train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                                    if step==0:
+                                        if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
+                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                            train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                                        else:
+                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                            train_labels= None
+                                        train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                     val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
                                     predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                 else:
