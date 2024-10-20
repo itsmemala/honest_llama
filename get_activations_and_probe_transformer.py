@@ -30,6 +30,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from sklearn.neighbors import KNeighborsClassifier
+from k_means_constrained import KMeansConstrained
 from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
@@ -178,7 +179,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
                 silhouette_avg = []
                 range_k = list(range(2,top_k+1,1))
                 for num_clusters in range_k:
-                    kmeans = KMeans(n_clusters=num_clusters)
+                    kmeans = KMeansConstrained(n_clusters=num_clusters) # KMeans(n_clusters=num_clusters)
                     kmeans.fit(data)
                     cluster_labels = kmeans.labels_
                     # if len(np.unique(cluster_labels))==1: # if we can form only one cluster then exit loop and set best_k=1
