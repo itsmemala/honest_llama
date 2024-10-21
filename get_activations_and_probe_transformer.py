@@ -136,8 +136,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
             # if len(np.unique(cluster_labels))==1:
             #     best_k = 1
             # else:
-            best_k = range_k[np.argmax(silhouette_avg)]
-            best_k = 1
+            best_k = 1 # range_k[np.argmax(silhouette_avg)]
             kmeans = KMeans(n_clusters=best_k)
             kmeans.fit(data)
             cluster_centers.append(kmeans.cluster_centers_)
