@@ -244,7 +244,7 @@ def main():
             test_f1_cls1.append(cls1_f1)
             test_recall_cls0.append(cls0_re)
             test_recall_cls1.append(cls1_re)
-            precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model]))
+            precision, recall, _ = precision_recall_curve(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else precision_recall_curve(labels, np.squeeze(test_preds[model]))
             aupr_by_layer.append(auc(recall,precision))
             auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
             auroc_by_layer.append(auc_val)
