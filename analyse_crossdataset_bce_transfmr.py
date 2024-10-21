@@ -191,6 +191,7 @@ def main():
                     perf = recall if args.best_threshold_using_recall else np.mean((cls1_f1,cls0_f1))
                     if perf>best_val_perf:
                         best_val_perf, best_t = perf, t
+                    print(recall)
             else:
                 best_t = 0.5
             print(best_t)
