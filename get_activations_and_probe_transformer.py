@@ -157,6 +157,18 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             # dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
         dist = torch.stack(dist)
+    elif metric=='euclidean_wgtd_centers' or metric=='euclidean_maj_centers':
+        outputs = outputs.detach().cpu().numpy()
+        cluster_centers = torch.from_numpy(cluster_centers)
+        # o_matrix = []
+        for o in outputs:
+            o_dist = torch.cdist(o[None,:], cluster_centers, p=2.0)[0] # L2 distance to cluster centers of training data
+            cur_sample_label = cluster_centers_labels[torch.argmin(o_dist)]
+            # prob_score = 1 if cur_sample_label==1 else 1e-7
+            # dist.append(1 / prob_score)
+            prob_score = cur_sample_label
+            dist.append(-1 * prob_score)
+        dist = torch.Tensor(dist)
     elif metric=='mahalanobis':
         iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         outputs = outputs.detach().cpu().numpy()
@@ -200,14 +212,17 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
         dist = torch.from_numpy(dist)
     elif metric=='mahalanobis_wgtd_centers' or metric=='mahalanobis_maj_centers':
-        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        iv = []
+        for set_id in [0,1]:
+            data = torch.stack([train_outputs[j] for j in train_labels if j==set_id])
+            iv.append(torch.linalg.pinv(torch.cov(torch.transpose(data,0,1))).detach().cpu().numpy()) # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         outputs = outputs.detach().cpu().numpy()
         # o_matrix = []
         dist = []
         for o in outputs:
             o_dist = []
-            for t in cluster_centers:
-                o_dist.append(mahalanobis(o, t, iv))
+            for t,l in zip(cluster_centers,cluster_centers_labels):
+                o_dist.append(mahalanobis(o, t, iv[l]))
             cur_sample_label = cluster_centers_labels[np.argmin(o_dist)]
             # prob_score = 1 if cur_sample_label==1 else 1e-7
             # dist.append(1 / prob_score)
