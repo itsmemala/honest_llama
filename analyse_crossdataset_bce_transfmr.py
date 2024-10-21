@@ -165,7 +165,7 @@ def main():
                         probes_file_name_list.append(probes_file_name)
                         all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                         # print(all_val_pred.shape)
-                        auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if 'knn' in args.probes_file_name else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
+                        auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
                         auc_by_lr.append(auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
                 print(best_probes_file_name)
@@ -175,10 +175,10 @@ def main():
             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
-                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='auto') if 'knn' in args.probes_file_name else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='auto') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-                    if 'knn' in args.probes_file_name:
+                    if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                         val_pred_model[val_pred_model<t] = 1
                         val_pred_model[val_pred_model>=t] = 0
                     else:
@@ -212,7 +212,7 @@ def main():
             all_preds.append(test_preds[model])
 
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-            if 'knn' in args.probes_file_name:
+            if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 val_pred_model[val_pred_model<best_t] = 1
                 val_pred_model[val_pred_model>=best_t] = 0
             else:
@@ -229,7 +229,7 @@ def main():
                 incl_layers.append(model)
             
             test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-            if 'knn' in args.probes_file_name:
+            if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 test_pred_model[test_pred_model<best_t] = 1
                 test_pred_model[test_pred_model>=best_t] = 0
             else:
@@ -243,7 +243,7 @@ def main():
             test_recall_cls1.append(cls1_re)
             precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model]))
             aupr_by_layer.append(auc(recall,precision))
-            auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if 'knn' in args.probes_file_name else roc_auc_score(labels, np.squeeze(test_preds[model]))
+            auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
             auroc_by_layer.append(auc_val)
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
