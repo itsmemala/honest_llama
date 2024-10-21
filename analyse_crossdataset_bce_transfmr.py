@@ -191,10 +191,10 @@ def main():
                     perf = recall if args.best_threshold_using_recall else np.mean((cls1_f1,cls0_f1))
                     if perf>best_val_perf:
                         best_val_perf, best_t = perf, t
-                    print(recall)
+                    # print(recall)
             else:
                 best_t = 0.5
-            print(best_t)
+            # print(best_t)
             return best_probes_file_name, all_val_pred, all_val_true, best_t
 
         # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
@@ -216,8 +216,8 @@ def main():
 
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                val_pred_model[val_pred_model<best_t] = 1
-                val_pred_model[val_pred_model>=best_t] = 0
+                val_pred_model[val_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                val_pred_model[val_pred_model>best_t] = 0
             else:
                 val_pred_model[val_pred_model>best_t] = 1
                 val_pred_model[val_pred_model<=best_t] = 0
