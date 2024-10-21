@@ -123,7 +123,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
             data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
             # print(data.shape)
             silhouette_avg = []
-            range_k = [top_k] # list(range(2,top_k+1,1))
+            range_k = list(range(2,top_k+1,1)) # [top_k]
             for num_clusters in range_k:
                 kmeans = KMeansConstrained(n_clusters=num_clusters) # KMeans(n_clusters=num_clusters)
                 kmeans.fit(data)
@@ -196,14 +196,17 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             dist.append(o_dist[np.argsort(o_dist)[top_k-1]])
         dist = torch.Tensor(dist)
     elif metric=='mahalanobis_wgtd' or metric=='mahalanobis_maj':
-        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        iv = []
+        for set_id in [0,1]:
+            data = torch.stack([train_outputs[j] for j in train_labels if j==set_id])
+            iv.append(torch.linalg.pinv(torch.cov(torch.transpose(data,0,1))).detach().cpu().numpy()) # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         outputs = outputs.detach().cpu().numpy()
         train_outputs = train_outputs.detach().cpu().numpy()
         o_matrix = []
         for o in outputs:
             o_dist = []
-            for t in train_outputs:
-                o_dist.append(mahalanobis(o, t, iv))
+            for t,l in train_outputs,train_labels:
+                o_dist.append(mahalanobis(o, t, iv[l]))
             o_matrix.append(np.array(o_dist))
         o_matrix = np.stack(o_matrix) # shape: (n_test_samples, n_train_samples)
         weights = 'uniform' if 'maj' in metric else 'distance'
