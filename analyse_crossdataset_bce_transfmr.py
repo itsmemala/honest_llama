@@ -180,11 +180,11 @@ def main():
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
                     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                        val_pred_model[val_pred_model<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
-                        val_pred_model[val_pred_model>t] = 0
+                        val_pred_model[all_val_pred[fold][model]<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                        val_pred_model[all_val_pred[fold][model]>t] = 0
                     else:
-                        val_pred_model[val_pred_model>t] = 1
-                        val_pred_model[val_pred_model<=t] = 0
+                        val_pred_model[all_val_pred[fold][model]>t] = 1
+                        val_pred_model[all_val_pred[fold][model]<=t] = 0
                     cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                     cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
                     recall = recall_score(all_val_true[fold][0],val_pred_model)
@@ -216,11 +216,11 @@ def main():
 
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                val_pred_model[val_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
-                val_pred_model[val_pred_model>best_t] = 0
+                val_pred_model[all_val_pred[fold][model]<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                val_pred_model[all_val_pred[fold][model]>best_t] = 0
             else:
-                val_pred_model[val_pred_model>best_t] = 1
-                val_pred_model[val_pred_model<=best_t] = 0
+                val_pred_model[all_val_pred[fold][model]>best_t] = 1
+                val_pred_model[all_val_pred[fold][model]<=best_t] = 0
             cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
             cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
             val_f1_cls0.append(cls0_f1)
@@ -232,16 +232,12 @@ def main():
                 incl_layers.append(model)
             
             test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-            print(sum(test_pred_model))
-            print(sum(test_pred_model<=best_t))
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                print('check')
-                test_pred_model[test_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
-                # test_pred_model[test_pred_model>best_t] = 0
+                test_pred_model[test_preds[model]<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                test_pred_model[test_preds[model]>best_t] = 0
             else:
-                test_pred_model[test_pred_model>best_t] = 1
-                test_pred_model[test_pred_model<=best_t] = 0
-            print(sum(test_pred_model))
+                test_pred_model[test_preds[model]>best_t] = 1
+                test_pred_model[test_preds[model]<=best_t] = 0
             cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
             test_f1_cls0.append(cls0_f1)

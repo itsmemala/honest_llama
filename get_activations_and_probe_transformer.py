@@ -100,11 +100,11 @@ def get_best_threshold(val_true, val_preds, is_knn=False):
     for t in thresholds:
         val_pred_at_thres = deepcopy(val_preds) # Deep copy so as to not touch orig values
         if is_knn:
-            val_pred_at_thres[val_pred_at_thres<t] = 1
-            val_pred_at_thres[val_pred_at_thres>=t] = 0
+            val_pred_at_thres[val_preds<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
+            val_pred_at_thres[val_preds>t] = 0
         else:
-            val_pred_at_thres[val_pred_at_thres>t] = 1
-            val_pred_at_thres[val_pred_at_thres<=t] = 0
+            val_pred_at_thres[val_preds>t] = 1
+            val_pred_at_thres[val_preds<=t] = 0
         cls1_f1 = f1_score(val_true,val_pred_at_thres)
         cls0_f1 = f1_score(val_true,val_pred_at_thres,pos_label=0)
         perf = np.mean((cls1_f1,cls0_f1))
