@@ -233,6 +233,7 @@ def main():
             
             test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
             print(sum(test_pred_model))
+            print(sum(test_pred_model<=best_t))
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 test_pred_model[test_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
                 test_pred_model[test_pred_model>best_t] = 0
