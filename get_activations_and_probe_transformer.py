@@ -159,7 +159,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         dist = torch.stack(dist)
     elif metric=='euclidean_wgtd_centers' or metric=='euclidean_maj_centers':
         # outputs = outputs.detach().cpu().numpy()
-        cluster_centers = torch.from_numpy(cluster_centers)
+        cluster_centers = torch.from_numpy(cluster_centers).to(device)
         # o_matrix = []
         for o in outputs:
             o_dist = torch.cdist(o[None,:], cluster_centers, p=2.0)[0] # L2 distance to cluster centers of training data
