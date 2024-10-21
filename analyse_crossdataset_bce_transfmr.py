@@ -232,12 +232,14 @@ def main():
                 incl_layers.append(model)
             
             test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
+            print(sum(test_pred_model))
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 test_pred_model[test_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
                 test_pred_model[test_pred_model>best_t] = 0
             else:
                 test_pred_model[test_pred_model>best_t] = 1
                 test_pred_model[test_pred_model<=best_t] = 0
+            print(sum(test_pred_model))
             cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
             test_f1_cls0.append(cls0_f1)
