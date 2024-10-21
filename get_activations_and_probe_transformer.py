@@ -158,7 +158,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
         dist = torch.stack(dist)
     elif metric=='euclidean_wgtd_centers' or metric=='euclidean_maj_centers':
-        outputs = outputs.detach().cpu().numpy()
+        # outputs = outputs.detach().cpu().numpy()
         cluster_centers = torch.from_numpy(cluster_centers)
         # o_matrix = []
         for o in outputs:
