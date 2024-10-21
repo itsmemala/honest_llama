@@ -192,6 +192,7 @@ def main():
                         best_val_perf, best_t = perf, t
             else:
                 best_t = 0.5
+            print(best_t)
             return best_probes_file_name, all_val_pred, all_val_true, best_t
 
         # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
