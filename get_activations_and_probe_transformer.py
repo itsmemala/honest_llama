@@ -918,7 +918,10 @@ def main():
                                 probes_saved.append(probe_save_path)
                         
                         if args.skip_train:
-                            prior_probes_file_name = probes_file_name.replace('knn_','').replace('kmeans_','').replace(args.dist_metric+str(args.top_k)+'_','')
+                            if 'knn' in args.method or 'kmeans' in args.method:
+                                prior_probes_file_name = probes_file_name.replace('knn_','').replace('kmeans_','').replace(args.dist_metric+str(args.top_k)+'_','')
+                            elif args.ood_test:
+                                prior_probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
                             nlinear_model = torch.load(prior_save_path).to(device)
                             probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
