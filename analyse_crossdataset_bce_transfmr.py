@@ -199,7 +199,7 @@ def main():
 
         # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
         fold = 0
-        test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, test_precision_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
+        test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, test_precision_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], [], []
         best_probes_per_model, layer_pred_thresholds = [], []
         excl_layers, incl_layers = [], []
         aupr_by_layer, auroc_by_layer = [], []
