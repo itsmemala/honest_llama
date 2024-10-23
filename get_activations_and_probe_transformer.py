@@ -1124,6 +1124,11 @@ def main():
                             # print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
                             # print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
                     
+                    # Free up space
+                    if 'knn' in args.method or 'kmeans' in args.method:
+                        del train_inputs, train_outputs
+                        torch.cuda.empty_cache()
+
 
                     np.save(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', all_val_auc)
                     # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
