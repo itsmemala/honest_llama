@@ -157,6 +157,14 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             # dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
         dist = torch.stack(dist)
+    if metric=='euclidean_avg':
+        outputs = F.normalize(outputs, p=2, dim=-1)
+        train_outputs = F.normalize(train_outputs, p=2, dim=-1)
+        for o in outputs:
+            o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
+            dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+            # dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
+        dist = torch.stack(dist)
     elif metric=='euclidean_wgtd_centers' or metric=='euclidean_maj_centers':
         # outputs = outputs.detach().cpu().numpy()
         cluster_centers = torch.from_numpy(cluster_centers).to('cuda')
@@ -181,6 +189,19 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
                 o_dist.append(mahalanobis(o, t, iv))
             o_dist = np.array(o_dist)
             dist.append(o_dist[np.argsort(o_dist)[top_k-1]])
+        dist = torch.Tensor(dist)
+    elif metric=='mahalanobis_avg':
+        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        outputs = outputs.detach().cpu().numpy()
+        train_outputs = train_outputs.detach().cpu().numpy()
+        for o in outputs:
+            o_dist = []
+            for t in train_outputs:
+                # print(o.shape, t.shape) # o,t are 1-D tensors
+                # print(iv.shape) # iv is (num_features,num_features)
+                o_dist.append(mahalanobis(o, t, iv))
+            o_dist = np.array(o_dist)
+            dist.append(np.mean(o_dist[np.argsort(o_dist)[:top_k]]))
         dist = torch.Tensor(dist)
     elif metric=='mahalanobis_ivfix':
         outputs = outputs.detach().cpu().numpy()
