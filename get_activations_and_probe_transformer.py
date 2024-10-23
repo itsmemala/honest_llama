@@ -275,9 +275,8 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         for o in outputs:
             o_dist = []
             for t in cluster_centers:
-                print(o.shape,t.shape,iv.shape)
+                # print(o.shape,t.shape,iv.shape)
                 o_dist.append(mahalanobis(o, t, iv))
-                sys.exit()
             o_dist = np.array(o_dist)
             dist.append(np.min(o_dist))
         dist = torch.Tensor(dist)
