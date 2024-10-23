@@ -142,7 +142,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
             cluster_centers.append(kmeans.cluster_centers_)
             cluster_centers_labels += [set_id for j in range(best_k)]
             print('\nNum clusters:',len(kmeans.cluster_centers_))
-    if len(np.unique(train_labels))>1: cluster_centers = np.concatenate(cluster_centers, axis=0)
+    if len(cluster_centers)>1: cluster_centers = np.concatenate(cluster_centers, axis=0)
     # print(cluster_centers.shape)
     # sys.exit()
     return cluster_centers, cluster_centers_labels
@@ -275,7 +275,9 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         for o in outputs:
             o_dist = []
             for t in cluster_centers:
+                print(o.shape,t.shape,iv.shape)
                 o_dist.append(mahalanobis(o, t, iv))
+                sys.exit()
             o_dist = np.array(o_dist)
             dist.append(np.min(o_dist))
         dist = torch.Tensor(dist)
