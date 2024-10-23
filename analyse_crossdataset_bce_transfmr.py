@@ -199,7 +199,7 @@ def main():
 
         # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
         fold = 0
-        test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
+        test_f1_cls0, test_f1_cls1, test_recall_cls0, test_recall_cls1, test_precision_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], []
         best_probes_per_model, layer_pred_thresholds = [], []
         excl_layers, incl_layers = [], []
         aupr_by_layer, auroc_by_layer = [], []
@@ -238,12 +238,13 @@ def main():
             else:
                 test_pred_model[test_preds[model]>best_t] = 1
                 test_pred_model[test_preds[model]<=best_t] = 0
-            cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
+            cls1_f1, cls1_re, cls1_pr = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model), precision_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
             test_f1_cls0.append(cls0_f1)
             test_f1_cls1.append(cls1_f1)
             test_recall_cls0.append(cls0_re)
             test_recall_cls1.append(cls1_re)
+            test_precision_cls1.append(cls1_pr)
             precision, recall, _ = precision_recall_curve(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else precision_recall_curve(labels, np.squeeze(test_preds[model]))
             aupr_by_layer.append(auc(recall,precision))
             auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
@@ -257,6 +258,7 @@ def main():
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
         seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+        seed_results_list.append(np.mean(test_precision_cls1)) # print(np.mean(test_precision_cls1)) # H
         seed_results_list.append(np.mean(test_recall_cls1)) # print(np.mean(test_recall_cls1)) # H
         seed_results_list.append(np.mean(aupr_by_layer)) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
         seed_results_list.append(np.mean(auroc_by_layer)) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
