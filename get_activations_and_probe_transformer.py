@@ -119,7 +119,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
     # fig, ax = 
     with warnings.catch_warnings(): # we do not want to see warnings when only one cluster is formed
         warnings.simplefilter("ignore")
-        for set_id in [0,1]:
+        for set_id in np.unique(train_labels):
             data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
             # print(data.shape)
             silhouette_avg = []
@@ -142,7 +142,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
             cluster_centers.append(kmeans.cluster_centers_)
             cluster_centers_labels += [set_id for j in range(best_k)]
             print('\nNum clusters:',len(kmeans.cluster_centers_))
-    cluster_centers = np.concatenate(cluster_centers, axis=0)
+    if len(np.unique(train_labels))>1: cluster_centers = np.concatenate(cluster_centers, axis=0)
     # print(cluster_centers.shape)
     # sys.exit()
     return cluster_centers, cluster_centers_labels
@@ -176,6 +176,14 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             # dist.append(1 / prob_score)
             prob_score = cur_sample_label
             dist.append(-1 * prob_score)
+        dist = torch.Tensor(dist)
+    elif metric=='euclidean_centers':
+        # outputs = outputs.detach().cpu().numpy()
+        cluster_centers = torch.from_numpy(cluster_centers).to('cuda')
+        # o_matrix = []
+        for o in outputs:
+            o_dist = torch.cdist(o[None,:], cluster_centers, p=2.0)[0]  # L2 distance to cluster centers of training data
+            dist.append(torch.min(o_dist))
         dist = torch.Tensor(dist)
     elif metric=='mahalanobis':
         iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
@@ -259,6 +267,17 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         # knn.fit(np.ones((cluster_centers.shape[0],cluster_centers.shape[0])),cluster_centers_labels) # dummy but required otherwise sklearn throws err
         # dist = -1 * knn.predict_proba(o_matrix)[:,1] # only positive class probs; neg sign to convert probs to dist for compatibility with values returned using other metrics
         # dist = torch.from_numpy(dist)
+        dist = torch.Tensor(dist)
+    elif metric=='mahalanobis_centers':
+        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        outputs = outputs.detach().cpu().numpy()
+        dist = []
+        for o in outputs:
+            o_dist = []
+            for t in cluster_centers:
+                o_dist.append(mahalanobis(o, t, iv))
+            o_dist = np.array(o_dist)
+            dist.append(np.min(o_dist))
         dist = torch.Tensor(dist)
     elif metric=='cosine':
         outputs = F.normalize(outputs, p=2, dim=-1)
