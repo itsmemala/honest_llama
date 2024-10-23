@@ -142,7 +142,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
             cluster_centers.append(kmeans.cluster_centers_)
             cluster_centers_labels += [set_id for j in range(best_k)]
             print('\nNum clusters:',len(kmeans.cluster_centers_))
-    if len(cluster_centers)>1: cluster_centers = np.concatenate(cluster_centers, axis=0)
+    cluster_centers = np.concatenate(cluster_centers, axis=0)
     # print(cluster_centers.shape)
     # sys.exit()
     return cluster_centers, cluster_centers_labels
