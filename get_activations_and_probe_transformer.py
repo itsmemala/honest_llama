@@ -268,7 +268,7 @@ def compute_knn_dist(outputs,train_outputs,device,train_labels=None,metric='eucl
         # dist = torch.from_numpy(dist)
         dist = torch.Tensor(dist)
     elif metric=='mahalanobis_centers':
-        iv = np.linalg.pinv(np.cov(np.transpose(train_outputs,0,1))) # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))) # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         for o in outputs:
             o_dist = []
             for t in cluster_centers:
