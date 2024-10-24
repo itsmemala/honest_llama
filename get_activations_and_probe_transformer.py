@@ -148,7 +148,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
     # sys.exit()
     return cluster_centers, cluster_centers_labels
 
-def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',device,top_k=5,cluster_centers=None,cluster_centers_labels=None,pca=None):
+def compute_knn_dist(outputs,train_outputs,device,train_labels=None,metric='euclidean',top_k=5,cluster_centers=None,cluster_centers_labels=None,pca=None):
     if pca is not None:
         train_outputs = train_outputs.detach().cpu().numpy()
         outputs = outputs.detach().cpu().numpy()
@@ -1027,7 +1027,7 @@ def main():
                                                 cluster_centers, cluster_centers_labels = compute_kmeans(train_outputs.data,train_labels,args.top_k)
                                             else:
                                                 cluster_centers, cluster_centers_labels = None, None
-                                        val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,device,args.top_k,cluster_centers,cluster_centers_labels,pca)
+                                        val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca)
                                         predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                     else:
                                         predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
@@ -1099,7 +1099,7 @@ def main():
                                             #     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
                                             #     train_labels = None
                                             # train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                            test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,device,args.top_k,cluster_centers,cluster_centers_labels,pca)
+                                            test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca)
                                             predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                                         else:
                                             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
