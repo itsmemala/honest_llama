@@ -150,9 +150,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
 
 def compute_knn_dist(outputs,train_outputs,device,train_labels=None,metric='euclidean',top_k=5,cluster_centers=None,cluster_centers_labels=None,pca=None):
     if pca is not None:
-        train_outputs = train_outputs.detach().cpu().numpy()
         outputs = outputs.detach().cpu().numpy()
-        train_outputs = torch.from_numpy(pca.transform(train_outputs)).to(device)
         outputs = torch.from_numpy(pca.transform(outputs)).to(device)
     
     dist = []
