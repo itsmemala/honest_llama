@@ -31,6 +31,7 @@ from sklearn.metrics import silhouette_score
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, recall_score, classification_report, precision_recall_curve, auc, roc_auc_score
 from sklearn.neighbors import KNeighborsClassifier
 from k_means_constrained import KMeansConstrained
+from sklearn.decomposition import PCA
 from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
@@ -147,14 +148,19 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
     # sys.exit()
     return cluster_centers, cluster_centers_labels
 
-def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',top_k=5,cluster_centers=None,cluster_centers_labels=None):
+def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',top_k=5,cluster_centers=None,cluster_centers_labels=None,pca=None):
+    if pca is not None:
+        train_outputs = train_outputs.detach().cpu().numpy()
+        outputs = outputs.detach().cpu().numpy()
+        train_outputs = torch.from_numpy(pca.transform(train_outputs)).to('cuda')
+        outputs = torch.from_numpy(pca.transform(outputs)).to('cuda')
+    
     dist = []
     if metric=='euclidean':
         outputs = F.normalize(outputs, p=2, dim=-1)
         train_outputs = F.normalize(train_outputs, p=2, dim=-1)
         for o in outputs:
             o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
-            # dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
             dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
         dist = torch.stack(dist)
     if metric=='euclidean_avg':
@@ -163,12 +169,9 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         for o in outputs:
             o_dist = torch.cdist(o[None,:], train_outputs, p=2.0)[0] # L2 distance to training data
             dist.append(torch.mean(o_dist[torch.argsort(o_dist)[:top_k]])) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
-            # dist.append(o_dist[torch.argsort(o_dist)[top_k-1]]) # choose top-k sorted in ascending order (i.e. top-k smallest distances)
         dist = torch.stack(dist)
     elif metric=='euclidean_wgtd_centers' or metric=='euclidean_maj_centers':
-        # outputs = outputs.detach().cpu().numpy()
         cluster_centers = torch.from_numpy(cluster_centers).to('cuda')
-        # o_matrix = []
         for o in outputs:
             o_dist = torch.cdist(o[None,:], cluster_centers, p=2.0)[0] # L2 distance to cluster centers of training data
             cur_sample_label = cluster_centers_labels[torch.argmin(o_dist)]
@@ -178,9 +181,7 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
             dist.append(-1 * prob_score)
         dist = torch.Tensor(dist)
     elif metric=='euclidean_centers':
-        # outputs = outputs.detach().cpu().numpy()
         cluster_centers = torch.from_numpy(cluster_centers).to('cuda')
-        # o_matrix = []
         for o in outputs:
             o_dist = torch.cdist(o[None,:], cluster_centers, p=2.0)[0]  # L2 distance to cluster centers of training data
             dist.append(torch.min(o_dist))
@@ -269,13 +270,10 @@ def compute_knn_dist(outputs,train_outputs,train_labels=None,metric='euclidean',
         # dist = torch.from_numpy(dist)
         dist = torch.Tensor(dist)
     elif metric=='mahalanobis_centers':
-        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
-        outputs = outputs.detach().cpu().numpy()
-        dist = []
+        iv = np.linalg.pinv(np.cov(np.transpose(train_outputs,0,1))) # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         for o in outputs:
             o_dist = []
             for t in cluster_centers:
-                # print(o.shape,t.shape,iv.shape)
                 o_dist.append(mahalanobis(o, t, iv))
             o_dist = np.array(o_dist)
             dist.append(np.min(o_dist))
@@ -351,6 +349,7 @@ def main():
     # parser.add_argument('--seed',type=int, default=42)
     parser.add_argument('--seed_list',default=42,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--top_k_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
+    parser.add_argument('--pca_dims_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--supcon_temp_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--skip_train', type=bool, default=False)
     parser.add_argument('--skip_hypsearch', type=bool, default=False)
@@ -601,463 +600,393 @@ def main():
         device = 'cuda:'+str(device_id) # move to next empty gpu for model processing
         print('Loading on device',device_id)
 
-    args.top_k_list = [args.top_k] if args.top_k_list is None else args.top_k_list
-    for top_k in args.top_k_list:
-        args.top_k = top_k
+    args.pca_dims_list = [None] if args.pca_dims_list is None else args.pca_dims_list
+    for dims in args.pca_dims_list:
+        args.pca_dims = dims
 
-        for seed_itr,save_seed in enumerate(args.seed_list):
-            print('Training SEED',save_seed)
-            
-            if args.skip_hypsearch:
-                lr_search_list = [args.lr_list[seed_itr]] # One-to-one mapping of seed and lr
-                supcon_temp_search_list = [args.supcon_temp_list[seed_itr]] # One-to-one mapping of seed and supcon_temp
-            else:
-                lr_search_list= args.lr_list
-                supcon_temp_search_list = [args.supcon_temp] if args.supcon_temp_list is None else args.supcon_temp_list
+        args.top_k_list = [args.top_k] if args.top_k_list is None else args.top_k_list
+        for top_k in args.top_k_list:
+            args.top_k = top_k
 
-            for supcon_temp in supcon_temp_search_list:
-                args.supcon_temp = supcon_temp
+            for seed_itr,save_seed in enumerate(args.seed_list):
+                print('Training SEED',save_seed)
+                
+                if args.skip_hypsearch:
+                    lr_search_list = [args.lr_list[seed_itr]] # One-to-one mapping of seed and lr
+                    supcon_temp_search_list = [args.supcon_temp_list[seed_itr]] # One-to-one mapping of seed and supcon_temp
+                else:
+                    lr_search_list= args.lr_list
+                    supcon_temp_search_list = [args.supcon_temp] if args.supcon_temp_list is None else args.supcon_temp_list
 
-                for lr in lr_search_list:
-                    args.lr=lr
-                    print('Training lr',lr)
+                for supcon_temp in supcon_temp_search_list:
+                    args.supcon_temp = supcon_temp
 
-                    method_concat = args.method + '_dropout' if args.use_dropout else args.method
-                    method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
-                    method_concat = method_concat + '_' + str(args.supcon_temp) if ('supcon' in args.method) and (args.supcon_temp!=0.1) else method_concat
-                    method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if ('knn' in args.method) or ('kmeans' in args.method) else method_concat
+                    for lr in lr_search_list:
+                        args.lr=lr
+                        print('Training lr',lr)
 
-                    # Probe training
-                    np.random.seed(save_seed)
-                    torch.manual_seed(save_seed)
-                    if torch.cuda.is_available(): torch.cuda.manual_seed(save_seed)
-                    # save_seed = save_seed if save_seed!=42 else '' # for backward compat
+                        method_concat = args.method + '_dropout' if args.use_dropout else args.method
+                        method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
+                        method_concat = method_concat + '_' + str(args.supcon_temp) if ('supcon' in args.method) and (args.supcon_temp!=0.1) else method_concat
+                        method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if ('knn' in args.method) or ('kmeans' in args.method) else method_concat
+                        method_concat = method_concat + 'pca' + str(args.pca_dims) if args.pca_dims is not None else method_concat
 
-                    if len(args.dataset_list)==1 and args.ood_test==False:
-                        probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                    elif len(args.dataset_list)>1:
-                        probes_file_name = f'T{save_seed}_{args.model_name}_multi_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                    elif args.ood_test:
-                        train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
-                        probes_file_name = f'T{save_seed}_{args.model_name}_ood_{train_dataset_name}_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                    plot_name_concat = 'b' if args.use_best_val_t else ''
-                    plot_name_concat += 'a' if args.best_using_auc else ''
-                    plot_name_concat += 'l' if args.best_as_last else ''
-                    probes_file_name += plot_name_concat
+                        # Probe training
+                        np.random.seed(save_seed)
+                        torch.manual_seed(save_seed)
+                        if torch.cuda.is_available(): torch.cuda.manual_seed(save_seed)
+                        # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
-                    # Individual probes
-                    all_supcon_train_loss,all_supcon1_train_loss,all_supcon2_train_loss = {}, {}, {}
-                    all_train_loss, all_val_loss, all_val_auc = {}, {}, {}
-                    all_val_accs, all_val_f1s = {}, {}
-                    all_test_accs, all_test_f1s = {}, {}
-                    all_val_preds, all_test_preds = {}, {}
-                    all_y_true_val, all_y_true_test = {}, {}
-                    all_val_logits, all_test_logits = {}, {}
-                    all_val_sim, all_test_sim = {}, {}
+                        if len(args.dataset_list)==1 and args.ood_test==False:
+                            probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        elif len(args.dataset_list)>1:
+                            probes_file_name = f'T{save_seed}_{args.model_name}_multi_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        elif args.ood_test:
+                            train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
+                            probes_file_name = f'T{save_seed}_{args.model_name}_ood_{train_dataset_name}_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        plot_name_concat = 'b' if args.use_best_val_t else ''
+                        plot_name_concat += 'a' if args.best_using_auc else ''
+                        plot_name_concat += 'l' if args.best_as_last else ''
+                        probes_file_name += plot_name_concat
 
-                    for i in range(args.num_folds):
-                        print('Training FOLD',i)
-                        train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
-                        test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
-                        if 'sampled' in args.train_file_name:
-                            num_prompts = int(len(train_idxs)/num_samples)
-                            # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
-                            # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
-                            labels_sample_dist = []
-                            for k in range(num_prompts):
-                                sample_dist = sum(labels[(k*num_samples):(k*num_samples)+num_samples])
-                                if sample_dist==num_samples:
-                                    labels_sample_dist.append(0)
-                                elif sample_dist==0:
-                                    labels_sample_dist.append(1)
-                                elif sample_dist <= int(num_samples/3):
-                                    labels_sample_dist.append(2)
-                                elif sample_dist > int(2*num_samples/3):
-                                    labels_sample_dist.append(3)
-                                else:
-                                    labels_sample_dist.append(4)
-                            print(Counter(labels_sample_dist))
-                            if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(0)] = 3
-                            if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(1)] = 2
-                            if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
-                            if labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
-                            if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
-                            train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
-                            train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
-                            # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
-                            val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
-                            # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
-                            print('Hallu in val:',sum([labels[i] for i in val_set_idxs])/len(val_set_idxs),'Hallu in train:',sum([labels[i] for i in train_set_idxs])/len(train_set_idxs))
-                        else:
-                            # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
-                            # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
-                            train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
+                        # Individual probes
+                        all_supcon_train_loss,all_supcon1_train_loss,all_supcon2_train_loss = {}, {}, {}
+                        all_train_loss, all_val_loss, all_val_auc = {}, {}, {}
+                        all_val_accs, all_val_f1s = {}, {}
+                        all_test_accs, all_test_f1s = {}, {}
+                        all_val_preds, all_test_preds = {}, {}
+                        all_y_true_val, all_y_true_test = {}, {}
+                        all_val_logits, all_test_logits = {}, {}
+                        all_val_sim, all_test_sim = {}, {}
 
-                        y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
-                        y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
-                        y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
-                        if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
-                        
-                        all_supcon_train_loss[i], all_supcon1_train_loss[i], all_supcon2_train_loss[i], all_train_loss[i], all_val_loss[i], all_val_auc[i] = [], [], [], [], [], []
-                        all_val_accs[i], all_val_f1s[i] = [], []
-                        all_test_accs[i], all_test_f1s[i] = [], []
-                        all_val_preds[i], all_test_preds[i] = [], []
-                        all_y_true_val[i], all_y_true_test[i] = [], []
-                        all_val_logits[i], all_test_logits[i] = [], []
-                        all_val_sim[i], all_test_sim[i] = [], []
-                        model_wise_mc_sample_idxs, probes_saved = [], []
-                        num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
-                        
-                        cur_probe_train_set_idxs = train_set_idxs
-                        cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
-                        train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
-                        class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
-                        weight = 1. / class_sample_count
-                        samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
-                        sampler = WeightedRandomSampler(samples_weight, len(samples_weight)) # Default: replacement=True
-                        ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
-                        # sampler = RandomSampler(ds_train, replacement=True) # Default: replacement=False
-                        ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler) if args.no_batch_sampling==False else DataLoader(ds_train, batch_size=args.bs)
-                        ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
-                        ds_val = DataLoader(ds_val, batch_size=args.bs)
-                        if args.test_file_name is not None: 
-                            ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                            ds_test = DataLoader(ds_test, batch_size=args.bs)
-
-                        act_dims = 4096
-                        bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
-                        n_blocks = 2 if 'transformer2' in args.method else 1
-                        supcon = True if 'supcon' in args.method else False
-                        nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, supcon=supcon).to(device)
-                        if args.retrain_model_path is not None:
-                            retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
-                            retrain_model_state_dict = torch.load(retrain_model_path).state_dict()
-                            with torch.no_grad():
-                                for n,param in nlinear_model.named_parameters():
-                                    if 'classifier' not in n:
-                                        param.copy_(retrain_model_state_dict[n])
-                        wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
-                        criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
-                        use_supcon_pos = True if 'supconv2_pos' in args.method else False
-                        sc_num_samples = num_samples if 'wp' in args.method else None
-                        if (use_supcon_pos) and (sc_num_samples is not None):
-                            criterion_supcon1 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=None) # operates on greedy samples only
-                            criterion_supcon2 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=sc_num_samples) # operates within prompt only
-                        else:
-                            criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
-                        
-                        if args.norm_input:
-                            for layer in range(my_train_acts.shape[1]):
-                                transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2)
-                                my_train_acts[:,layer,:] = (my_train_acts[:,layer,:]-transform_mean)/transform_std
-                                my_test_acts[:,layer,:] = (my_test_acts[:,layer,:]-transform_mean)/transform_std
-
-                        if args.skip_train==False:
-                            # Training
-                            print('\n\nStart time of train:',datetime.datetime.now(),'\n\n')
-                            supcon_train_loss, supcon1_train_loss, supcon2_train_loss, train_loss, val_loss, val_auc = [], [], [], [], [], []
-                            best_val_loss, best_val_auc = torch.inf, 0
-                            best_model_state = deepcopy(nlinear_model.state_dict())
-                            no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-                            named_params = list(nlinear_model.named_parameters())
-                            optimizer_grouped_parameters = [
-                                {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
-                                {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
-                            ]
-                            optimizer = torch.optim.AdamW(optimizer_grouped_parameters) #torch.optim.AdamW(optimizer_grouped_parameters)
-                            # optimizer = torch.optim.Adam(nlinear_model.parameters())
-                            steps_per_epoch = int(len(train_set_idxs)/args.bs)  # number of steps in an epoch
-                            warmup_period = steps_per_epoch * 5
-                            T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
-                            scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
-                            scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
-                            scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1) if args.scheduler=='static' else torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
-                            # if 'supcon' in args.method:
-                            #     T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
-                            #     scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
-                            #     scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=10,total_iters=steps_per_epoch*0.1*args.epochs)
-                            #     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
-                            # for epoch in tqdm(range(args.epochs)):
-                            for epoch in range(args.epochs):
-                                # if epoch==250: break
-                                num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss, epoch_supcon1_loss, epoch_supcon2_loss = 0, 0, 0, 0, 0, 0
-                                nlinear_model.train()
-                                for step,batch in enumerate(ds_train):
-                                    optimizer.zero_grad()
-                                    activations, batch_target_idxs = [], []
-                                    for k,idx in enumerate(batch['inputs_idxs']):
-                                        if 'tagged_tokens' in args.token: 
-                                            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                            act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                                            # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                                            # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                                            if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-                                            if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                                            if args.no_sep==False:
-                                                sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                                                act = torch.cat((act,sep_token), dim=1)
-                                            act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-                                            batch_target_idxs.append(k)
-                                        else:
-                                            act = my_train_acts[idx].to(device)
-                                        activations.append(act)
-                                    if len(activations)==0: continue
-                                    num_samples_used += len(batch_target_idxs)
-                                    if 'tagged_tokens' in args.token:
-                                        inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                        for i in range(args.num_folds):
+                            print('Training FOLD',i)
+                            train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
+                            test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
+                            if 'sampled' in args.train_file_name:
+                                num_prompts = int(len(train_idxs)/num_samples)
+                                # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
+                                # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+                                labels_sample_dist = []
+                                for k in range(num_prompts):
+                                    sample_dist = sum(labels[(k*num_samples):(k*num_samples)+num_samples])
+                                    if sample_dist==num_samples:
+                                        labels_sample_dist.append(0)
+                                    elif sample_dist==0:
+                                        labels_sample_dist.append(1)
+                                    elif sample_dist <= int(num_samples/3):
+                                        labels_sample_dist.append(2)
+                                    elif sample_dist > int(2*num_samples/3):
+                                        labels_sample_dist.append(3)
                                     else:
-                                        inputs = torch.stack(activations,axis=0)
-                                    # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                                    # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                                    targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                                    if 'supcon' in args.method:
-                                        # SupCon backward
-                                        emb = nlinear_model.forward_upto_classifier(inputs)
-                                        norm_emb = F.normalize(emb, p=2, dim=-1)
-                                        emb_projection = nlinear_model.projection(norm_emb)
-                                        emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
-                                        if 'supconv2' in args.method:
-                                            if (use_supcon_pos) and (sc_num_samples is not None):
-                                                greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
-                                                if 'wp_all' in args.method:
-                                                    supcon1_loss = criterion_supcon1(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates on all samples
-                                                else:
-                                                    supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
-                                                supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
-                                                supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
-                                            else:
-                                                supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
-                                        else:
-                                            logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
-                                            supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
-                                        # print(supcon_loss.item())
-                                        epoch_supcon_loss += supcon_loss.item()
-                                        if (use_supcon_pos) and (sc_num_samples is not None):
-                                            epoch_supcon1_loss += supcon1_loss.item()
-                                            epoch_supcon2_loss += supcon2_loss.item()
-                                        supcon_loss.backward()
-                                        # supcon_train_loss.append(supcon_loss.item())
-                                        # CE backward
-                                        if ('knn' in args.method) or ('kmeans' in args.method):
-                                            loss = torch.Tensor([0])
-                                        else:
-                                            emb = nlinear_model.forward_upto_classifier(inputs).detach()
-                                            norm_emb = F.normalize(emb, p=2, dim=-1)
-                                            outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
-                                            loss = criterion(outputs, targets.to(device).float())
-                                            loss.backward()
-                                    else:
-                                        outputs = nlinear_model(inputs)
-                                        loss = criterion(outputs, targets.to(device).float())
-                                        try:
-                                            loss.backward()
-                                        except torch.cuda.OutOfMemoryError:
-                                            print('Num of tokens in input:',activations[0].shape[0])
-                                    optimizer.step()
-                                    scheduler.step()
-                                    epoch_train_loss += loss.item()
-                                    # train_loss.append(loss.item())
-                                    # break
-                                # scheduler.step()
-                                if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
-                                epoch_supcon1_loss = epoch_supcon1_loss/(step+1)
-                                epoch_supcon2_loss = epoch_supcon2_loss/(step+1)
-                                epoch_train_loss = epoch_train_loss/(step+1)
+                                        labels_sample_dist.append(4)
+                                print(Counter(labels_sample_dist))
+                                if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(0)] = 3
+                                if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(1)] = 2
+                                if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
+                                if labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
+                                if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
+                                train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
+                                train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
+                                # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
+                                val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
+                                # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
+                                print('Hallu in val:',sum([labels[i] for i in val_set_idxs])/len(val_set_idxs),'Hallu in train:',sum([labels[i] for i in train_set_idxs])/len(train_set_idxs))
+                            else:
+                                # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
+                                # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+                                train_set_idxs, val_set_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
 
-                                # Get val loss
-                                nlinear_model.eval()
-                                epoch_val_loss = 0
-                                val_preds, val_true = [], []
-                                for step,batch in enumerate(ds_val):
-                                    optimizer.zero_grad()
-                                    activations, batch_target_idxs = [], []
-                                    for k,idx in enumerate(batch['inputs_idxs']):
-                                        if 'tagged_tokens' in args.token: 
-                                            file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                            act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                                            # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                                            # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                                            if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-                                            if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                                            if args.no_sep==False:
-                                                sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                                                act = torch.cat((act,sep_token), dim=1)
-                                            act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-                                            batch_target_idxs.append(k)
-                                        else:
-                                            act = my_train_acts[idx].to(device)
-                                        activations.append(act)
-                                    if len(activations)==0: continue
-                                    num_val_samples_used += len(batch_target_idxs)
-                                    if 'tagged_tokens' in args.token:
-                                        inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
-                                    else:
-                                        inputs = torch.stack(activations,axis=0)
-                                    # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                                    # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                                    targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
-                                    if ('knn' in args.method) or ('kmeans' in args.method):
-                                        outputs = nlinear_model.forward_upto_classifier(inputs)
-                                        epoch_val_loss += 0
-                                        if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
-                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
-                                            train_labels = np.array([labels[idx] for idx in train_set_idxs])
-                                        else:
-                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
-                                            train_labels = None
-                                        train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                        val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
-                                    else:
-                                        outputs = nlinear_model(inputs)
-                                        epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
-                                        val_preds_batch = torch.sigmoid(outputs.data)
-                                    val_preds += val_preds_batch.tolist()
-                                    val_true += targets.tolist()
-                                epoch_val_loss = epoch_val_loss/(step+1)
-                                # epoch_val_auc = roc_auc_score(val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(val_true, val_preds)
-                                epoch_val_auc = roc_auc_score(val_true, val_preds)
-                                supcon_train_loss.append(epoch_supcon_loss)
-                                supcon1_train_loss.append(epoch_supcon1_loss)
-                                supcon2_train_loss.append(epoch_supcon2_loss)
-                                train_loss.append(epoch_train_loss)
-                                val_loss.append(epoch_val_loss)
-                                val_auc.append(epoch_val_auc)
-                                # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
-                                # print('Samples:',num_samples_used, num_val_samples_used)
-                                # Choose best model
-                                if args.best_using_auc:
-                                    if epoch_val_auc > best_val_auc:
-                                        best_val_auc = epoch_val_auc
-                                        best_model_state = deepcopy(nlinear_model.state_dict())
-                                elif args.best_as_last:
-                                    best_model_state = deepcopy(nlinear_model.state_dict())
-                                else:
-                                    if epoch_val_loss < best_val_loss:
-                                        best_val_loss = epoch_val_loss
-                                        best_model_state = deepcopy(nlinear_model.state_dict())
-                                # Early stopping
-                                # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
-                                # if len(val_loss)>=patience:
-                                #     for epoch_id in range(1,patience,1):
-                                #         val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
-                                #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
-                                #     if is_not_decreasing==patience-1: break
-                            all_supcon_train_loss[i].append(np.array(supcon_train_loss))
-                            all_supcon1_train_loss[i].append(np.array(supcon1_train_loss))
-                            all_supcon2_train_loss[i].append(np.array(supcon2_train_loss))
-                            all_train_loss[i].append(np.array(train_loss))
-                            all_val_loss[i].append(np.array(val_loss))
-                            all_val_auc[i].append(np.array(val_auc))
-                            nlinear_model.load_state_dict(best_model_state)
+                            y_train_supcon = np.stack([labels[i] for i in train_set_idxs], axis = 0)
+                            y_train = np.stack([[labels[i]] for i in train_set_idxs], axis = 0)
+                            y_val = np.stack([[labels[i]] for i in val_set_idxs], axis = 0)
+                            if args.test_file_name is not None: y_test = np.stack([[labels[i]] for i in test_idxs], axis = 0) if args.num_folds>1 else np.stack([test_labels[i] for i in test_idxs], axis = 0)
                             
-                            # print(np.array(val_loss))
-                            if args.save_probes:
+                            all_supcon_train_loss[i], all_supcon1_train_loss[i], all_supcon2_train_loss[i], all_train_loss[i], all_val_loss[i], all_val_auc[i] = [], [], [], [], [], []
+                            all_val_accs[i], all_val_f1s[i] = [], []
+                            all_test_accs[i], all_test_f1s[i] = [], []
+                            all_val_preds[i], all_test_preds[i] = [], []
+                            all_y_true_val[i], all_y_true_test[i] = [], []
+                            all_val_logits[i], all_test_logits[i] = [], []
+                            all_val_sim[i], all_test_sim[i] = [], []
+                            model_wise_mc_sample_idxs, probes_saved = [], []
+                            num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+                            
+                            cur_probe_train_set_idxs = train_set_idxs
+                            cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
+                            train_target = np.stack([labels[j] for j in cur_probe_train_set_idxs], axis = 0)
+                            class_sample_count = np.array([len(np.where(train_target == t)[0]) for t in np.unique(train_target)])
+                            weight = 1. / class_sample_count
+                            samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
+                            sampler = WeightedRandomSampler(samples_weight, len(samples_weight)) # Default: replacement=True
+                            ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
+                            # sampler = RandomSampler(ds_train, replacement=True) # Default: replacement=False
+                            ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler) if args.no_batch_sampling==False else DataLoader(ds_train, batch_size=args.bs)
+                            ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
+                            ds_val = DataLoader(ds_val, batch_size=args.bs)
+                            if args.test_file_name is not None: 
+                                ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
+                                ds_test = DataLoader(ds_test, batch_size=args.bs)
+
+                            act_dims = 4096
+                            bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
+                            n_blocks = 2 if 'transformer2' in args.method else 1
+                            supcon = True if 'supcon' in args.method else False
+                            nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, supcon=supcon).to(device)
+                            if args.retrain_model_path is not None:
+                                retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
+                                retrain_model_state_dict = torch.load(retrain_model_path).state_dict()
+                                with torch.no_grad():
+                                    for n,param in nlinear_model.named_parameters():
+                                        if 'classifier' not in n:
+                                            param.copy_(retrain_model_state_dict[n])
+                            wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
+                            criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
+                            use_supcon_pos = True if 'supconv2_pos' in args.method else False
+                            sc_num_samples = num_samples if 'wp' in args.method else None
+                            if (use_supcon_pos) and (sc_num_samples is not None):
+                                criterion_supcon1 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=None) # operates on greedy samples only
+                                criterion_supcon2 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=sc_num_samples) # operates within prompt only
+                            else:
+                                criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
+                            
+                            if args.norm_input:
+                                for layer in range(my_train_acts.shape[1]):
+                                    transform_mean, transform_std = torch.mean(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2), torch.std(torch.stack([my_train_acts[k][layer] for k in train_set_idxs]), dim=-2)
+                                    my_train_acts[:,layer,:] = (my_train_acts[:,layer,:]-transform_mean)/transform_std
+                                    my_test_acts[:,layer,:] = (my_test_acts[:,layer,:]-transform_mean)/transform_std
+
+                            if args.skip_train==False:
+                                # Training
+                                print('\n\nStart time of train:',datetime.datetime.now(),'\n\n')
+                                supcon_train_loss, supcon1_train_loss, supcon2_train_loss, train_loss, val_loss, val_auc = [], [], [], [], [], []
+                                best_val_loss, best_val_auc = torch.inf, 0
+                                best_model_state = deepcopy(nlinear_model.state_dict())
+                                no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+                                named_params = list(nlinear_model.named_parameters())
+                                optimizer_grouped_parameters = [
+                                    {'params': [p for n, p in named_params if not any(nd in n for nd in no_decay)], 'weight_decay': 0.00001, 'lr': args.lr},
+                                    {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
+                                ]
+                                optimizer = torch.optim.AdamW(optimizer_grouped_parameters) #torch.optim.AdamW(optimizer_grouped_parameters)
+                                # optimizer = torch.optim.Adam(nlinear_model.parameters())
+                                steps_per_epoch = int(len(train_set_idxs)/args.bs)  # number of steps in an epoch
+                                warmup_period = steps_per_epoch * 5
+                                T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
+                                scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
+                                scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
+                                scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1) if args.scheduler=='static' else torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_period])
+                                # if 'supcon' in args.method:
+                                #     T_max = (steps_per_epoch*0.9*args.epochs) - warmup_period # 0.9*args.epochs-warmup_period
+                                #     scheduler2 = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=T_max)
+                                #     scheduler3 = torch.optim.lr_scheduler.ConstantLR(optimizer,factor=10,total_iters=steps_per_epoch*0.1*args.epochs)
+                                #     scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2, scheduler3], milestones=[warmup_period,steps_per_epoch*0.9*args.epochs])
+                                # for epoch in tqdm(range(args.epochs)):
+                                for epoch in range(args.epochs):
+                                    # if epoch==250: break
+                                    num_samples_used, num_val_samples_used, epoch_train_loss, epoch_supcon_loss, epoch_supcon1_loss, epoch_supcon2_loss = 0, 0, 0, 0, 0, 0
+                                    nlinear_model.train()
+                                    for step,batch in enumerate(ds_train):
+                                        optimizer.zero_grad()
+                                        activations, batch_target_idxs = [], []
+                                        for k,idx in enumerate(batch['inputs_idxs']):
+                                            if 'tagged_tokens' in args.token: 
+                                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                                                # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                                                # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                                                if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                                                if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                                                if args.no_sep==False:
+                                                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                                                    act = torch.cat((act,sep_token), dim=1)
+                                                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                                                batch_target_idxs.append(k)
+                                            else:
+                                                act = my_train_acts[idx].to(device)
+                                            activations.append(act)
+                                        if len(activations)==0: continue
+                                        num_samples_used += len(batch_target_idxs)
+                                        if 'tagged_tokens' in args.token:
+                                            inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                                        else:
+                                            inputs = torch.stack(activations,axis=0)
+                                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                                        # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
+                                        targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
+                                        if 'supcon' in args.method:
+                                            # SupCon backward
+                                            emb = nlinear_model.forward_upto_classifier(inputs)
+                                            norm_emb = F.normalize(emb, p=2, dim=-1)
+                                            emb_projection = nlinear_model.projection(norm_emb)
+                                            emb_projection = F.normalize(emb_projection, p=2, dim=1) # normalise projected embeddings for loss calc
+                                            if 'supconv2' in args.method:
+                                                if (use_supcon_pos) and (sc_num_samples is not None):
+                                                    greedy_features_index = [k for k in range(emb_projection.shape[0]) if k%num_samples==(num_samples-1)]
+                                                    if 'wp_all' in args.method:
+                                                        supcon1_loss = criterion_supcon1(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates on all samples
+                                                    else:
+                                                        supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
+                                                    supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
+                                                    supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
+                                                else:
+                                                    supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
+                                            else:
+                                                logits = torch.div(torch.matmul(emb_projection, torch.transpose(emb_projection, 0, 1)),args.supcon_temp)
+                                                supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
+                                            # print(supcon_loss.item())
+                                            epoch_supcon_loss += supcon_loss.item()
+                                            if (use_supcon_pos) and (sc_num_samples is not None):
+                                                epoch_supcon1_loss += supcon1_loss.item()
+                                                epoch_supcon2_loss += supcon2_loss.item()
+                                            supcon_loss.backward()
+                                            # supcon_train_loss.append(supcon_loss.item())
+                                            # CE backward
+                                            if ('knn' in args.method) or ('kmeans' in args.method):
+                                                loss = torch.Tensor([0])
+                                            else:
+                                                emb = nlinear_model.forward_upto_classifier(inputs).detach()
+                                                norm_emb = F.normalize(emb, p=2, dim=-1)
+                                                outputs = nlinear_model.classifier(norm_emb) # norm before passing here?
+                                                loss = criterion(outputs, targets.to(device).float())
+                                                loss.backward()
+                                        else:
+                                            outputs = nlinear_model(inputs)
+                                            loss = criterion(outputs, targets.to(device).float())
+                                            try:
+                                                loss.backward()
+                                            except torch.cuda.OutOfMemoryError:
+                                                print('Num of tokens in input:',activations[0].shape[0])
+                                        optimizer.step()
+                                        scheduler.step()
+                                        epoch_train_loss += loss.item()
+                                        # train_loss.append(loss.item())
+                                        # break
+                                    # scheduler.step()
+                                    if 'supcon' in args.method: epoch_supcon_loss = epoch_supcon_loss/(step+1)
+                                    epoch_supcon1_loss = epoch_supcon1_loss/(step+1)
+                                    epoch_supcon2_loss = epoch_supcon2_loss/(step+1)
+                                    epoch_train_loss = epoch_train_loss/(step+1)
+
+                                    # Get val loss
+                                    nlinear_model.eval()
+                                    epoch_val_loss = 0
+                                    val_preds, val_true = [], []
+                                    for step,batch in enumerate(ds_val):
+                                        optimizer.zero_grad()
+                                        activations, batch_target_idxs = [], []
+                                        for k,idx in enumerate(batch['inputs_idxs']):
+                                            if 'tagged_tokens' in args.token: 
+                                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                                                # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                                                # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                                                if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                                                if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                                                if args.no_sep==False:
+                                                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                                                    act = torch.cat((act,sep_token), dim=1)
+                                                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                                                batch_target_idxs.append(k)
+                                            else:
+                                                act = my_train_acts[idx].to(device)
+                                            activations.append(act)
+                                        if len(activations)==0: continue
+                                        num_val_samples_used += len(batch_target_idxs)
+                                        if 'tagged_tokens' in args.token:
+                                            inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                                        else:
+                                            inputs = torch.stack(activations,axis=0)
+                                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                                        # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
+                                        targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
+                                        if ('knn' in args.method) or ('kmeans' in args.method):
+                                            outputs = nlinear_model.forward_upto_classifier(inputs)
+                                            epoch_val_loss += 0
+                                            if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
+                                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                                train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                                            else:
+                                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                                train_labels = None
+                                            train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                                            val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k)
+                                        else:
+                                            outputs = nlinear_model(inputs)
+                                            epoch_val_loss += criterion(outputs, targets.to(device).float()).item()
+                                            val_preds_batch = torch.sigmoid(outputs.data)
+                                        val_preds += val_preds_batch.tolist()
+                                        val_true += targets.tolist()
+                                    epoch_val_loss = epoch_val_loss/(step+1)
+                                    # epoch_val_auc = roc_auc_score(val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(val_true, val_preds)
+                                    epoch_val_auc = roc_auc_score(val_true, val_preds)
+                                    supcon_train_loss.append(epoch_supcon_loss)
+                                    supcon1_train_loss.append(epoch_supcon1_loss)
+                                    supcon2_train_loss.append(epoch_supcon2_loss)
+                                    train_loss.append(epoch_train_loss)
+                                    val_loss.append(epoch_val_loss)
+                                    val_auc.append(epoch_val_auc)
+                                    # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
+                                    # print('Samples:',num_samples_used, num_val_samples_used)
+                                    # Choose best model
+                                    if args.best_using_auc:
+                                        if epoch_val_auc > best_val_auc:
+                                            best_val_auc = epoch_val_auc
+                                            best_model_state = deepcopy(nlinear_model.state_dict())
+                                    elif args.best_as_last:
+                                        best_model_state = deepcopy(nlinear_model.state_dict())
+                                    else:
+                                        if epoch_val_loss < best_val_loss:
+                                            best_val_loss = epoch_val_loss
+                                            best_model_state = deepcopy(nlinear_model.state_dict())
+                                    # Early stopping
+                                    # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
+                                    # if len(val_loss)>=patience:
+                                    #     for epoch_id in range(1,patience,1):
+                                    #         val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
+                                    #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
+                                    #     if is_not_decreasing==patience-1: break
+                                all_supcon_train_loss[i].append(np.array(supcon_train_loss))
+                                all_supcon1_train_loss[i].append(np.array(supcon1_train_loss))
+                                all_supcon2_train_loss[i].append(np.array(supcon2_train_loss))
+                                all_train_loss[i].append(np.array(train_loss))
+                                all_val_loss[i].append(np.array(val_loss))
+                                all_val_auc[i].append(np.array(val_auc))
+                                nlinear_model.load_state_dict(best_model_state)
+                                
+                                # print(np.array(val_loss))
+                                if args.save_probes:
+                                    probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
+                                    torch.save(nlinear_model, probe_save_path)
+                                    probes_saved.append(probe_save_path)
+                            
+                            if args.skip_train:
+                                if 'knn' in args.method or 'kmeans' in args.method:
+                                    prior_probes_file_name = probes_file_name.replace('knn_','').replace('kmeans_','').replace(args.dist_metric+str(args.top_k)+'_','')
+                                elif args.ood_test:
+                                    prior_probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
+                                nlinear_model = torch.load(prior_save_path).to(device)
                                 probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
                                 torch.save(nlinear_model, probe_save_path)
-                                probes_saved.append(probe_save_path)
-                        
-                        if args.skip_train:
-                            if 'knn' in args.method or 'kmeans' in args.method:
-                                prior_probes_file_name = probes_file_name.replace('knn_','').replace('kmeans_','').replace(args.dist_metric+str(args.top_k)+'_','')
-                            elif args.ood_test:
-                                prior_probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                            prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
-                            nlinear_model = torch.load(prior_save_path).to(device)
-                            probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
-                            torch.save(nlinear_model, probe_save_path)
 
-                        # Val and Test performance
-                        print('\n\nStart time of val and test perf:',datetime.datetime.now(),'\n\n')
-                        pred_correct = 0
-                        y_val_pred, y_val_true = [], []
-                        val_preds = []
-                        val_logits = []
-                        val_sim = []
-                        with torch.no_grad():
-                            nlinear_model.eval()
-                            for step,batch in enumerate(ds_val):
-                                activations, batch_target_idxs = [], []
-                                for k,idx in enumerate(batch['inputs_idxs']):
-                                    if 'tagged_tokens' in args.token: 
-                                        file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                        file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                                        act = torch.load(file_path)[idx%args.acts_per_file].to(device)
-                                        # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                                        # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
-                                        if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
-                                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                                        if args.no_sep==False:
-                                            sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                                            act = torch.cat((act,sep_token), dim=1)
-                                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-                                        batch_target_idxs.append(k)
-                                    else:
-                                        act = my_train_acts[idx].to(device)
-                                    activations.append(act)
-                                if len(activations)==0: continue
-                                if 'tagged_tokens' in args.token:
-                                    inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
-                                else:
-                                    inputs = torch.stack(activations,axis=0)
-                                # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
-                                # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                                if ('knn' in args.method) or ('kmeans' in args.method):
-                                    outputs = nlinear_model.forward_upto_classifier(inputs)
-                                    # epoch_val_loss += 0
-                                    if step==0:
-                                        if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
-                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
-                                            train_labels = np.array([labels[idx] for idx in train_set_idxs])
-                                        else:
-                                            train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
-                                            train_labels= np.array([1 for idx in range(len(train_inputs))])
-                                        train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                        if 'kmeans' in args.method:
-                                            cluster_centers, cluster_centers_labels = compute_kmeans(train_outputs.data,train_labels,args.top_k)
-                                        else:
-                                            cluster_centers, cluster_centers_labels = None, None
-                                    val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels)
-                                    predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
-                                else:
-                                    predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
-                                    val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
-                                y_val_pred += predicted
-                                y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
-                                val_preds.append(val_preds_batch)
-                                val_logits.append(nlinear_model(inputs))
-                        val_preds = torch.cat(val_preds).cpu().numpy()
-                        all_val_preds[i].append(val_preds)
-                        all_y_true_val[i].append(y_val_true)
-                        all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                        all_val_logits[i].append(torch.cat(val_logits))
-                        print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
-                        print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
-                        best_val_t = get_best_threshold(y_val_true, val_preds, True if ('knn' in args.method) or ('kmeans' in args.method) else False)
-                        if ('knn' in args.method) or ('kmeans' in args.method):
-                            y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
-                        else:
-                            y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
-                        log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
-                        log_val_recall = recall_score(y_val_true,y_val_pred_opt)
-                        log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_val_true, val_preds)
-                        pred_correct = 0
-                        y_test_pred, y_test_true = [], []
-                        test_preds = []
-                        test_logits = []
-                        test_sim = []
-                        samples_used_idxs = []
-                        if args.test_file_name is not None: 
+                            # Val and Test performance
+                            print('\n\nStart time of val and test perf:',datetime.datetime.now(),'\n\n')
+                            pred_correct = 0
+                            y_val_pred, y_val_true = [], []
+                            val_preds = []
+                            val_logits = []
+                            val_sim = []
                             with torch.no_grad():
-                                num_test_samples_used = 0
                                 nlinear_model.eval()
-                                for step,batch in enumerate(ds_test):
+                                for step,batch in enumerate(ds_val):
                                     activations, batch_target_idxs = [], []
                                     for k,idx in enumerate(batch['inputs_idxs']):
                                         if 'tagged_tokens' in args.token: 
                                             file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                            file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                                             act = torch.load(file_path)[idx%args.acts_per_file].to(device)
                                             # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                                             # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
@@ -1069,11 +998,9 @@ def main():
                                             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                                             batch_target_idxs.append(k)
                                         else:
-                                            act = my_test_acts[idx].to(device)
+                                            act = my_train_acts[idx].to(device)
                                         activations.append(act)
                                     if len(activations)==0: continue
-                                    num_test_samples_used += len(batch_target_idxs)
-                                    samples_used_idxs += batch['inputs_idxs'][np.array(batch_target_idxs)]
                                     if 'tagged_tokens' in args.token:
                                         inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                                     else:
@@ -1083,185 +1010,267 @@ def main():
                                     if ('knn' in args.method) or ('kmeans' in args.method):
                                         outputs = nlinear_model.forward_upto_classifier(inputs)
                                         # epoch_val_loss += 0
-                                        # if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
-                                        #     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
-                                        #     train_labels = np.array([labels[idx] for idx in train_set_idxs])
-                                        # else:
-                                        #     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
-                                        #     train_labels = None
-                                        # train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
-                                        test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels)
-                                        predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
+                                        if step==0:
+                                            if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
+                                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                                train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                                            else:
+                                                train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                                train_labels= np.array([1 for idx in range(len(train_inputs))])
+                                            train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                                            if args.pca_dims is not None:
+                                                pca = PCA(n_components=args.pca_dims)
+                                                train_outputs = torch.from_numpy(pca.fit_transform(train_outputs)).to(device)
+                                            else:
+                                                pca = None
+                                            if 'kmeans' in args.method:
+                                                cluster_centers, cluster_centers_labels = compute_kmeans(train_outputs.data,train_labels,args.top_k)
+                                            else:
+                                                cluster_centers, cluster_centers_labels = None, None
+                                        val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca)
+                                        predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                     else:
                                         predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
-                                        test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
-                                    y_test_pred += predicted
-                                    y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
-                                    test_preds.append(test_preds_batch)
-                                    test_logits.append(nlinear_model(inputs))
-                            test_preds = torch.cat(test_preds).cpu().numpy()
-                            all_test_preds[i].append(test_preds)
-                            all_y_true_test[i].append(y_test_true)
-                            all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                            precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
-                            print('AuPR:',"%.3f" % auc(recall,precision))
-                            print('F1:',"%.3f" % f1_score(y_test_true,y_test_pred),"%.3f" % f1_score(y_test_true,y_test_pred,pos_label=0))
-                            print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
-                            print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
-                            print('Samples:',num_test_samples_used)
+                                        val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
+                                    y_val_pred += predicted
+                                    y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
+                                    val_preds.append(val_preds_batch)
+                                    val_logits.append(nlinear_model(inputs))
+                            val_preds = torch.cat(val_preds).cpu().numpy()
+                            all_val_preds[i].append(val_preds)
+                            all_y_true_val[i].append(y_val_true)
+                            all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+                            all_val_logits[i].append(torch.cat(val_logits))
+                            print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
+                            print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
+                            best_val_t = get_best_threshold(y_val_true, val_preds, True if ('knn' in args.method) or ('kmeans' in args.method) else False)
                             if ('knn' in args.method) or ('kmeans' in args.method):
-                                y_test_pred_opt = [1 if v<best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
+                                y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
                             else:
-                                y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
-                            log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
-                            log_test_recall = recall_score(y_test_true, y_test_pred_opt)
-                            log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_test_true, test_preds)
-                            all_test_logits[i].append(torch.cat(test_logits))
+                                y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
+                            log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
+                            log_val_recall = recall_score(y_val_true,y_val_pred_opt)
+                            log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_val_true, val_preds)
+                            pred_correct = 0
+                            y_test_pred, y_test_true = [], []
+                            test_preds = []
+                            test_logits = []
+                            test_sim = []
+                            samples_used_idxs = []
+                            if args.test_file_name is not None: 
+                                with torch.no_grad():
+                                    num_test_samples_used = 0
+                                    nlinear_model.eval()
+                                    for step,batch in enumerate(ds_test):
+                                        activations, batch_target_idxs = [], []
+                                        for k,idx in enumerate(batch['inputs_idxs']):
+                                            if 'tagged_tokens' in args.token: 
+                                                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                                                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                                                act = torch.load(file_path)[idx%args.acts_per_file].to(device)
+                                                # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                                                # if act.shape[1] > args.max_tokens: continue # Skip inputs with large number of tokens to avoid OOM
+                                                if act.shape[1] > args.max_tokens: act = torch.cat([act[:,:args.max_tokens,:],act[:,-1:,:]],dim=1) # Truncate inputs with large number of tokens to avoid OOM
+                                                if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                                                if args.no_sep==False:
+                                                    sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                                                    act = torch.cat((act,sep_token), dim=1)
+                                                act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+                                                batch_target_idxs.append(k)
+                                            else:
+                                                act = my_test_acts[idx].to(device)
+                                            activations.append(act)
+                                        if len(activations)==0: continue
+                                        num_test_samples_used += len(batch_target_idxs)
+                                        samples_used_idxs += batch['inputs_idxs'][np.array(batch_target_idxs)]
+                                        if 'tagged_tokens' in args.token:
+                                            inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
+                                        else:
+                                            inputs = torch.stack(activations,axis=0)
+                                        # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
+                                        # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
+                                        if ('knn' in args.method) or ('kmeans' in args.method):
+                                            outputs = nlinear_model.forward_upto_classifier(inputs)
+                                            # epoch_val_loss += 0
+                                            # if ('maj' in args.dist_metric) or ('wgtd' in args.dist_metric):
+                                            #     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs],axis=0) # Take all train
+                                            #     train_labels = np.array([labels[idx] for idx in train_set_idxs])
+                                            # else:
+                                            #     train_inputs = torch.stack([my_train_acts[idx].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
+                                            #     train_labels = None
+                                            # train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                                            test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca)
+                                            predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
+                                        else:
+                                            predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                                            test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
+                                        y_test_pred += predicted
+                                        y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
+                                        test_preds.append(test_preds_batch)
+                                        test_logits.append(nlinear_model(inputs))
+                                test_preds = torch.cat(test_preds).cpu().numpy()
+                                all_test_preds[i].append(test_preds)
+                                all_y_true_test[i].append(y_test_true)
+                                all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+                                precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
+                                print('AuPR:',"%.3f" % auc(recall,precision))
+                                print('F1:',"%.3f" % f1_score(y_test_true,y_test_pred),"%.3f" % f1_score(y_test_true,y_test_pred,pos_label=0))
+                                print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
+                                print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
+                                print('Samples:',num_test_samples_used)
+                                if ('knn' in args.method) or ('kmeans' in args.method):
+                                    y_test_pred_opt = [1 if v<best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
+                                else:
+                                    y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
+                                log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
+                                log_test_recall = recall_score(y_test_true, y_test_pred_opt)
+                                log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_test_true, test_preds)
+                                all_test_logits[i].append(torch.cat(test_logits))
 
-                            # # Get preds on all tokens
-                            # alltokens_preds = []
-                            # tokenmax_preds, tokenavg_preds = [], []
-                            # acts_per_file = args.acts_per_file
-                            # for i in tqdm(range(len(test_labels))):
-                            #     # Load activations
-                            #     file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
-                            #     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
-                            #     acts_by_layer_token = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
-                            #     # acts_by_layer = acts_by_layer[layer][test_answer_token_idxes[i]:]
-                            #     preds_by_token = []
-                            #     for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
-                            #         token_idx = test_answer_token_idxes[i] + token_num
-                            #         inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # inputs: (layers, act_dims)
-                            #         inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
-                            #         preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
-                            #     preds_by_token = np.array(preds_by_token)
-                            #     alltokens_preds.append(preds_by_token)
-                            #     tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
-                            #     tokenavg_preds.append(1 if np.mean(preds_by_token)>0.5 else 0)
-                            # alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                 
-                            # alltokens_preds_arr[:] = alltokens_preds
-                            # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_alltokens_preds.npy',alltokens_preds_arr)
-                            # print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
-                            # print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
-                    
-                    # Free up space
-                    if 'knn' in args.method or 'kmeans' in args.method:
-                        del train_inputs, train_outputs
-                        torch.cuda.empty_cache()
-
-
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', all_val_auc)
-                    # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', all_val_loss)
-                    # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', all_train_loss)
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', all_supcon_train_loss)
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_supcon1_train_loss.npy', all_supcon1_train_loss)
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_supcon2_train_loss.npy', all_supcon2_train_loss)
-                    all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', all_val_preds)
-                    all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_val_f1.npy', all_val_f1s)
-                    all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', all_y_true_val)
-                    all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_val_logits.npy', all_val_logits)
-                    # all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
-                    # np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
-                    # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
-                    # np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
-                    np.save(f'{args.save_path}/probes/{probes_file_name}_samples_used.npy', samples_used_idxs)
-
-                    if args.test_file_name is not None:
-                        all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
-                        np.save(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy', all_test_preds)
-                        all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-                        np.save(f'{args.save_path}/probes/{probes_file_name}_test_f1.npy', all_test_f1s)
-                        all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
-                        np.save(f'{args.save_path}/probes/{probes_file_name}_test_true.npy', all_y_true_test)
-                        all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
-                        np.save(f'{args.save_path}/probes/{probes_file_name}_test_logits.npy', all_test_logits)
-
-                    if args.plot_name is not None:
-                        # probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                        val_auc = np.load(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', allow_pickle=True).item()[0]
-                        val_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
-                        train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
-                        try:
-                            supcon_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0]
-                        except (FileNotFoundError,KeyError):
-                            supcon_train_loss = []
-                        if (use_supcon_pos) and (sc_num_samples is not None):
-                            supcon1_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()[0]
-                            supcon2_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()[0]
+                                # # Get preds on all tokens
+                                # alltokens_preds = []
+                                # tokenmax_preds, tokenavg_preds = [], []
+                                # acts_per_file = args.acts_per_file
+                                # for i in tqdm(range(len(test_labels))):
+                                #     # Load activations
+                                #     file_end = i-(i%acts_per_file)+acts_per_file # 487: 487-(87)+100
+                                #     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_all/{args.model_name}_{args.test_file_name}_all_layer_wise_{file_end}.pkl'
+                                #     acts_by_layer_token = torch.from_numpy(np.load(file_path,allow_pickle=True)[i%acts_per_file]).to(device) if 'mlp' in args.using_act or 'layer' in args.using_act else None # torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%acts_per_file][layer][head*128:(head*128)+128]).to(device)
+                                #     # acts_by_layer = acts_by_layer[layer][test_answer_token_idxes[i]:]
+                                #     preds_by_token = []
+                                #     for token_num in range(acts_by_layer_token[0][test_answer_token_idxes[i]:].shape[0]):
+                                #         token_idx = test_answer_token_idxes[i] + token_num
+                                #         inputs = torch.squeeze(acts_by_layer_token[:,token_idx,:]) # inputs: (layers, act_dims)
+                                #         inputs = inputs[None,:,:] # inp[None,:,:] to add bs dimension
+                                #         preds_by_token.append(torch.sigmoid(nlinear_model(inputs).data).cpu().numpy())
+                                #     preds_by_token = np.array(preds_by_token)
+                                #     alltokens_preds.append(preds_by_token)
+                                #     tokenmax_preds.append(1 if np.max(preds_by_token)>0.5 else 0)
+                                #     tokenavg_preds.append(1 if np.mean(preds_by_token)>0.5 else 0)
+                                # alltokens_preds_arr = np.empty(len(alltokens_preds), object)                                                 
+                                # alltokens_preds_arr[:] = alltokens_preds
+                                # np.save(f'{args.save_path}/probes/T_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}_alltokens_preds.npy',alltokens_preds_arr)
+                                # print('Test F1 using token-avg:',f1_score(test_labels,tokenavg_preds),f1_score(test_labels,tokenavg_preds,pos_label=0))
+                                # print('Test F1 using token-max:',f1_score(test_labels,tokenmax_preds),f1_score(test_labels,tokenmax_preds,pos_label=0))
                         
+                        # Free up space
+                        if 'knn' in args.method or 'kmeans' in args.method:
+                            del train_inputs, train_outputs
+                            torch.cuda.empty_cache()
 
-                        # val_loss = val_loss[-1] # Last layer only
-                        # train_loss = train_loss[-1] # Last layer only
-                        # if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
 
-                        if len(val_loss)==1:
-                            val_auc = val_auc[0]
-                            val_loss = val_loss[0]
-                            train_loss = train_loss[0]
-                            if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[0]
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', all_val_auc)
+                        # all_val_loss = np.stack([np.stack(all_val_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', all_val_loss)
+                        # all_train_loss = np.stack([np.stack(all_train_loss[i]) for i in range(args.num_folds)]) # Can only stack if number of epochs is same for each probe
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', all_train_loss)
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', all_supcon_train_loss)
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_supcon1_train_loss.npy', all_supcon1_train_loss)
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_supcon2_train_loss.npy', all_supcon2_train_loss)
+                        all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', all_val_preds)
+                        all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_val_f1.npy', all_val_f1s)
+                        all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', all_y_true_val)
+                        all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_val_logits.npy', all_val_logits)
+                        # all_val_sim = np.stack([np.stack(all_val_sim[i]) for i in range(args.num_folds)])
+                        # np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_val_sim.npy', all_val_sim)
+                        # all_test_sim = np.stack([np.stack(all_test_sim[i]) for i in range(args.num_folds)])
+                        # np.save(f'{args.save_path}/probes/T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.optimizer}_{args.use_class_wgt}_{args.layer_start}_{args.layer_end}_test_sim.npy', all_test_sim)
+                        np.save(f'{args.save_path}/probes/{probes_file_name}_samples_used.npy', samples_used_idxs)
 
-                        if len(val_loss)!=len(train_loss):
-                            train_loss_by_epoch = []
-                            batches = int(len(train_loss)/len(val_loss))
-                            start_at = 0
-                            for epoch in range(len(val_loss)):
-                                train_loss_by_epoch.append(sum(train_loss[start_at:(start_at+batches)]))
-                                start_at += batches
-                            train_loss = train_loss_by_epoch
+                        if args.test_file_name is not None:
+                            all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
+                            np.save(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy', all_test_preds)
+                            all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
+                            np.save(f'{args.save_path}/probes/{probes_file_name}_test_f1.npy', all_test_f1s)
+                            all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
+                            np.save(f'{args.save_path}/probes/{probes_file_name}_test_true.npy', all_y_true_test)
+                            all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+                            np.save(f'{args.save_path}/probes/{probes_file_name}_test_logits.npy', all_test_logits)
 
-                        # print(len(val_auc))
-                        # print(len(val_loss))
-                        # print(len(train_loss))
-                        # if len(supcon_train_loss)>0: print(len(supcon_train_loss))
-                        
-                        plt.subplot(1, 2, 1)
-                        plt.plot(val_loss, label='val_ce_loss')
-                        plt.plot(train_loss, label='train_ce_loss')
-                        plt.plot(supcon_train_loss, label='train_supcon_loss')
-                        if (use_supcon_pos) and (sc_num_samples is not None):
-                            plt.plot(supcon1_train_loss, label='train_supcon1_loss')
-                            plt.plot(supcon2_train_loss, label='train_supcon2_loss')
-                        plt.legend(loc="upper left")
-                        plt.subplot(1, 2, 2)
-                        plt.plot(val_auc, label='val_auc')
-                        plt.legend(loc="upper left")
-                        # plt.savefig(f'{args.save_path}/testfig.png')
+                        if args.plot_name is not None:
+                            # probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                            val_auc = np.load(f'{args.save_path}/probes/{probes_file_name}_val_auc.npy', allow_pickle=True).item()[0]
+                            val_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_val_loss.npy', allow_pickle=True).item()[0]
+                            train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_train_loss.npy', allow_pickle=True).item()[0]
+                            try:
+                                supcon_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0]
+                            except (FileNotFoundError,KeyError):
+                                supcon_train_loss = []
+                            if (use_supcon_pos) and (sc_num_samples is not None):
+                                supcon1_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()[0]
+                                supcon2_train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()[0]
+                            
 
-                        plot_name_concat = 'b' if args.use_best_val_t else ''
-                        plot_name_concat += 'a' if args.best_using_auc else ''
-                        plot_name_concat += 'l' if args.best_as_last else ''
+                            # val_loss = val_loss[-1] # Last layer only
+                            # train_loss = train_loss[-1] # Last layer only
+                            # if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[-1] # Last layer only
 
-                        wandb.init(
-                        project="LLM-Hallu-Detection",
-                        config={
-                        "run_name": probes_file_name,
-                        "model": args.model_name,
-                        "dataset": test_dataset_name,
-                        "act_type": args.using_act,
-                        "token": args.token,
-                        "method": args.method,
-                        "bs": args.bs,
-                        "lr": args.lr,
-                        "tag": args.tag, #'design_choices',
-                        "norm_inp": args.norm_input,
-                        "with_pe": args.use_pe,
-                        # "num_blocks": args.num_blocks,
-                        # "wd": args.wd
-                        },
-                        name=str(save_seed)+'-'+args.plot_name+'-'+str(args.lr)+plot_name_concat
-                        )
-                        tbl = wandb.Table(columns=['Val AUC', 'Val Recall', 'Val Macro-F1', 'Test AUC', 'Test Recall', 'Test Macro-F1'],
-                                    data=[[log_val_auc, log_val_recall, log_val_f1, log_test_auc, log_test_recall, log_test_f1]])
-                        wandb.log({'chart': plt,
-                                    'metrics': tbl
-                        })
-                        wandb.finish()
+                            if len(val_loss)==1:
+                                val_auc = val_auc[0]
+                                val_loss = val_loss[0]
+                                train_loss = train_loss[0]
+                                if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[0]
+
+                            if len(val_loss)!=len(train_loss):
+                                train_loss_by_epoch = []
+                                batches = int(len(train_loss)/len(val_loss))
+                                start_at = 0
+                                for epoch in range(len(val_loss)):
+                                    train_loss_by_epoch.append(sum(train_loss[start_at:(start_at+batches)]))
+                                    start_at += batches
+                                train_loss = train_loss_by_epoch
+
+                            # print(len(val_auc))
+                            # print(len(val_loss))
+                            # print(len(train_loss))
+                            # if len(supcon_train_loss)>0: print(len(supcon_train_loss))
+                            
+                            plt.subplot(1, 2, 1)
+                            plt.plot(val_loss, label='val_ce_loss')
+                            plt.plot(train_loss, label='train_ce_loss')
+                            plt.plot(supcon_train_loss, label='train_supcon_loss')
+                            if (use_supcon_pos) and (sc_num_samples is not None):
+                                plt.plot(supcon1_train_loss, label='train_supcon1_loss')
+                                plt.plot(supcon2_train_loss, label='train_supcon2_loss')
+                            plt.legend(loc="upper left")
+                            plt.subplot(1, 2, 2)
+                            plt.plot(val_auc, label='val_auc')
+                            plt.legend(loc="upper left")
+                            # plt.savefig(f'{args.save_path}/testfig.png')
+
+                            plot_name_concat = 'b' if args.use_best_val_t else ''
+                            plot_name_concat += 'a' if args.best_using_auc else ''
+                            plot_name_concat += 'l' if args.best_as_last else ''
+
+                            wandb.init(
+                            project="LLM-Hallu-Detection",
+                            config={
+                            "run_name": probes_file_name,
+                            "model": args.model_name,
+                            "dataset": test_dataset_name,
+                            "act_type": args.using_act,
+                            "token": args.token,
+                            "method": args.method,
+                            "bs": args.bs,
+                            "lr": args.lr,
+                            "tag": args.tag, #'design_choices',
+                            "norm_inp": args.norm_input,
+                            "with_pe": args.use_pe,
+                            # "num_blocks": args.num_blocks,
+                            # "wd": args.wd
+                            },
+                            name=str(save_seed)+'-'+args.plot_name+'-'+str(args.lr)+plot_name_concat
+                            )
+                            tbl = wandb.Table(columns=['Val AUC', 'Val Recall', 'Val Macro-F1', 'Test AUC', 'Test Recall', 'Test Macro-F1'],
+                                        data=[[log_val_auc, log_val_recall, log_val_f1, log_test_auc, log_test_recall, log_test_f1]])
+                            wandb.log({'chart': plt,
+                                        'metrics': tbl
+                            })
+                            wandb.finish()
 
 if __name__ == '__main__':
     main()
