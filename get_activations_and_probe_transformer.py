@@ -968,7 +968,7 @@ def main():
                                 elif args.ood_test:
                                     prior_probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                 prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
-                                nlinear_model = torch.load(prior_save_path).to(device)
+                                nlinear_model = torch.load(prior_save_path,map_location=device)
                                 probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
                                 torch.save(nlinear_model, probe_save_path)
 
@@ -1020,6 +1020,7 @@ def main():
                                             train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                             if args.pca_dims is not None:
                                                 pca = PCA(n_components=args.pca_dims)
+                                                train_outputs = train_outputs.detach().cpu().numpy()
                                                 train_outputs = torch.from_numpy(pca.fit_transform(train_outputs)).to(device)
                                             else:
                                                 pca = None
