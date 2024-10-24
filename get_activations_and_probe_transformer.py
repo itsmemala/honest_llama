@@ -137,7 +137,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
             # if len(np.unique(cluster_labels))==1:
             #     best_k = 1
             # else:
-            best_k = range_k[np.argmax(silhouette_avg)] # 1
+            best_k = 1 # range_k[np.argmax(silhouette_avg)] # 1
             kmeans = KMeans(n_clusters=best_k)
             kmeans.fit(data)
             cluster_centers.append(kmeans.cluster_centers_)
@@ -268,7 +268,8 @@ def compute_knn_dist(outputs,train_outputs,device,train_labels=None,metric='eucl
         # dist = torch.from_numpy(dist)
         dist = torch.Tensor(dist)
     elif metric=='mahalanobis_centers':
-        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))) # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
+        outputs = outputs.detach().cpu().numpy()
+        iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         for o in outputs:
             o_dist = []
             for t in cluster_centers:
