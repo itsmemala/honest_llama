@@ -124,7 +124,7 @@ def compute_kmeans(train_outputs,train_labels,top_k=5):
             data = np.stack([train_outputs[j] for j in train_labels if j==set_id])
             # print(data.shape)
             silhouette_avg = []
-            range_k = list(range(1,top_k+1,1)) # [top_k]
+            range_k = list(range(2,top_k+1,1)) # [top_k]
             for num_clusters in range_k:
                 kmeans = KMeansConstrained(n_clusters=num_clusters) # KMeans(n_clusters=num_clusters)
                 kmeans.fit(data)
