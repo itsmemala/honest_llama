@@ -1215,6 +1215,8 @@ def main():
                                 val_loss = val_loss[0]
                                 train_loss = train_loss[0]
                                 if len(supcon_train_loss)>0: supcon_train_loss = supcon_train_loss[0]
+                                supcon1_train_loss = supcon1_train_loss[0]
+                                supcon2_train_loss = supcon2_train_loss[0]
 
                             if len(val_loss)!=len(train_loss):
                                 train_loss_by_epoch = []
