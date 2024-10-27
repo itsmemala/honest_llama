@@ -627,7 +627,7 @@ def main():
                         method_concat = args.method + '_dropout' if args.use_dropout else args.method
                         method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
                         method_concat = method_concat + '_' + str(args.supcon_temp) if ('supcon' in args.method) and (args.supcon_temp!=0.1) else method_concat
-                        method_concat = method_concat + '_' + str(args.sc1_wgt) + '_' + str(args.sc2_wgt) if ('supconv2_pos_wp' in args.method) and (args.sc1_wgt!=1.0) and (args.sc2_wgt!=1.0) else method_concat
+                        method_concat = method_concat + '_' + str(args.sc1_wgt) + '_' + str(args.sc2_wgt) if ('supconv2_pos_wp' in args.method) and (args.sc1_wgt!=1.0 or args.sc2_wgt!=1.0) else method_concat
                         method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if ('knn' in args.method) or ('kmeans' in args.method) else method_concat
                         method_concat = method_concat + 'pca' + str(args.pca_dims) if args.pca_dims is not None else method_concat
 

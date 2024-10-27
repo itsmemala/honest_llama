@@ -80,7 +80,3 @@ python analyse_crossdataset_bce_transfmr.py hl_llama_7B strqa --using_act layer 
 python analyse_crossdataset_bce_transfmr.py hl_llama_7B strqa --using_act layer --token answer_last --probes_file_name T42_hl_llama_7B_strqa_sampledplus_responses_train_16479_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.3_mahalanobis_wgtd_centers5_bs288_epochs500_ --probes_file_name_concat ba --lr_list 0.00005 --best_threshold True --save_path ~/Desktop/honest_llama_data --seed_list 101 --sc_temp_list 0.2
 python analyse_crossdataset_bce_transfmr.py hl_llama_7B strqa --using_act layer --token answer_last --probes_file_name T42_hl_llama_7B_strqa_sampledplus_responses_train_16479_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.3_mahalanobis_wgtd_centers5_bs288_epochs500_ --probes_file_name_concat ba --lr_list 0.005 --best_threshold True --save_path ~/Desktop/honest_llama_data --seed_list 2650 --sc_temp_list 1.0
 best hyp 2 layer (kmeans):
-
-
-
-T101_hl_llama_7B_strqa_sampledplus_responses_train_16479_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.2_bs288_epochs500_5e-05
