@@ -348,7 +348,7 @@ def main():
     # parser.add_argument('--seed',type=int, default=42)
     parser.add_argument('--seed_list',default=42,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--top_k_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
-    parser.add_argument('--pca_dims_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
+    parser.add_argument('--pca_dims_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--supcon_temp_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--skip_train', type=bool, default=False)
     parser.add_argument('--skip_hypsearch', type=bool, default=False)
@@ -1030,7 +1030,10 @@ def main():
                                                     train_labels= np.array([1 for idx in range(len(train_inputs))])
                                                 train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                                 if args.pca_dims is not None:
-                                                    pca = PCA(n_components=args.pca_dims)
+                                                    if args.pca_dims<1:
+                                                        pca = PCA(n_components=args.pca_dims,svd_solver='full')
+                                                    else:
+                                                        pca = PCA(n_components=args.pca_dims)
                                                     train_outputs = train_outputs.detach().cpu().numpy()
                                                     train_outputs = torch.from_numpy(pca.fit_transform(train_outputs)).to(device)
                                                 else:
