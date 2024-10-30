@@ -941,16 +941,24 @@ def main():
                                         # print('Loss:', epoch_supcon_loss, epoch_train_loss, epoch_val_loss)
                                         # print('Samples:',num_samples_used, num_val_samples_used)
                                         # Choose best model
-                                        if args.best_using_auc:
-                                            if epoch_val_auc > best_val_auc:
-                                                best_val_auc = epoch_val_auc
-                                                best_model_state = deepcopy(nlinear_model.state_dict())
-                                        elif args.best_as_last:
-                                            best_model_state = deepcopy(nlinear_model.state_dict())
-                                        else:
-                                            if epoch_val_loss < best_val_loss:
+                                        best_model_state_using_last = deepcopy(nlinear_model.state_dict())
+                                        if epoch_val_auc > best_val_auc:
+                                            best_val_auc = epoch_val_auc
+                                            best_model_state_using_auc = deepcopy(nlinear_model.state_dict())
+                                        if epoch_val_loss < best_val_loss:
                                                 best_val_loss = epoch_val_loss
-                                                best_model_state = deepcopy(nlinear_model.state_dict())
+                                                best_model_state_using_loss = deepcopy(nlinear_model.state_dict())
+                                        if args.best_using_auc:
+                                            best_model_state = best_model_state_using_auc
+                                        elif args.best_as_last:
+                                            best_model_state = best_model_state_using_last
+                                        else:
+                                            best_model_state = best_model_state_using_loss
+                                        
+                                        if args.save_probes:
+                                            probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_epoch{epoch}_model{i}'
+                                            torch.save(nlinear_model, probe_save_path)
+
                                         # Early stopping
                                         # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
                                         # if len(val_loss)>=patience:
@@ -964,13 +972,27 @@ def main():
                                     all_train_loss[i].append(np.array(train_loss))
                                     all_val_loss[i].append(np.array(val_loss))
                                     all_val_auc[i].append(np.array(val_auc))
-                                    nlinear_model.load_state_dict(best_model_state)
                                     
                                     # print(np.array(val_loss))
                                     if args.save_probes:
+                                        nlinear_model.load_state_dict(best_model_state)
                                         probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
                                         torch.save(nlinear_model, probe_save_path)
                                         probes_saved.append(probe_save_path)
+
+                                        nlinear_model.load_state_dict(best_model_state_using_auc)
+                                        probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_bestusingauc_model{i}'
+                                        torch.save(nlinear_model, probe_save_path)
+
+                                        nlinear_model.load_state_dict(best_model_state_using_last)
+                                        probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_bestusinglast_model{i}'
+                                        torch.save(nlinear_model, probe_save_path)
+
+                                        nlinear_model.load_state_dict(best_model_state_using_loss)
+                                        probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_bestusingloss_model{i}'
+                                        torch.save(nlinear_model, probe_save_path)
+                                    
+                                    nlinear_model.load_state_dict(best_model_state)
                                 
                                 if args.skip_train:
                                     if 'knn' in args.method or 'kmeans' in args.method:
