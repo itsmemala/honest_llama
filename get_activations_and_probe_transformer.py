@@ -747,8 +747,13 @@ def main():
                                                 param.copy_(retrain_model_state_dict[n])
                                 if args.continue_ce:
                                     prior_probes_file_name = probes_file_name.replace('_cce','').replace('epochs50_'+str(args.lr),'epochs500_'+str(lr))
-                                    prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
-                                    nlinear_model = torch.load(prior_save_path,map_location=device)
+                                    retrain_model_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
+                                    # nlinear_model = torch.load(retrain_model_path,map_location=device)
+                                    retrain_model_state_dict = torch.load(retrain_model_path).state_dict()
+                                    with torch.no_grad():
+                                        for n,param in nlinear_model.named_parameters():
+                                            if 'classifier' not in n:
+                                                param.copy_(retrain_model_state_dict[n])
                                 wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                                 use_supcon_pos = True if 'supconv2_pos' in args.method else False
