@@ -172,7 +172,7 @@ def main():
             else:
                 best_probes_file_name = args.probes_file_name
             
-            loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True)[fold][model]
+            loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True)
             fig, axs = plt.subplots(1,1)
             axs.plot(loss_to_plot)
             fig.savefig(f'{args.save_path}/figures/{best_probes_file_name}_supcon_train_loss.png')
