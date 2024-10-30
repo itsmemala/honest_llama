@@ -1259,6 +1259,7 @@ def main():
                                 plt.legend(loc="upper left")
                                 # plt.savefig(f'{args.save_path}/testfig.png')
 
+                                sc_hyp = '_'+str(args.supcon_temp)+'_'+str(args.sc1_wgt)+'_'+str(args.sc2_wgt)
                                 plot_name_concat = 'b' if args.use_best_val_t else ''
                                 plot_name_concat += 'a' if args.best_using_auc else ''
                                 plot_name_concat += 'l' if args.best_as_last else ''
@@ -1280,7 +1281,7 @@ def main():
                                 # "num_blocks": args.num_blocks,
                                 # "wd": args.wd
                                 },
-                                name=str(save_seed)+'-'+args.plot_name+'-'+str(args.lr)+plot_name_concat
+                                name=str(save_seed)+'-'+args.plot_name+sc_hyp+'-'+str(args.lr)+plot_name_concat
                                 )
                                 tbl = wandb.Table(columns=['Val AUC', 'Val Recall', 'Val Macro-F1', 'Test AUC', 'Test Recall', 'Test Macro-F1'],
                                             data=[[log_val_auc, log_val_recall, log_val_f1, log_test_auc, log_test_recall, log_test_f1]])
