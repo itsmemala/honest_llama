@@ -172,6 +172,11 @@ def main():
             else:
                 best_probes_file_name = args.probes_file_name
             
+            loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy')[fold][model]
+            fig, axs = plt.subplots(1,1)
+            axs.plot(loss_to_plot)
+            fig.savefig(f'{args.save_path}/figures/{best_probes_file_name}_supcon_train_loss.png')
+
             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
