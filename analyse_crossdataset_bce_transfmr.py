@@ -267,7 +267,9 @@ def main():
                 else:
                     test_pred_model[test_preds[model]>t] = 1
                     test_pred_model[test_preds[model]<=t] = 0
-                r, fpr = recall_score(labels,test_pred_model), 
+                fp = np.sum((test_pred_model == 1) & (labels == 0))
+                tn = np.sum((test_pred_model == 0) & (labels == 0))
+                r, fpr = recall_score(labels,test_pred_model), fp / (fp + tn)
                 if r>=args.fpr_at_recall:
                     if fpr < best_fpr:
                         best_fpr = fpr
