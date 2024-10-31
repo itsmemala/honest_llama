@@ -47,7 +47,7 @@ def main():
     parser.add_argument("--responses_file_name", type=str, default='', help='local directory with dataset')
     parser.add_argument("--mitigated_responses_file_name", type=str, default='', help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
-    parser.add_argument("--probes_file_name_concat", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
