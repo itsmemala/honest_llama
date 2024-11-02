@@ -257,6 +257,7 @@ def main():
             auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
             auroc_by_layer.append(auc_val)
 
+            r_list, fpr_list = [], []
             thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
             for t in thresholds:
                 test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
