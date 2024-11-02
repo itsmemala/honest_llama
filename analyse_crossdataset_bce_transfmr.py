@@ -278,7 +278,10 @@ def main():
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             best_r.append(np.max(r_list))
             test_fpr_best_r.append(np.min(fpr_list[np.argwhere(r_list==np.max(r_list))]))
-            test_fpr.append(np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)]))
+            try: 
+                test_fpr.append(np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)]))
+            except ValueError:
+                test_fpr.append(None)
 
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
