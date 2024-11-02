@@ -281,7 +281,7 @@ def main():
             try: 
                 test_fpr.append(np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)]))
             except ValueError:
-                test_fpr.append(None)
+                test_fpr.append(-10000)
 
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
