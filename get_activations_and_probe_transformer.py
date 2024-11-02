@@ -1286,7 +1286,7 @@ def main():
                                 plt.legend(loc="upper left")
                                 # plt.savefig(f'{args.save_path}/testfig.png')
 
-                                sc_hyp = '_'+str(args.supcon_temp)+'_'+str(args.sc1_wgt)+'_'+str(args.sc2_wgt)
+                                sc_hyp = '_'+str(args.supcon_temp)+'_'+str(args.sc1_wgt)+'_'+str(args.sc2_wgt) if 'supcon' in args.method else ''
                                 plot_name_concat = 'b' if args.use_best_val_t else ''
                                 plot_name_concat += 'a' if args.best_using_auc else ''
                                 plot_name_concat += 'l' if args.best_as_last else ''
