@@ -827,7 +827,8 @@ def main():
                                             if 'tagged_tokens' in args.token:
                                                 inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                                             else:
-                                                inputs = torch.stack(activations,axis=0)
+                                                inputs = activations
+                                                # inputs = torch.stack(activations,axis=0)
                                             # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                                             targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
