@@ -819,7 +819,7 @@ def main():
                                                     batch_target_idxs.append(k)
                                                     activations.append(act)
                                             else:
-                                                activations = my_train_acts[torch.stack(batch['inputs_idxs'])].to(device)
+                                                activations = my_train_acts[batch['inputs_idxs']].to(device)
                                                 # act = my_train_acts[idx].to(device)
                                                 # activations.append(act)
                                             if len(activations)==0: continue
