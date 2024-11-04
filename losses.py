@@ -104,19 +104,19 @@ class SupConLoss(nn.Module):
         log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
         if self.num_samples is not None:
             all_prompt_mask, wp_mask, wp_samples = [], [], []
-            for k in range(len(mask)):
-                prompt_mask = torch.zeros_like(mask[k])
-                prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
-                start_idx = prompt_idx*self.num_samples
-                end_idx = start_idx + self.num_samples
-                prompt_mask[start_idx:end_idx] = 1
-                sample_wp_mask = mask[k].detach().clone()*prompt_mask # keep only samples from same prompt
-                if sample_wp_mask.sum()==0: continue # skip samples with no within-prompt positive pairs
-                wp_samples.append(k)
-                wp_mask.append(sample_wp_mask)
-                all_prompt_mask.append(prompt_mask)
-            orig_mask, all_prompt_mask = torch.stack(wp_mask), torch.stack(all_prompt_mask)
-            orig_log_prob = logits[wp_samples] - torch.log((all_prompt_mask*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use all_prompt_mask to normalise over only pairs from same prompt
+            # for k in range(len(mask)):
+            #     prompt_mask = torch.zeros_like(mask[k])
+            #     prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
+            #     start_idx = prompt_idx*self.num_samples
+            #     end_idx = start_idx + self.num_samples
+            #     prompt_mask[start_idx:end_idx] = 1
+            #     sample_wp_mask = mask[k].detach().clone()*prompt_mask # keep only samples from same prompt
+            #     if sample_wp_mask.sum()==0: continue # skip samples with no within-prompt positive pairs
+            #     wp_samples.append(k)
+            #     wp_mask.append(sample_wp_mask)
+            #     all_prompt_mask.append(prompt_mask)
+            # orig_mask, all_prompt_mask = torch.stack(wp_mask), torch.stack(all_prompt_mask)
+            # orig_log_prob = logits[wp_samples] - torch.log((all_prompt_mask*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use all_prompt_mask to normalise over only pairs from same prompt
             
             self.prompt_mask = torch.zeros_like(mask)
             for k in range(mask.shape[0]):
@@ -127,14 +127,12 @@ class SupConLoss(nn.Module):
             self.prompt_mask = self.prompt_mask.to(device)
             wp_mask = mask.detach().clone()*self.prompt_mask # keep only samples from same prompt
             wp_samples = torch.argwhere(wp_mask.sum(dim=1)>0).squeeze() # skip samples with no within-prompt positive pairs
-            # print(wp_samples)
             mask = wp_mask[wp_samples]
-            # print(mask)
             log_prob = logits[wp_samples] - torch.log((self.prompt_mask[wp_samples]*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use self.prompt_mask to normalise over only pairs from same prompt
-            try:
-                assert orig_log_prob.sum() == log_prob.sum()
-            except AssertionError:
-                print(orig_log_prob.sum(),log_prob.sum())
+            # try:
+            #     assert orig_log_prob.sum() == log_prob.sum()
+            # except AssertionError:
+            #     print(orig_log_prob.sum(),log_prob.sum())
 
         # compute mean of log-likelihood over positive
         # modified to handle edge cases when there is no positive pair
