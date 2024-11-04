@@ -562,7 +562,7 @@ def main():
                 if file_path not in unique_file_paths: unique_file_paths.append(file_path)
             file_wise_data = {}
             for file_path in unique_file_paths:
-                file_wise_data[file_path] = torch.from_numpy(np.load(file_path)).to(device)
+                file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
             for idx in temp_train_idxs:
                 if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
@@ -575,7 +575,7 @@ def main():
                 else:
                     # try:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
+                    act = torch.from_numpy(file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]).to(device)
                     # except torch.cuda.OutOfMemoryError:
                     #     device_id += 1
                     #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
