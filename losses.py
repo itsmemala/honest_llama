@@ -123,6 +123,7 @@ class SupConLoss(nn.Module):
             wp_samples = torch.argwhere(wp_mask.sum(dim=1)>0)[0] # skip samples with no within-prompt positive pairs
             print(wp_samples)
             mask = wp_mask[wp_samples]
+            print(mask)
             log_prob = logits[wp_samples] - torch.log((self.prompt_mask[wp_samples]*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use self.prompt_mask to normalise over only pairs from same prompt
             try:
                 assert orig_log_prob.sum() == log_prob.sum()
