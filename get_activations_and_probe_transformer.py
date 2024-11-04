@@ -461,17 +461,17 @@ def main():
                         #     if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
                         #     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                         #     labels.append(label)
-                print('\n\End time of loading:',datetime.datetime.now(),'\n\n')
-                sys.exit()
-                if 'greedy' in args.train_labels_file_name:
-                    if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
-                    labels.append(label)
-                else:
-                    for j in range(1,num_samples+1,1):
-                        if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
-                        if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
-                        labels.append(label)
+                # print('\n\End time of loading:',datetime.datetime.now(),'\n\n')
+                # sys.exit()
+                        if 'greedy' in args.train_labels_file_name:
+                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                            labels.append(label)
+                        else:
+                            for j in range(1,num_samples+1,1):
+                                if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                                if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                                labels.append(label)
             labels = labels[:args.len_dataset]
             all_labels += labels
     labels = all_labels
