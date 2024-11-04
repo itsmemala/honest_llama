@@ -583,7 +583,7 @@ def main():
                     #     print('Loading on device',device_id)
                     #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_train_acts.append(act)
-                my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
+        my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
 
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
