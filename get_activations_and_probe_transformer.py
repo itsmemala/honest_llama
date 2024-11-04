@@ -542,6 +542,7 @@ def main():
     if args.fast_mode:
         # device_id, device = 0, 'cuda:0' # start with first gpu
         print("Loading acts...")
+        print('\n\nStart time of loading:',datetime.datetime.now(),'\n\n')
         my_train_acts, my_test_acts = [], []
         for dataset_name,train_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.len_dataset_list):
             args.dataset_name = dataset_name
@@ -575,13 +576,14 @@ def main():
                 else:
                     # try:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                    act = torch.from_numpy(file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]).to(device)
+                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
                     # except torch.cuda.OutOfMemoryError:
                     #     device_id += 1
                     #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
                     #     print('Loading on device',device_id)
                     #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                 my_train_acts.append(act)
+                my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
 
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
@@ -602,7 +604,8 @@ def main():
                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device)
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
-        my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
+        my_test_acts = torch.stack(my_test_acts)
+        print('\n\nEnd time of loading:',datetime.datetime.now(),'\n\n')
 
     if args.multi_gpu:
         device_id += 1
