@@ -25,13 +25,13 @@ class SupConLoss(nn.Module):
         self.base_temperature = base_temperature
         self.use_supcon_pos = use_supcon_pos
         self.num_samples = num_samples
-        # if self.num_samples is not None:
-        #     self.prompt_mask = torch.zeros_like(torch.empty(bs, bs))
-        #     for k in range(bs):
-        #         prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
-        #         start_idx = prompt_idx*self.num_samples
-        #         end_idx = start_idx + self.num_samples
-        #         self.prompt_mask[k][start_idx:end_idx] = 1
+        if self.num_samples is not None:
+            self.prompt_mask = torch.zeros_like(torch.empty(bs, bs))
+            for k in range(bs):
+                prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
+                start_idx = prompt_idx*self.num_samples
+                end_idx = start_idx + self.num_samples
+                self.prompt_mask[k][start_idx:end_idx] = 1
 
     def forward(self, features, labels=None, mask=None):
         """Compute loss for model. If both `labels` and `mask` are None,
@@ -118,12 +118,13 @@ class SupConLoss(nn.Module):
             # orig_mask, all_prompt_mask = torch.stack(wp_mask), torch.stack(all_prompt_mask)
             # orig_log_prob = logits[wp_samples] - torch.log((all_prompt_mask*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use all_prompt_mask to normalise over only pairs from same prompt
             
-            self.prompt_mask = torch.zeros_like(mask)
-            for k in range(mask.shape[0]):
-                prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
-                start_idx = prompt_idx*self.num_samples
-                end_idx = start_idx + self.num_samples
-                self.prompt_mask[k][start_idx:end_idx] = 1
+            if mask.shape[0]!=prompt_mask.shape[0]:
+                self.prompt_mask = torch.zeros_like(mask)
+                for k in range(mask.shape[0]):
+                    prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
+                    start_idx = prompt_idx*self.num_samples
+                    end_idx = start_idx + self.num_samples
+                    self.prompt_mask[k][start_idx:end_idx] = 1
             self.prompt_mask = self.prompt_mask.to(device)
             wp_mask = mask.detach().clone()*self.prompt_mask # keep only samples from same prompt
             wp_samples = torch.argwhere(wp_mask.sum(dim=1)>0).squeeze() # skip samples with no within-prompt positive pairs
