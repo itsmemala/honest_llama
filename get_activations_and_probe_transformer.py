@@ -894,8 +894,8 @@ def main():
                                         for step,batch in enumerate(ds_val):
                                             optimizer.zero_grad()
                                             activations, batch_target_idxs = [], []
-                                            for k,idx in enumerate(batch['inputs_idxs']):
-                                                if 'tagged_tokens' in args.token: 
+                                            if 'tagged_tokens' in args.token: 
+                                                for k,idx in enumerate(batch['inputs_idxs']):
                                                     file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                                                     file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                                                     act = torch.load(file_path)[idx%args.acts_per_file].to(device)
@@ -908,15 +908,18 @@ def main():
                                                         act = torch.cat((act,sep_token), dim=1)
                                                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                                                     batch_target_idxs.append(k)
-                                                else:
-                                                    act = my_train_acts[idx].to(device)
-                                                activations.append(act)
+                                                    activations.append(act)
+                                            else:
+                                                activations = my_train_acts[batch['inputs_idxs']].to(device)
+                                                # act = my_train_acts[idx].to(device)
+                                                # activations.append(act)
                                             if len(activations)==0: continue
                                             num_val_samples_used += len(batch_target_idxs)
                                             if 'tagged_tokens' in args.token:
                                                 inputs = torch.nn.utils.rnn.pad_sequence(activations, batch_first=True)
                                             else:
-                                                inputs = torch.stack(activations,axis=0)
+                                                inputs = activations
+                                                # inputs = torch.stack(activations,axis=0)
                                             # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                                             targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
@@ -974,6 +977,7 @@ def main():
                                         #         val_loss_drop = val_loss[-(epoch_id+1)]-val_loss[-epoch_id]
                                         #         if val_loss_drop > -1 and val_loss_drop < min_val_loss_drop: is_not_decreasing += 1
                                         #     if is_not_decreasing==patience-1: break
+                                    print('\n\nEnd time of train:',datetime.datetime.now(),'\n\n')
                                     all_supcon_train_loss[i].append(np.array(supcon_train_loss))
                                     all_supcon1_train_loss[i].append(np.array(supcon1_train_loss))
                                     all_supcon2_train_loss[i].append(np.array(supcon2_train_loss))
