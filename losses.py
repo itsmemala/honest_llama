@@ -120,7 +120,7 @@ class SupConLoss(nn.Module):
             
             self.prompt_mask = self.prompt_mask.to(device)
             wp_mask = mask.detach().clone()*self.prompt_mask # keep only samples from same prompt
-            wp_samples = torch.argwhere(wp_mask.sum(dim=1)>0)[0] # skip samples with no within-prompt positive pairs
+            wp_samples = torch.argwhere(wp_mask.sum(dim=1)>0).squeeze() # skip samples with no within-prompt positive pairs
             print(wp_samples)
             mask = wp_mask[wp_samples]
             print(mask)
