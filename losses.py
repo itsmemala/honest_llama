@@ -121,9 +121,9 @@ class SupConLoss(nn.Module):
             self.prompt_mask = self.prompt_mask.to(device)
             wp_mask = mask.detach().clone()*self.prompt_mask # keep only samples from same prompt
             wp_samples = torch.argwhere(wp_mask.sum(dim=1)>0).squeeze() # skip samples with no within-prompt positive pairs
-            print(wp_samples)
+            # print(wp_samples)
             mask = wp_mask[wp_samples]
-            print(mask)
+            # print(mask)
             log_prob = logits[wp_samples] - torch.log((self.prompt_mask[wp_samples]*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use self.prompt_mask to normalise over only pairs from same prompt
             try:
                 assert orig_log_prob.sum() == log_prob.sum()
@@ -146,6 +146,6 @@ class SupConLoss(nn.Module):
         loss = - (self.temperature / self.base_temperature) * mean_log_prob_pos
         # loss = loss.view(anchor_count, batch_size).mean()
         loss = loss.view(anchor_count, mean_log_prob_pos.shape[0]).mean()
-        sys.exit()
+        # sys.exit()
 
         return loss
