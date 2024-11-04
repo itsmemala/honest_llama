@@ -760,9 +760,9 @@ def main():
                                 sc_num_samples = num_samples if 'wp' in args.method else None
                                 if (use_supcon_pos) and (sc_num_samples is not None):
                                     criterion_supcon1 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=None) # operates on greedy samples only
-                                    criterion_supcon2 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=sc_num_samples) # operates within prompt only
+                                    criterion_supcon2 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=sc_num_samples,bs=args.bs) # operates within prompt only
                                 else:
-                                    criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples) if 'supconv2' in args.method else NTXentLoss()
+                                    criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples,bs=args.bs) if 'supconv2' in args.method else NTXentLoss()
                                 
                                 if args.norm_input:
                                     for layer in range(my_train_acts.shape[1]):
