@@ -562,7 +562,7 @@ def main():
                 if file_path not in unique_file_paths: unique_file_paths.append(file_path)
             file_wise_data = {}
             for file_path in unique_file_paths:
-                file_wise_data[file_path] = torch.from_numpy(np.load(file_path,allow_pickle=True)).to(device)
+                file_wise_data[file_path] = torch.from_numpy(np.load(file_path)).to(device)
             for idx in temp_train_idxs:
                 if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
