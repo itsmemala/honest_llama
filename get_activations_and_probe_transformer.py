@@ -554,9 +554,16 @@ def main():
             else:
                 args.acts_per_file = 100
             temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(args.len_dataset)
+            act_wise_file_paths, unique_file_paths = [], []
             for idx in temp_train_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                 file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                act_wise_file_paths.append(file_path)
+                if file_path not in unique_file_paths: unique_file_paths.append(file_path)
+            file_wise_data = {}
+            for file_path in unique_file_paths:
+                file_wise_data[file_path] = torch.from_numpy(np.load(file_path,allow_pickle=True)).to(device)
+            for idx in temp_train_idxs:
                 if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     act = combine_acts(idx,args.train_file_name,args)
@@ -567,7 +574,8 @@ def main():
                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
                     # try:
-                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
                     # except torch.cuda.OutOfMemoryError:
                     #     device_id += 1
                     #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
