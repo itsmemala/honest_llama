@@ -118,7 +118,7 @@ class SupConLoss(nn.Module):
             # orig_mask, all_prompt_mask = torch.stack(wp_mask), torch.stack(all_prompt_mask)
             # orig_log_prob = logits[wp_samples] - torch.log((all_prompt_mask*exp_logits[wp_samples]).sum(1, keepdim=True)) # Use all_prompt_mask to normalise over only pairs from same prompt
             
-            if mask.shape[0]!=prompt_mask.shape[0]:
+            if mask.shape[0]!=self.prompt_mask.shape[0]:
                 self.prompt_mask = torch.zeros_like(mask)
                 for k in range(mask.shape[0]):
                     prompt_idx = math.floor(k/self.num_samples) # get prompt idx for this sample
