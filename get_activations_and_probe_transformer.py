@@ -1085,10 +1085,13 @@ def main():
                                                         pca = PCA(n_components=args.pca_dims,svd_solver='full')
                                                     else:
                                                         pca = PCA(n_components=args.pca_dims)
-                                                    print(train_outputs.shape)
                                                     train_outputs = train_outputs.detach().cpu().numpy()
                                                     train_outputs = torch.from_numpy(pca.fit_transform(train_outputs)).to(device)
-                                                    print(train_outputs.shape)
+                                                    if train_outputs.shape[1]==1:
+                                                        train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
+                                                        pca = PCA(n_components=2)
+                                                        train_outputs = train_outputs.detach().cpu().numpy()
+                                                        train_outputs = torch.from_numpy(pca.fit_transform(train_outputs)).to(device)
                                                 else:
                                                     pca = None
                                                 if 'kmeans' in args.method:
