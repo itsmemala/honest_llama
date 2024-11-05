@@ -259,6 +259,11 @@ def main():
             # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
             # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
             
+            confident_sample_pred = np.array(confident_sample_pred)
+            fp = np.sum((confident_sample_pred == 1) & (labels == 0))
+            tn = np.sum((confident_sample_pred == 0) & (labels == 0))
+            test_fpr_best_f1 = fp / (fp + tn)
+
             test_preds, model = all_preds, num_layers-1
             r_list, fpr_list = [], []
             thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
@@ -290,6 +295,7 @@ def main():
             seed_results_list.append(best_r)
             seed_results_list.append(test_fpr_best_r)
             seed_results_list.append(test_fpr)
+            seed_results_list.append(test_fpr_best_f1)
             seed_results_list.append(f1_score(labels,confident_sample_pred))
             seed_results_list.append(precision_score(labels,confident_sample_pred))
             seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
