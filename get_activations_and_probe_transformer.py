@@ -351,6 +351,7 @@ def main():
     parser.add_argument('--pca_dims_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--supcon_temp_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--skip_train', type=bool, default=False)
+    parser.add_argument('--which_checkpoint', type=str, default='')
     parser.add_argument('--skip_hypsearch', type=bool, default=False)
     parser.add_argument('--continue_ce', type=bool, default=False)
     parser.add_argument('--cce_lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
@@ -1025,7 +1026,7 @@ def main():
                                     elif args.ood_test:
                                         prior_probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                         prior_probes_file_name += plot_name_concat
-                                    prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
+                                    prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}model{i}'
                                     nlinear_model = torch.load(prior_save_path,map_location=device)
                                     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
                                     torch.save(nlinear_model, probe_save_path)
