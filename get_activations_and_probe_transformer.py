@@ -15,7 +15,8 @@ import numpy as np
 from collections import Counter
 import statistics
 import pickle
-import ujson as json
+# import ujson as json
+import orjson as json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
 from utils import My_Transformer_Layer
 from losses import SupConLoss
@@ -456,7 +457,7 @@ def main():
             else:
                 labels = []
                 file_path = f'{args.save_path}/responses/{args.train_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json'
-                with open(file_path, 'r') as read_file:
+                with open(file_path, 'rb') as read_file:
                     for line in read_file:
                         data = json.loads(line)
                         # for j in range(1,num_samples+1,1):
