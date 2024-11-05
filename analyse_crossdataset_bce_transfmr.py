@@ -206,7 +206,7 @@ def main():
 
         # all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{args.probes_file_name}_val_true.npy')
         fold = 0
-        test_f1_cls0, test_f1_cls1, best_r, test_fpr_best_r, test_fpr, test_recall_cls0, test_recall_cls1, test_precision_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], [], [], [], [], []
+        test_f1_cls0, test_f1_cls1, best_r, test_fpr_best_r, test_fpr_best_f1, test_fpr, test_recall_cls0, test_recall_cls1, test_precision_cls1, val_f1_cls1, val_f1_cls0, val_f1_avg = [], [], [], [], [], [], [], [], [], [], []
         best_probes_per_model, layer_pred_thresholds = [], []
         excl_layers, incl_layers = [], []
         aupr_by_layer, auroc_by_layer = [], []
@@ -257,6 +257,10 @@ def main():
             auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
             auroc_by_layer.append(auc_val)
 
+            fp = np.sum((test_pred_model == 1) & (labels == 0))
+            tn = np.sum((test_pred_model == 0) & (labels == 0))
+            test_fpr_best_f1.append(fp / (fp + tn))
+
             r_list, fpr_list = [], []
             thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
             for t in thresholds:
@@ -295,6 +299,7 @@ def main():
         seed_results_list.append(np.mean(best_r))
         seed_results_list.append(np.mean(test_fpr_best_r))
         seed_results_list.append(np.mean(test_fpr))
+        seed_results_list.append(np.mean(test_fpr_best_f1))
         seed_results_list.append(np.mean(test_f1_cls1))
         seed_results_list.append(np.mean(test_precision_cls1)) # print(np.mean(test_precision_cls1)) # H
         seed_results_list.append(np.mean(test_recall_cls1)) # print(np.mean(test_recall_cls1)) # H
