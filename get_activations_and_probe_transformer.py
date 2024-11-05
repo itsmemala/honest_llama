@@ -269,6 +269,7 @@ def compute_knn_dist(outputs,train_outputs,device,train_labels=None,metric='eucl
         dist = torch.Tensor(dist)
     elif metric=='mahalanobis_centers':
         outputs = outputs.detach().cpu().numpy()
+        print(torch.cov(torch.transpose(train_outputs,0,1)).shape)
         iv = torch.linalg.pinv(torch.cov(torch.transpose(train_outputs,0,1))).detach().cpu().numpy() # we want cov of the full dataset [for cov between two obs: torch.cov(torch.stack((o,t),dim=1))]
         for o in outputs:
             o_dist = []
