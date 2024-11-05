@@ -1028,7 +1028,7 @@ def main():
                                         prior_probes_file_name += plot_name_concat
                                     prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}model{i}'
                                     nlinear_model = torch.load(prior_save_path,map_location=device)
-                                    probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
+                                    probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_{args.which_checkpoint}model{i}'
                                     torch.save(nlinear_model, probe_save_path)
 
                                 # Val and Test performance
