@@ -307,7 +307,7 @@ def main():
                 fig, axs = plt.subplots(1,1)
                 axs.plot(recall_vals,fpr_at_recall_vals)
                 axs.title.set_text('FPR at recall')
-                fig.savefig(f'{args.save_path}/figures/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
+                fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
             seed_results_list.append(test_fpr_best_f1)
             seed_results_list.append(f1_score(labels,confident_sample_pred))
             seed_results_list.append(precision_score(labels,confident_sample_pred))
