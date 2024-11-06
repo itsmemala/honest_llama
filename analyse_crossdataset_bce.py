@@ -306,6 +306,10 @@ def main():
             if args.fpr_at_recall==-1:
                 fig, axs = plt.subplots(1,1)
                 axs.plot(recall_vals,fpr_at_recall_vals)
+                for xy in zip(recall_vals,fpr_at_recall_vals):
+                    axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
+                axs.set_xlabel('Recall')
+                axs.set_ylabel('FPR')
                 axs.title.set_text('FPR at recall')
                 fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
             seed_results_list.append(test_fpr_best_f1)
