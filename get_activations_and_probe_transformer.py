@@ -361,7 +361,7 @@ def main():
     parser.add_argument('--tag',type=str, default=None) # Wandb args
     args = parser.parse_args()
 
-    torch.set_default_dtype(torch.float16)
+    # torch.set_default_dtype(torch.float16)
 
     print('\n\nStart time of main:',datetime.datetime.now(),'\n\n')
 
