@@ -286,6 +286,14 @@ def main():
                 test_fpr.append(np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)]))
             except ValueError:
                 test_fpr.append(-10000)
+            if args.fpr_at_recall==-1:
+                recall_vals, fpr_at_recall_vals = [], []
+                for check_recall in [0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]:
+                    try: 
+                        fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
+                        recall_vals.append(check_recall)
+                    except ValueError:
+                        continue
 
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
@@ -299,6 +307,11 @@ def main():
         seed_results_list.append(np.mean(best_r))
         seed_results_list.append(np.mean(test_fpr_best_r))
         seed_results_list.append(np.mean(test_fpr))
+        if args.fpr_at_recall==-1:
+            fig, axs = plt.subplots(1,1)
+            axs.plot(recall_vals,fpr_at_recall_vals)
+            axs.title.set_text('FPR at recall')
+            fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
         seed_results_list.append(np.mean(test_fpr_best_f1))
         seed_results_list.append(np.mean(test_f1_cls1))
         seed_results_list.append(np.mean(test_precision_cls1)) # print(np.mean(test_precision_cls1)) # H
