@@ -266,7 +266,7 @@ def main():
 
             test_preds, model = all_preds, num_layers-1
             r_list, fpr_list = [], []
-            thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+            thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
             for t in thresholds:
                 test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -285,16 +285,29 @@ def main():
                 #         best_fpr = fpr
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             best_r = np.max(r_list)
-            test_fpr_best_r = np.min(fpr_list[np.argwhere(r_list==np.max(r_list))])
+            test_fpr_best_r = np.min(fpr_list[np.argwhere(r_list==best_r)])
             try: 
                 test_fpr = np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)])
             except ValueError:
                 test_fpr = -10000
+            if args.fpr_at_recall==-1:
+                recall_vals, fpr_at_recall_vals = [], []
+                for check_recall in [0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]:
+                    try: 
+                        fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
+                        recall_vals.append(check_recall)
+                    except ValueError:
+                        continue
             ########################
             seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
             seed_results_list.append(best_r)
             seed_results_list.append(test_fpr_best_r)
             seed_results_list.append(test_fpr)
+            if args.fpr_at_recall==-1:
+                fig, axs = plt.subplots(1,1)
+                axs.plot(recall_vals,fpr_at_recall_vals)
+                axs.title.set_text('FPR at recall')
+                fig.savefig(f'{args.save_path}/figures/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
             seed_results_list.append(test_fpr_best_f1)
             seed_results_list.append(f1_score(labels,confident_sample_pred))
             seed_results_list.append(precision_score(labels,confident_sample_pred))
