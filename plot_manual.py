@@ -15,8 +15,8 @@ for path,label in zip(paths,labels):
     recall_vals = np.load(f'{save_path}/fpr_at_recall_curves/{path}_xaxis.npy')
     fpr_at_recall_vals = np.load(f'{save_path}/fpr_at_recall_curves/{path}_yaxis.npy')
     axs.plot(recall_vals,fpr_at_recall_vals,label=label)
-    for xy in zip(recall_vals,fpr_at_recall_vals):
-        axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
+    # for xy in zip(recall_vals,fpr_at_recall_vals):
+    #     axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
 axs.legend()    
 axs.set_xlabel('Recall')
 axs.set_ylabel('FPR')
