@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+import numpy as np
 
 fig, axs = plt.subplots(1,1)
 paths = ['NLSC42_hl_llama_7B_trivia_qa_greedy_responses_train5000_5000_1_layerFalse_answer_last_individual_linear_hallu_pos_bs128_epochs50_0.0005_False_fpr_at_recall',
