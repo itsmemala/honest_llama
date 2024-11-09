@@ -312,6 +312,8 @@ def main():
                 axs.title.set_text('FPR at recall')
                 fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
                 seed_results_list.append(auc(recall_vals,fpr_at_recall_vals))
+                np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
+                np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
             else:
                 seed_results_list.append(test_fpr)
             seed_results_list.append(test_fpr_best_f1)
