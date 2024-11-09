@@ -10,8 +10,8 @@ paths = ['NLSC42_hl_llama_7B_trivia_qa_greedy_responses_train5000_5000_1_layerFa
 ]
 labels = ['linear_last_layer','tfmr_all_layers','tfmr_supcon','tfmr_supcon+*','tfmr_supcon+*_dist']
 for path,label in zip(paths,labels):
-    recall_vals = np.load(f'{path}_xaxis.npy')
-    fpr_at_recall_vals = np.load(f'{path}_yaxis.npy')
+    recall_vals = np.load(f'{args.save_path}/fpr_at_recall_curves/{path}_xaxis.npy')
+    fpr_at_recall_vals = np.load(f'{args.save_path}/fpr_at_recall_curves/{path}_yaxis.npy')
     axs.plot(recall_vals,fpr_at_recall_vals,label)
     for xy in zip(recall_vals,fpr_at_recall_vals):
         axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
