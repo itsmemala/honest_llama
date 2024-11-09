@@ -17,4 +17,4 @@ for path in xpaths:
 axs.set_xlabel('Recall')
 axs.set_ylabel('FPR')
 axs.title.set_text('FPR at recall')
-fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
+fig.savefig(f'{args.save_path}/fpr_at_recall_curves/llama_trivia_fpr_at_recall.png')
