@@ -127,6 +127,8 @@ class LogisticRegression_Torch(torch.nn.Module):
     def forward(self, x):
         y_pred = self.linear(x)
         return y_pred
+    def forward_upto_classifier(self, x):
+        return x
 
 # class FeedforwardNeuralNetModel(nn.Module):
 #     def __init__(self, input_dim, hidden_dim1, output_dim):
