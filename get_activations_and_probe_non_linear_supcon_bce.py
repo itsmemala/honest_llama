@@ -1147,7 +1147,7 @@ def main():
                                                     train_labels = np.array([labels[idx] for idx in train_set_idxs])
                                                 else:
                                                     train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==1],axis=0) # Take all train hallucinations
-                                                    train_labels = None
+                                                    train_labels = np.array([1 for idx in range(len(train_inputs))])
                                                 train_outputs = nlinear_model.forward_upto_classifier(train_inputs)
                                                 if args.pca_dims is not None:
                                                     if args.pca_dims<1:
