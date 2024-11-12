@@ -155,6 +155,7 @@ def main():
                     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                     auc_by_lr.append(roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
                 best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
+                print(best_probes_file_name)
             else:
                 best_probes_file_name = args.probes_file_name
             
