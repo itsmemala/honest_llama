@@ -324,15 +324,15 @@ def main():
             seed_results_list.append(f1_score(labels,confident_sample_pred))
             seed_results_list.append(precision_score(labels,confident_sample_pred))
             seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
-            precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1,:,:]))
+            precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1]))
             seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
-            seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(all_preds[num_layers-1,:,:])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:]))) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
+            seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(all_preds[num_layers-1])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[num_layers-1]))) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
             ########################
 
             # Best probe from validation data
             confident_sample_pred = []
             for i in range(all_preds.shape[1]):
-                sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i,:])
+                sample_pred = np.squeeze(all_preds[np.argmax(val_f1_avg),i])
                 confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[np.argmax(val_f1_avg)] else 0)
             # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
             # print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
