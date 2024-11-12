@@ -380,13 +380,13 @@ def main():
             # Probe selection - a
             confident_sample_pred,confident_sample_probs = [], []
             for i in range(all_preds.shape[1]):
-                sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+                sample_pred = np.squeeze(all_preds[:,i]) # Get predictions of each sample across all layers of model
                 sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
                 # print(sample_pred.shape,sample_pred[:5])
                 probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
                 layer = incl_layers[np.argmin(probe_wise_entropy[incl_layers])]
                 confident_sample_pred.append(1 if sample_pred[layer][1]>layer_pred_thresholds[layer] else 0)
-                confident_sample_probs.append(np.squeeze(all_preds[layer,i,:]))
+                confident_sample_probs.append(np.squeeze(all_preds[layer,i]))
             # print('Using most confident probe per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
             # print('Using most confident probe per sample (best val threshold, excl layers):\n',classification_report(labels,confident_sample_pred))
             
@@ -486,7 +486,7 @@ def main():
             # Probe selection - d
             confident_sample_pred,confident_sample_probs = [], []
             for i in range(all_preds.shape[1]):
-                sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+                sample_pred = np.squeeze(all_preds[:,i]) # Get predictions of each sample across all layers of model
                 sample_pred_val = [1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)]
                 sample_pred_val = np.array(sample_pred_val)
                 class_1_vote_cnt = sum(sample_pred_val[incl_layers])
