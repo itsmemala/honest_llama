@@ -184,7 +184,7 @@ def main():
         best_probes_per_model, layer_pred_thresholds = [], []
         excl_layers, incl_layers = [], []
         aupr_by_layer, auroc_by_layer = [], []
-        num_models = 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+        num_models = 1 # 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
         print(num_models)
         all_preds = []
         for model in tqdm(range(num_models)):
