@@ -51,16 +51,18 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, supcon=False, device='cuda'):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False supcon=False, device='cuda'):
         super().__init__()
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
         nhead = 16 # 16 # 8
         max_length = 512*33 # max_new_tokens in generation config x num_layers
         self.use_pe =  use_pe
+        self.batch_norm = batch_norm
         self.n_blocks = n_blocks
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
         self.class_token = torch.nn.Parameter(torch.randn(1,1,d_model))
+        self.batch_norm_layer = torch.nn.BatchNorm1d(d_model)
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.transfomer2 = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.supcon=supcon
@@ -81,22 +83,22 @@ class My_Transformer_Layer(torch.nn.Module):
 
     # make predictions
     def forward(self, x): # x: (bs, n_layers, n_inputs)
-        layer_wise_x = []
-        for layer in range(x.shape[-2]):
-            layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
-        x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
-        if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
-        x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
-        if self.use_pe: x = x + self.pe[:, : x.size(1)].requires_grad_(False)
+        # layer_wise_x = []
+        # for layer in range(x.shape[-2]):
+        #     layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+        # x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
+        # if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
+        # x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
+        # if self.use_pe: x = x + self.pe[:, : x.size(1)].requires_grad_(False)
 
-        x = self.transfomer(x) # x: (bs, n_layers, d_model)
-        if self.n_blocks==2: x = self.transfomer2(x)
+        # x = self.transfomer(x) # x: (bs, n_layers, d_model)
+        # if self.n_blocks==2: x = self.transfomer2(x)
 
-        # x = x[:,-1,:] # Take last token embedding
-        # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
-        x = x[:,0,:] # Take first token embedding (CLS token)
+        # # x = x[:,-1,:] # Take last token embedding
+        # # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
+        # x = x[:,0,:] # Take first token embedding (CLS token)
+        x = self.forward_upto_classifier(x)
         if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
-        # x = F.normalize(x, p=2, dim=-1)
         y_pred = self.classifier(x)
         return y_pred
     
@@ -109,13 +111,13 @@ class My_Transformer_Layer(torch.nn.Module):
         x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
         if self.use_pe: x = x + self.pe[:, : x.size(1)].requires_grad_(False)
 
+        if self.batch_norm: x = self.batch_norm_layer(x)
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
         if self.n_blocks==2: x = self.transfomer2(x)
 
         # x = x[:,-1,:] # Take last token embedding
         # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         x = x[:,0,:] # Take first token embedding (CLS token)
-        # x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         return x
 
 class LogisticRegression_Torch(torch.nn.Module):    

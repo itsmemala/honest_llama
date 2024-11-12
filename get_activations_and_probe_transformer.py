@@ -314,6 +314,7 @@ def main():
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--retrain_model_path',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
+    parser.add_argument('--use_batch_norm',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--norm_input',type=bool, default=False)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
@@ -654,6 +655,7 @@ def main():
                             method_concat = method_concat + '_cce' if args.continue_ce else method_concat
                             method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if ('knn' in args.method) or ('kmeans' in args.method) else method_concat
                             method_concat = method_concat + 'pca' + str(args.pca_dims) if args.pca_dims is not None else method_concat
+                            if args.use_batch_norm: method_concat = method_concat + '_batchnorm'
 
                             # Probe training
                             np.random.seed(save_seed)
@@ -756,7 +758,7 @@ def main():
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 n_blocks = 2 if 'transformer2' in args.method else 1
                                 supcon = True if 'supcon' in args.method else False
-                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, supcon=supcon).to(device)
+                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon).to(device)
                                 if args.retrain_model_path is not None:
                                     retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_model_path).state_dict()
