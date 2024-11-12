@@ -62,7 +62,7 @@ class My_Transformer_Layer(torch.nn.Module):
         self.n_blocks = n_blocks
         self.linear = torch.nn.Linear(n_inputs, d_model, bias)
         self.class_token = torch.nn.Parameter(torch.randn(1,1,d_model))
-        self.batch_norm_layer = torch.nn.BatchNorm1d(d_model)
+        self.batch_norm_layer = torch.nn.BatchNorm1d(n_layers+1)
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.transfomer2 = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.supcon=supcon
