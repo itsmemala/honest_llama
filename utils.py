@@ -51,7 +51,7 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False supcon=False, device='cuda'):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, device='cuda'):
         super().__init__()
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
