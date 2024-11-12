@@ -255,7 +255,7 @@ def main():
             # Last layer probe
             confident_sample_pred = []
             for i in range(all_preds.shape[1]):
-                sample_pred = np.squeeze(all_preds[num_layers-1,i,:])
+                sample_pred = np.squeeze(all_preds[num_layers-1,i])
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                     confident_sample_pred.append(1 if sample_pred<=layer_pred_thresholds[num_layers-1] else 0)
                 else:
