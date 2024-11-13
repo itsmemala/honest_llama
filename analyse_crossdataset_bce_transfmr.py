@@ -177,7 +177,7 @@ def main():
             loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True)
             # print(loss_to_plot)
             fig, axs = plt.subplots(1,1)
-            axs.plot(loss_to_plot['0'])[0] # index fold, model
+            axs.plot(loss_to_plot['0'][0]) # index fold, model
             fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_supcon_train_loss.png')
 
             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
