@@ -174,16 +174,16 @@ def main():
             else:
                 best_probes_file_name = args.probes_file_name
             
-            # loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
-            # loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()
-            # loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()
-            # print(loss_to_plot[0])
-            # fig, axs = plt.subplots(1,1)
-            # axs.plot(loss_to_plot[0][0],label='total') # index fold, model
-            # axs.plot(loss_to_plot1[0][0],label='pos')
-            # axs.plot(loss_to_plot2[0][0],label='wp')
-            # axs.legend()
-            # fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_supcon_train_loss.png')
+            loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
+            loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()
+            loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()
+            print(loss_to_plot[0])
+            fig, axs = plt.subplots(1,1)
+            axs.plot(loss_to_plot[0][0],label='total') # index fold, model
+            axs.plot(loss_to_plot1[0][0],label='pos')
+            axs.plot(loss_to_plot2[0][0],label='wp')
+            axs.legend()
+            fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_supcon_train_loss.png')
 
             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
             if args.best_threshold:
