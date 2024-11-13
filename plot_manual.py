@@ -16,7 +16,7 @@ paths = ['NLSC42_hl_llama_7B_trivia_qa_greedy_responses_train5000_5000_1_layerFa
 'T42_hl_llama_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_2.0_mahalanobis_centers1pca0.9_bs352_epochs500_0.0005_Falseba_bestusinglast_fpr_at_recall'
 ]
 # labels = ['linear_last_layer','last_layer_dist','tfmr','tfmr_dist','tfmr_supcon','tfmr_supcon_dist','tfmr_supcon+','tfmr_supcon+_dist','tfmr_supcon+*','tfmr_supcon+*_dist']
-lables = ['linear_probe','distance_to_last_layer','our_approach']
+labels = ['linear_probe','distance_to_last_layer','our_approach']
 ## hl-nq
 # paths = ['NLSC42_hl_llama_7B_nq_open_greedy_responses_train5000_5000_1_layerFalse_answer_last_individual_linear_hallu_pos_bs128_epochs50_0.005_False_fpr_at_recall',
 # 'NLSC42_hl_llama_7B_nq_open_greedy_responses_train5000_5000_1_layerFalse_answer_last_individual_linear_kmeans_hallu_pos_mahalanobis_centers1pca0.9_bs128_epochs50_5e-05_Falseba_bestusinglast_fpr_at_recall',
