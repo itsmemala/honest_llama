@@ -56,7 +56,7 @@ class My_Transformer_Layer(torch.nn.Module):
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
         nhead = 16 # 16 # 8
-        max_length = 512*33 # max_new_tokens in generation config x num_layers
+        max_length = 512*n_layers # max_new_tokens in generation config x num_layers
         self.use_pe =  use_pe
         self.batch_norm = batch_norm
         self.n_blocks = n_blocks
