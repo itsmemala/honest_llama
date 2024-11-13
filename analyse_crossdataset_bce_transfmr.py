@@ -184,15 +184,15 @@ def main():
             # axs.plot(loss_to_plot2[0][0],label='wp')
             # axs.legend()
             # fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_supcon_train_loss.png')
-            loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_train_loss.npy', allow_pickle=True).item()
-            loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_loss.npy', allow_pickle=True).item()
-            loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_auc.npy', allow_pickle=True).item()
-            fig, axs = plt.subplots(1,1)
-            axs.plot(loss_to_plot[0][0],label='train_ce_loss') # index fold, model
-            axs.plot(loss_to_plot1[0][0],label='val_ce_loss')
-            axs.plot(loss_to_plot2[0][0],label='val_auc')
-            axs.legend()
-            fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
+            # loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_train_loss.npy', allow_pickle=True).item()
+            # loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_loss.npy', allow_pickle=True).item()
+            # loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_auc.npy', allow_pickle=True).item()
+            # fig, axs = plt.subplots(1,1)
+            # axs.plot(loss_to_plot[0][0],label='train_ce_loss') # index fold, model
+            # axs.plot(loss_to_plot1[0][0],label='val_ce_loss')
+            # axs.plot(loss_to_plot2[0][0],label='val_auc')
+            # axs.legend()
+            # fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
 
             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
             if args.best_threshold:
@@ -319,8 +319,8 @@ def main():
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
         seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
-        seed_results_list.append(np.mean(best_r))
-        seed_results_list.append(np.mean(test_fpr_best_r))
+        # seed_results_list.append(np.mean(best_r))
+        # seed_results_list.append(np.mean(test_fpr_best_r))
         if args.fpr_at_recall==-1:
             fig, axs = plt.subplots(1,1)
             axs.plot(recall_vals,fpr_at_recall_vals)
