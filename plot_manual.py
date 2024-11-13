@@ -25,7 +25,7 @@ labels = ['linear_probe','distance_to_last_layer','our_approach']
 # 'T42_hl_llama_7B_nq_open_greedy_responses_train5000_5000_1_layerFalse_answer_last_transformer_supconv2_hallu_pos_0.2_bs256_epochs500_0.0005_Falseba_fpr_at_recall',
 # 'T42_hl_llama_7B_nq_open_greedy_responses_train5000_5000_1_layerFalse_answer_last_transformer_supconv2_kmeans_hallu_pos_0.2_mahalanobis_centers1pca0.9_bs256_epochs500_5e-05_Falseba_bestusinglast_fpr_at_recall',
 # 'T42_hl_llama_7B_nq_open_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_hallu_pos_2.0_bs352_epochs500_0.0005_Falseba_fpr_at_recall',
-# '',
+# 'T42_hl_llama_7B_nq_open_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_kmeans_hallu_pos_mahalanobis_centers1pca0.9_bs352_epochs500_5e-05_Falseba_bestusinglast',
 # 'T42_hl_llama_7B_nq_open_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_2.0_bs352_epochs500_0.0005_Falseba_fpr_at_recall',
 # 'T42_hl_llama_7B_nq_open_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_1.0_mahalanobis_centers1pca0.9_bs352_epochs500_5e-05_Falseba_bestusinglast_fpr_at_recall'
 # ]
@@ -65,13 +65,13 @@ labels = ['linear_probe','distance_to_last_layer','our_approach']
 paths = ['T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.7_bs352_epochs500_5e-05_Falseba_fpr_at_recall',
 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.5_mahalanobis_centers1pca0.9_bs352_epochs500_5e-05_Falseba_bestusinglast_fpr_at_recall',
 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.5_0.5_bs352_epochs500_5e-05_Falseba_fpr_at_recall',
-'',
+'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.5_0.5_mahalanobis_centers1pca0.9_bs352_epochs500_5e-05_Falseba_bestusinglast_fpr_at_recall',
 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.4_0.6_bs352_epochs500_0.0005_Falseba_fpr_at_recall',
-'',
+'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.4_0.6_mahalanobis_centers1pca0.9_bs352_epochs500_0.0005_Falseba_bestusinglast',
 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.3_0.7_bs352_epochs500_5e-05_Falseba_fpr_at_recall',
-'',
+'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.3_0.7_mahalanobis_centers1pca0.9_bs352_epochs500_0.0005_Falseba_bestusinglast',
 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.2_0.8_bs352_epochs500_0.005_Falseba',
-'',
+'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.2_0.8_mahalanobis_centers1pca0.9_bs352_epochs500_0.0005_Falseba_bestusinglast',
 ]
 labels = ['pos_wp','pos_wp_dist','0.5pos_0.5wp','0.5pos_0.5wp_dist','0.4pos_0.6wp','0.4pos_0.6wp_dist','0.3pos_0.7wp','0.3pos_0.7wp_dist','0.2pos_0.8wp','0.2pos_0.8wp_dist']
 
@@ -81,6 +81,7 @@ labels = ['pos_wp','pos_wp_dist','0.5pos_0.5wp','0.5pos_0.5wp_dist','0.4pos_0.6w
 # labels = ['pos_wp','pos_wp_dist','0.5pos_0.5wp',]
 
 for path,label in zip(paths,labels):
+    if 'fpr_at_recall' not in path: path += '_fpr_at_recall'
     recall_vals = np.load(f'{save_path}/fpr_at_recall_curves/{path}_xaxis.npy')
     fpr_at_recall_vals = np.load(f'{save_path}/fpr_at_recall_curves/{path}_yaxis.npy')
     axs.plot(recall_vals,fpr_at_recall_vals,marker='o',label=label)
