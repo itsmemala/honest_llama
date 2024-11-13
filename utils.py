@@ -114,7 +114,7 @@ class My_Transformer_Layer(torch.nn.Module):
         try:
             if self.batch_norm: x = self.batch_norm_layer(x)
         except AttributeError:
-            continue
+            pass
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
         if self.n_blocks==2: x = self.transfomer2(x)
 
