@@ -111,7 +111,10 @@ class My_Transformer_Layer(torch.nn.Module):
         x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
         if self.use_pe: x = x + self.pe[:, : x.size(1)].requires_grad_(False)
 
-        if self.batch_norm: x = self.batch_norm_layer(x)
+        try:
+            if self.batch_norm: x = self.batch_norm_layer(x)
+        except AttributeError:
+            continue
         x = self.transfomer(x) # x: (bs, n_layers, d_model)
         if self.n_blocks==2: x = self.transfomer2(x)
 
