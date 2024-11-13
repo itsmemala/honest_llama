@@ -154,11 +154,11 @@ def main():
                         if temp==0:
                             probes_file_name = args.probes_file_name
                         else:
-                            if temp==0.1: 
-                                temp=''
-                            else:
-                                temp = str(temp) + '_'
-                            # temp = str(temp) + '_'
+                            # if temp==0.1: 
+                            #     temp=''
+                            # else:
+                            #     temp = str(temp) + '_'
+                            temp = str(temp) + '_'
                             fn_left_text = args.probes_file_name.split('hallu_pos_',1)[0] + 'hallu_pos_'
                             fn_right_text = args.probes_file_name.split('hallu_pos_',1)[1].split('_',1)[1]
                             probes_file_name = fn_left_text + temp + fn_right_text
