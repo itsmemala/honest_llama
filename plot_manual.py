@@ -84,7 +84,7 @@ labels = ['pos_wp','pos_wp_dist','0.5pos_0.5wp','0.5pos_0.5wp_dist','0.4pos_0.6w
 # paths = ['T42_alpaca_7B_trivia_qa_greedy_responses_train5000_5000_1_layerFalse_answer_last_transformer_hallu_pos_bs128_epochs50_5e-05_Falseba_bestusinglast',
 # 'T42_alpaca_7B_trivia_qa_greedy_responses_train5000_5000_1_layerFalse_answer_last_transformer_supconv2_hallu_pos_1.0_bs256_epochs500_5e-05_Falseba_bestusinglast',
 # 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_hallu_pos_bs352_epochs500_5e-06_Falseba_bestusinglast',
-# ''
+# 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.7_bs352_epochs500_5e-05_Falseba_bestusinglast'
 # ]
 # labels = []
 
@@ -104,6 +104,6 @@ axs.title.set_text('FPR at recall')
 # fig.savefig(f'{save_path}/fpr_at_recall_curves/alpaca_trivia_part_fpr_at_recall.png')
 # fig.savefig(f'{save_path}/fpr_at_recall_curves/alpaca_nq_part_fpr_at_recall.png')
 
-fig.savefig(f'{save_path}/fpr_at_recall_curves/llama_trivia_lwgting_fpr_at_recall.png')
+# fig.savefig(f'{save_path}/fpr_at_recall_curves/llama_trivia_lwgting_fpr_at_recall.png')
 # fig.savefig(f'{save_path}/fpr_at_recall_curves/alpaca_trivia_lwgting_fpr_at_recall.png')
 
