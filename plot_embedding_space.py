@@ -244,7 +244,7 @@ def main():
                 act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device)
             my_test_acts.append(act)
         # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
-    my_train_acts, my_test_acts = torch.stack(my_train_acts), torch.stack(my_test_acts)
+    my_test_acts = torch.stack(my_test_acts)
 
     if args.plot_act:
         # TODO: norm input
