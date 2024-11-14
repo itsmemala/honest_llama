@@ -1091,7 +1091,7 @@ def main():
                                                     if args.pca_dims<1:
                                                         pca = PCA(n_components=args.pca_dims,svd_solver='full')
                                                     else:
-                                                        pca = PCA(n_components=args.pca_dims)
+                                                        pca = PCA(n_components=int(args.pca_dims))
                                                     train_outputs = train_outputs.detach().cpu().numpy()
                                                     train_outputs = torch.from_numpy(pca.fit_transform(train_outputs)).to(device)
                                                     if train_outputs.shape[1]==1:
