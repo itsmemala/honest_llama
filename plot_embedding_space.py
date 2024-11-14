@@ -221,7 +221,7 @@ def main():
                 act = torch.cat((act,sep_token), dim=1)
             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
         else:
-            act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
+            act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][-1]
         my_train_acts.append(act)
     my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
 
@@ -248,8 +248,8 @@ def main():
 
     if args.plot_act:
         # TODO: norm input
-        my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-        my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+        # my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+        # my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
         print(my_test_acts.shape)
         my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
     else:
