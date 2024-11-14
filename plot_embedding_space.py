@@ -248,8 +248,8 @@ def main():
 
     if args.plot_act:
         # TODO: norm input
-        # my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-        # my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+        my_train_acts = my_train_acts.detach().cpu().numpy() # torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+        my_test_acts = my_test_acts.detach().cpu().numpy() # torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
         print(my_test_acts.shape)
         my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
     else:
