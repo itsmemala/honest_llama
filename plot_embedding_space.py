@@ -182,9 +182,36 @@ def main():
     # Load acts
     device_id, device = 0, 'cuda:0' # start with first gpu
     my_train_acts, my_test_acts = [], []
+    # for idx in train_idxs:
+        # file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+        # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+        # if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
+        #     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+        #     act = combine_acts(idx,args.train_file_name,args)
+        #     if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+        #     if args.no_sep==False:
+        #         sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+        #         act = torch.cat((act,sep_token), dim=1)
+        #     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
+        # else:
+        #     try:
+        #         act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+        #     except torch.cuda.OutOfMemoryError:
+        #         device_id += 1
+        #         device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+        #         print('Loading on device',device_id)
+        #         act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+        # my_train_acts.append(act)
+    act_wise_file_paths, unique_file_paths = [], []
     for idx in train_idxs:
         file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
         file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+        act_wise_file_paths.append(file_path)
+        if file_path not in unique_file_paths: unique_file_paths.append(file_path)
+    file_wise_data = {}
+    for file_path in unique_file_paths:
+        file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
+    for idx in train_idxs:
         if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
             # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
             act = combine_acts(idx,args.train_file_name,args)
@@ -194,14 +221,9 @@ def main():
                 act = torch.cat((act,sep_token), dim=1)
             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
         else:
-            try:
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-            except torch.cuda.OutOfMemoryError:
-                device_id += 1
-                device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
-                print('Loading on device',device_id)
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+            act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
         my_train_acts.append(act)
+    my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
 
     # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
     
