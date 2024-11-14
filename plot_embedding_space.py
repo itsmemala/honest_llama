@@ -241,7 +241,7 @@ def main():
                     act = torch.cat((act,sep_token), dim=1)
                 act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
             else:
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device)
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file][-1]).to(device)
             my_test_acts.append(act)
         # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
     my_test_acts = torch.stack(my_test_acts)
