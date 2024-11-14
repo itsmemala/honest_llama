@@ -221,7 +221,7 @@ def main():
                 act = torch.cat((act,sep_token), dim=1)
             act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
         else:
-            act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][-1]
+            act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file] #[-1]
         my_train_acts.append(act)
     my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
 
@@ -241,15 +241,15 @@ def main():
                     act = torch.cat((act,sep_token), dim=1)
                 act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
             else:
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file][-1]).to(device)
+                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device) #[-1]
             my_test_acts.append(act)
         # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
     my_test_acts = torch.stack(my_test_acts)
 
     if args.plot_act:
         # TODO: norm input
-        my_train_acts = my_train_acts.detach().cpu().numpy() # torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
-        my_test_acts = my_test_acts.detach().cpu().numpy() # torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers
+        my_train_acts = torch.flatten(my_train_acts, start_dim=1).detach().cpu().numpy() # concatenate layers # my_train_acts.detach().cpu().numpy()
+        my_test_acts = torch.flatten(my_test_acts, start_dim=1).detach().cpu().numpy() # concatenate layers # my_test_acts.detach().cpu().numpy()
         print(my_test_acts.shape)
         my_embs = np.concatenate([my_train_acts,my_test_acts],axis=0)
     else:
