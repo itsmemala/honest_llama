@@ -186,14 +186,15 @@ class My_SupCon_NonLinear_Classifier4(nn.Module):
         self.projection = torch.nn.Linear(64,32,bias=False)
         self.classifier = nn.Linear(64, output_size, bias=bias)
     def forward(self,x):
-        if self.use_dropout: x = self.dropout(x)
-        x = self.linear1(x)
-        x = self.relu1(x)
-        # norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
-        x = self.linear2(x)
-        x = self.relu2(x)
-        x = self.linear3(x)
-        x = self.relu3(x)
+        # if self.use_dropout: x = self.dropout(x)
+        # x = self.linear1(x)
+        # x = self.relu1(x)
+        # # norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        # x = self.linear2(x)
+        # x = self.relu2(x)
+        # x = self.linear3(x)
+        # x = self.relu3(x)
+        x = self.forward_upto_classifier(x)
         if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         output = self.classifier(x)
         return output
