@@ -1111,6 +1111,7 @@ def main():
                                             print(torch.min(val_preds_batch),torch.quantile(val_preds_batch,0.25),torch.quantile(val_preds_batch,0.5),torch.quantile(val_preds_batch,0.75),torch.max(val_preds_batch),torch.mean(val_preds_batch))
                                             val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca)
                                             print(torch.min(val_preds_batch),torch.quantile(val_preds_batch,0.25),torch.quantile(val_preds_batch,0.5),torch.quantile(val_preds_batch,0.75),torch.max(val_preds_batch),torch.mean(val_preds_batch))
+                                            sys.exit()
                                             predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                         else:
                                             predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
