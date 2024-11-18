@@ -263,13 +263,15 @@ def main():
                     confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
             # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
             # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
-            
-            print(np.where((confident_sample_pred == 0) & (labels == 1))[0])
 
             confident_sample_pred = np.array(confident_sample_pred)
             fp = np.sum((confident_sample_pred == 1) & (labels == 0))
             tn = np.sum((confident_sample_pred == 0) & (labels == 0))
             test_fpr_best_f1 = fp / (fp + tn)
+
+            fn = (confident_sample_pred == 0) & (labels == 1)
+            print('# fn:',len(fn))
+            print('Index of fn:',np.where(fn)[0])
 
             test_preds, model = all_preds, num_layers-1
             r_list, fpr_list = [], []
