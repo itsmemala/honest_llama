@@ -270,8 +270,9 @@ def main():
             test_fpr_best_f1 = fp / (fp + tn)
 
             fn = (confident_sample_pred == 0) & (labels == 1)
-            print('# fn:',len(fn))
-            print('Index of fn:',np.where(fn)[0])
+            fn_index = np.where(fn)[0]
+            print('# fn:',len(fn_index))
+            print('Index of fn:',fn_index)
 
             test_preds, model = all_preds, num_layers-1
             r_list, fpr_list = [], []
