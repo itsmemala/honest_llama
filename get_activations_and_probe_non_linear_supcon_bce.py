@@ -1168,8 +1168,7 @@ def main():
                                                 else:
                                                     cluster_centers, cluster_centers_labels = None, None
                                             nh_train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==0],axis=0) # Take all train non-hallucinations
-                                            nh_train_labels = np.array([1 for idx in range(len(nh_train_inputs))])
-                                            outputs = nlinear_model.forward_upto_classifier(nh_train_labels)
+                                            outputs = nlinear_model.forward_upto_classifier(nh_train_inputs)
                                             val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca) if args.token in single_token_types else None
                                             print(torch.min(val_preds_batch),torch.quantile(val_preds_batch,0.25),torch.quantile(val_preds_batch,0.5),torch.quantile(val_preds_batch,0.75),torch.max(val_preds_batch),torch.mean(val_preds_batch))
                                             sys.exit()
