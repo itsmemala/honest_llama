@@ -264,6 +264,8 @@ def main():
             # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
             # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
             
+            print(np.where((confident_sample_pred == 0) & (labels == 1))[0])
+
             confident_sample_pred = np.array(confident_sample_pred)
             fp = np.sum((confident_sample_pred == 1) & (labels == 0))
             tn = np.sum((confident_sample_pred == 0) & (labels == 0))
