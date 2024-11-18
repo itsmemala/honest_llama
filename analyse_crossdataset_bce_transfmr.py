@@ -276,11 +276,11 @@ def main():
             tn = np.sum((test_pred_model == 0) & (labels == 0))
             test_fpr_best_f1.append(fp / (fp + tn))
 
-            check_indexes = np.array([   0,    5 ,  11,   23 ,  33 ,  40  , 44 ,  62 ,  71 ,  74 ,  85 ,  86 ,  89  , 90])
-            fixes = (test_pred_model[check_indexes] == 1)
-            fixes_index = np.where(fixes)[0]
-            print('% fixes:',len(fixes_index)/len(check_indexes))
-            print('Index of fixes:',check_indexes[fixes_index])
+            # check_indexes = np.array([   0,    5 ,  11,   23 ,  33 ,  40  , 44 ,  62 ,  71 ,  74 ,  85 ,  86 ,  89  , 90])
+            # fixes = (test_pred_model[check_indexes] == 1)
+            # fixes_index = np.where(fixes)[0]
+            # print('% fixes:',len(fixes_index)/len(check_indexes))
+            # print('Index of fixes:',check_indexes[fixes_index])
 
             r_list, fpr_list = [], []
             thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]

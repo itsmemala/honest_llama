@@ -659,7 +659,7 @@ def main():
                 reference_answers = batch['answer'] 
             elif args.dataset_name=='trivia_qa':
                 reference_answers_unformatted = batch['answer']
-                reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases']
+                reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases'] # [reference_answers_unformatted['normalized_value']]
             elif args.dataset_name=='cnn_dailymail':
                 reference_answers = [batch['highlights']]
             for answer in reference_answers:
