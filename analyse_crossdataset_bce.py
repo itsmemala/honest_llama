@@ -86,8 +86,8 @@ def main():
         print('Num of samples positively affected:',len(samples_pos_affected))
     
     # args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
-    num_layers = 1 # 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
-    num_models = 1 # 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+    num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
+    num_models = 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
 
     if args.dataset_name=='strqa':
         acts_per_file = 50
@@ -198,12 +198,12 @@ def main():
             all_preds.append(test_preds[model])
 
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-            if 'knn' in args.probes_file_name:
-                val_pred_model[val_pred_model<best_t] = 1
-                val_pred_model[val_pred_model>=best_t] = 0
+            if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name)e:
+                val_pred_model[all_val_pred[fold][model]<best_t] = 1
+                val_pred_model[all_val_pred[fold][model]>=best_t] = 0
             else:
-                val_pred_model[val_pred_model>best_t] = 1
-                val_pred_model[val_pred_model<=best_t] = 0
+                val_pred_model[all_val_pred[fold][model]>best_t] = 1
+                val_pred_model[all_val_pred[fold][model]<=best_t] = 0
             cls1_f1 = f1_score(all_val_true[fold][model],val_pred_model)
             cls0_f1 = f1_score(all_val_true[fold][model],val_pred_model,pos_label=0)
             val_f1_cls0.append(cls0_f1)
@@ -215,12 +215,12 @@ def main():
                 incl_layers.append(model)
             
             test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-            if 'knn' in args.probes_file_name:
-                test_pred_model[test_pred_model<best_t] = 1
-                test_pred_model[test_pred_model>=best_t] = 0
+            if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
+                test_pred_model[test_preds[model]<best_t] = 1
+                test_pred_model[test_preds[model]>=best_t] = 0
             else:
-                test_pred_model[test_pred_model>best_t] = 1
-                test_pred_model[test_pred_model<=best_t] = 0
+                test_pred_model[test_preds[model]>best_t] = 1
+                test_pred_model[test_preds[model]<=best_t] = 0
             cls1_f1, cls1_re = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
             test_f1_cls0.append(cls0_f1)
