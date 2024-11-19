@@ -198,7 +198,7 @@ def main():
             all_preds.append(test_preds[model])
 
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-            if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name)e:
+            if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 val_pred_model[all_val_pred[fold][model]<best_t] = 1
                 val_pred_model[all_val_pred[fold][model]>=best_t] = 0
             else:
