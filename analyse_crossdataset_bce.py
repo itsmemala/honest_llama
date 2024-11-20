@@ -163,7 +163,7 @@ def main():
             if args.best_threshold:
                 # best_val_perf, best_t = 0, 0.5
                 best_val_fpr, best_t = 1, 0
-                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
+                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0,0.05,0.10,0.15,0.20,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
                     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
