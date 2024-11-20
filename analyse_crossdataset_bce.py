@@ -173,7 +173,7 @@ def main():
                         val_pred_model[all_val_pred[fold][model]<=t] = 0
                     cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                     cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
-                    perf = np.mean((cls1_f1,cls0_f1))
+                    perf = cls1_f1 # np.mean((cls1_f1,cls0_f1))
                     if perf>best_val_perf:
                         best_val_perf, best_t = perf, t
             else:
