@@ -219,7 +219,7 @@ def main():
                     val_fpr = fp / (fp + tn)
                     if recall >= 0.95:
                         if val_fpr<best_val_fpr:
-                            best_val_fpr, best_t = perf, t
+                            best_val_fpr, best_t = val_fpr, t
                     # print(recall)
             else:
                 best_t = 0.5
