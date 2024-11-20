@@ -182,8 +182,8 @@ def main():
                     fp = np.sum((val_pred_model == 1) & (np.squeeze(all_val_true[fold][0]) == 0))
                     tn = np.sum((val_pred_model == 0) & (np.squeeze(all_val_true[fold][0]) == 0))
                     val_fpr = fp / (fp + tn)
-                    print(fp,tn,np.sum(all_val_true[fold][0] == 0))
-                    print(all_val_true[fold][0])
+                    print(fp,tn,np.sum(np.squeeze(all_val_true[fold][0]) == 0))
+                    print(np.squeeze(all_val_true[fold][0]))
                     sys.exit()
                     if recall >= 0.95:
                         if val_fpr<best_val_fpr:
