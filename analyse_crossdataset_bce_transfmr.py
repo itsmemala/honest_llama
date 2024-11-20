@@ -196,8 +196,8 @@ def main():
 
             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
             if args.best_threshold:
-                # best_val_perf, best_t = 0, 0.5
-                best_val_fpr, best_t = 1, 0
+                best_val_perf, best_t = 0, 0.5
+                # best_val_fpr, best_t = 1, 0
                 thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0,0.05,0.10,0.15,0.20,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
                 print(np.histogram(all_val_pred[fold][model], bins='sqrt'))
                 for t in thresholds:
@@ -211,15 +211,15 @@ def main():
                     cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                     cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
                     recall = recall_score(all_val_true[fold][0],val_pred_model)
-                    # perf = recall if args.best_threshold_using_recall else np.mean((cls1_f1,cls0_f1)) # cls1_f1
-                    # if perf>best_val_perf:
-                    #     best_val_perf, best_t = perf, t
-                    fp = np.sum((val_pred_model == 1) & (all_val_true[fold][0] == 0))
-                    tn = np.sum((val_pred_model == 0) & (all_val_true[fold][0] == 0))
-                    val_fpr = fp / (fp + tn)
-                    if recall >= 0.95:
-                        if val_fpr<best_val_fpr:
-                            best_val_fpr, best_t = val_fpr, t
+                    perf = recall if args.best_threshold_using_recall else np.mean((cls1_f1,cls0_f1)) # cls1_f1
+                    if perf>best_val_perf:
+                        best_val_perf, best_t = perf, t
+                    # fp = np.sum((val_pred_model == 1) & (all_val_true[fold][0] == 0))
+                    # tn = np.sum((val_pred_model == 0) & (all_val_true[fold][0] == 0))
+                    # val_fpr = fp / (fp + tn)
+                    # if recall >= 0.95:
+                    #     if val_fpr<best_val_fpr:
+                    #         best_val_fpr, best_t = val_fpr, t
                     # print(recall)
             else:
                 best_t = 0.5
