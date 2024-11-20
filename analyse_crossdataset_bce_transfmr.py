@@ -210,7 +210,7 @@ def main():
                     cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                     cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
                     recall = recall_score(all_val_true[fold][0],val_pred_model)
-                    perf = recall if args.best_threshold_using_recall else np.mean((cls1_f1,cls0_f1))
+                    perf = cls1_f1 # recall if args.best_threshold_using_recall else np.mean((cls1_f1,cls0_f1))
                     if perf>best_val_perf:
                         best_val_perf, best_t = perf, t
                     # print(recall)
