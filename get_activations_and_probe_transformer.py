@@ -987,9 +987,9 @@ def main():
                                         else:
                                             best_model_state = best_model_state_using_loss
                                         
-                                        # if args.save_probes:
-                                        #     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_epoch{epoch}_model{i}'
-                                        #     torch.save(nlinear_model, probe_save_path)
+                                        if args.save_probes:
+                                            probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_epoch{epoch}_model{i}'
+                                            torch.save(nlinear_model, probe_save_path)
 
                                         # Early stopping
                                         # patience, min_val_loss_drop, is_not_decreasing = 5, 0.01, 0
