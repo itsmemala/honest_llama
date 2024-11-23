@@ -87,8 +87,8 @@ def main():
         print('Num of samples positively affected:',len(samples_pos_affected))
     
     # args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
-    num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
-    num_models = 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+    num_layers = 1 #33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
+    num_models = 1 #33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
 
     if args.dataset_name=='strqa':
         acts_per_file = 50
