@@ -209,8 +209,8 @@ def main():
                     else:
                         val_pred_model[all_val_pred[fold][model]>t] = 1
                         val_pred_model[all_val_pred[fold][model]<=t] = 0
-                    print(all_val_true[fold][0].shape,val_pred_model.shape,f1_score(all_val_true[fold][0],val_pred_model),f1_score(all_val_true[fold][0],np.squeeze(val_pred_model)))
-                    sys.exit()
+                    # print(all_val_true[fold][0].shape,val_pred_model.shape,f1_score(all_val_true[fold][0],val_pred_model),f1_score(all_val_true[fold][0],np.squeeze(val_pred_model)))
+                    # sys.exit()
                     cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                     cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
                     recall = recall_score(all_val_true[fold][0],val_pred_model)
