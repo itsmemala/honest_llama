@@ -256,7 +256,9 @@ def main():
         ########################
 
         # print(auroc_by_layer)
+        print(all_preds.shape)
         all_preds = np.stack(all_preds, axis=0)
+        print(all_preds.shape)
 
 
         # print('\n')
@@ -318,7 +320,7 @@ def main():
                     except ValueError:
                         continue
             ########################
-            print(layer_pred_thresholds[num_layers-1], fpr_list, r_list)
+            # print(layer_pred_thresholds[num_layers-1], fpr_list, r_list)
             seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
             # seed_results_list.append(best_r)
             # seed_results_list.append(test_fpr_best_r)
