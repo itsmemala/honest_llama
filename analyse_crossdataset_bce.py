@@ -297,8 +297,8 @@ def main():
                     test_pred_model[test_preds[model]>t] = 1
                     test_pred_model[test_preds[model]<=t] = 0
                 test_pred_model = np.squeeze(test_pred_model)
-                # print((test_pred_model == 1).shape,(labels == 0).shape,((test_pred_model == 1) & (labels == 0)).shape)
-                # sys.exit()
+                print((test_pred_model == 1).shape,(labels == 0).shape,((test_pred_model == 1) & (labels == 0)).shape)
+                sys.exit()
                 fp = np.sum((test_pred_model == 1) & (labels == 0))
                 tn = np.sum((test_pred_model == 0) & (labels == 0))
                 r_list.append(recall_score(labels,test_pred_model))
