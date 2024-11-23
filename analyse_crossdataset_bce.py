@@ -276,7 +276,6 @@ def main():
             # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
 
             confident_sample_pred = np.array(confident_sample_pred)
-            print(confident_sample_pred.shape,labels.shape)
             fp = np.sum((confident_sample_pred == 1) & (labels == 0))
             tn = np.sum((confident_sample_pred == 0) & (labels == 0))
             test_fpr_best_f1 = fp / (fp + tn)
@@ -297,6 +296,8 @@ def main():
                 else:
                     test_pred_model[test_preds[model]>t] = 1
                     test_pred_model[test_preds[model]<=t] = 0
+                print(test_pred_model.shape,(test_pred_model == 1).shape)
+                sys.exit()
                 fp = np.sum((test_pred_model == 1) & (labels == 0))
                 tn = np.sum((test_pred_model == 0) & (labels == 0))
                 r_list.append(recall_score(labels,test_pred_model))
