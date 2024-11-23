@@ -256,7 +256,7 @@ def main():
         ########################
 
         # print(auroc_by_layer)
-        print(all_preds.shape)
+        print(len(all_preds),all_preds[0].shape)
         all_preds = np.stack(all_preds, axis=0)
         print(all_preds.shape)
 
