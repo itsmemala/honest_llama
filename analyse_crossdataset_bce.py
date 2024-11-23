@@ -289,7 +289,7 @@ def main():
             r_list, fpr_list = [], []
             thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
             for t in thresholds:
-                test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
+                test_pred_model = np.squeeze(deepcopy(test_preds[model])) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                     test_pred_model[test_preds[model]<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
                     test_pred_model[test_preds[model]>t] = 0
