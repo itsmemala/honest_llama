@@ -267,8 +267,7 @@ def main():
             else:
                 test_pred_model[test_preds[model]>best_t] = 1
                 test_pred_model[test_preds[model]<=best_t] = 0
-            print(recall_score(labels,test_pred_model),recall_score(labels,np.squeeze(test_pred_model)))
-            sys.exit()
+            # print(recall_score(labels,test_pred_model),recall_score(labels,np.squeeze(test_pred_model)))
             cls1_f1, cls1_re, cls1_pr = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model), precision_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
             test_f1_cls0.append(cls0_f1)
