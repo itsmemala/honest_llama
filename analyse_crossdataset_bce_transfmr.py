@@ -267,6 +267,8 @@ def main():
             else:
                 test_pred_model[test_preds[model]>best_t] = 1
                 test_pred_model[test_preds[model]<=best_t] = 0
+            print(recall_score(labels,test_pred_model),recall_score(labels,np.squeeze(test_pred_model)))
+            sys.exit()
             cls1_f1, cls1_re, cls1_pr = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model), precision_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
             test_f1_cls0.append(cls0_f1)
@@ -279,6 +281,7 @@ def main():
             auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
             auroc_by_layer.append(auc_val)
 
+            test_pred_model = np.squeeze(test_pred_model)
             fp = np.sum((test_pred_model == 1) & (labels == 0))
             tn = np.sum((test_pred_model == 0) & (labels == 0))
             test_fpr_best_f1.append(fp / (fp + tn))
