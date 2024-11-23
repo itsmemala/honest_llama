@@ -256,9 +256,9 @@ def main():
         ########################
 
         # print(auroc_by_layer)
-        print(len(all_preds),all_preds[0].shape)
+        # print(len(all_preds),all_preds[0].shape)
         all_preds = np.stack(all_preds, axis=0)
-        print(all_preds.shape)
+        # print(all_preds.shape)
 
 
         # print('\n')
@@ -276,6 +276,7 @@ def main():
             # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
 
             confident_sample_pred = np.array(confident_sample_pred)
+            print(confident_sample_pred.shape,labels.shape)
             fp = np.sum((confident_sample_pred == 1) & (labels == 0))
             tn = np.sum((confident_sample_pred == 0) & (labels == 0))
             test_fpr_best_f1 = fp / (fp + tn)
