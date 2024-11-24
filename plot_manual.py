@@ -25,7 +25,7 @@ paths = ['NLSC42_alpaca_7B_trivia_qa_greedy_responses_train5000_5000_1_layerFals
 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_hallu_pos_0.7_bs352_epochs500_5e-05_Falseba_fpr_at_recall',
 'T42_alpaca_7B_trivia_qa_sampledplus_responses_train5000_55000_1_layerFalse_answer_last_transformer_supconv2_pos_wp_kmeans_hallu_pos_0.3_mahalanobis_centers1_bs352_epochs500_5e-05_Falseba_bestusinglast'
 ]
-labels = ['linear_last_layer','nlinear_last_layer','tfmr','tfmr_supcon+','tfmr_supcon+_dist','tfmr_aug_supcon+','tfmr_aug_supcon+_dist','tfmr_supcon+*','tfmr_supcon+*_dist']
+labels = ['linear_last_layer','nlinear_last_layer','tfmr','tfmr_supcon+','tfmr_supcon+_dist','tfmr_aug_supcon+','tfmr_aug_supcon+_dist','tfmr_aug_supcon+*','tfmr_aug_supcon+*_dist']
 
 # best using last
 # paths = ['T42_alpaca_7B_trivia_qa_greedy_responses_train5000_5000_1_layerFalse_answer_last_transformer_hallu_pos_bs128_epochs50_5e-05_Falseba_bestusinglast',
