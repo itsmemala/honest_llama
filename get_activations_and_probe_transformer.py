@@ -630,7 +630,6 @@ def main():
             args.top_k = top_k
 
             for seed_itr,save_seed in enumerate(args.seed_list):
-                print('Training SEED',save_seed)
                 
                 if args.skip_hypsearch:
                     lr_search_list = [args.lr_list[seed_itr]] # One-to-one mapping of seed and lr
@@ -646,6 +645,8 @@ def main():
                         args.cce_lr_list = [None] if args.cce_lr_list is None else args.cce_lr_list
                         for cce_lr in args.cce_lr_list:
                             args.lr=lr if cce_lr is None else cce_lr
+                            print('Training SEED',save_seed)
+                            print('Training sc temp',args.supcon_temp)
                             print('Training lr',args.lr)
 
                             method_concat = args.method + '_dropout' if args.use_dropout else args.method
