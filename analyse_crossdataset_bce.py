@@ -53,6 +53,7 @@ def main():
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
+    parser.add_argument('--aufpr_till',type=float, default=100.0)
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -316,7 +317,7 @@ def main():
                 test_fpr = -10000
             if args.fpr_at_recall==-1:
                 recall_vals, fpr_at_recall_vals = [], []
-                for check_recall in [0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]:
+                for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
                     try: 
                         fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
                         recall_vals.append(check_recall)
