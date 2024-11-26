@@ -162,6 +162,7 @@ def main():
                     thr_preds[preds>t] = 1
                     thr_preds[preds<=t] = 0
                 thr_preds = np.squeeze(thr_preds)
+                print(thr_preds.shape,labels.shape)
                 assert thr_preds.shape==labels.shape
                 fp = np.sum((thr_preds == 1) & (labels == 0))
                 tn = np.sum((thr_preds == 0) & (labels == 0))
