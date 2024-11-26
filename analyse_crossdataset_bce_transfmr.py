@@ -201,7 +201,9 @@ def main():
                         # print(all_val_pred.shape)
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
                         _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])
-                        train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0][model][-1]  # index fold, model, epoch                  
+                        train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0][model]#[-1]  # index fold, model, epoch  
+                        print(train_loss.shape)                
+                        sys.exit()
                         perf = aufpr_val if args.best_hyp_using_aufpr else train_loss if args.best_hyp_using_trloss else auc_val 
                         perf_by_lr.append(perf)
                 best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if (args.best_hyp_using_aufpr or args.best_hyp_using_trloss) else probes_file_name_list[np.argmax(perf_by_lr)]
