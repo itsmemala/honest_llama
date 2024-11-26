@@ -52,6 +52,7 @@ def main():
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
+    parser.add_argument("--best_hyp_using_aufpr", type=bool, default=False, help='local directory with dataset')
     parser.add_argument("--best_threshold", type=bool, default=False, help='')
     parser.add_argument("--best_threshold_using_recall", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
@@ -148,9 +149,37 @@ def main():
         args.probes_file_name = 'T'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
         seed_results_list = []
 
+        # val_pred_model,all_val_true[fold][0]
+        def my_aufpr(preds,labels):
+            r_list, fpr_list = [], []
+            thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+            for t in thresholds:
+                thr_preds = deepcopy(preds) # Deep copy so as to not touch orig values
+                if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
+                    thr_preds[preds<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                    thr_preds[preds>t] = 0
+                else:
+                    thr_preds[preds>t] = 1
+                    thr_preds[preds<=t] = 0
+                thr_preds = np.squeeze(thr_preds)
+                assert thr_preds.shape==labels.shape
+                fp = np.sum((thr_preds == 1) & (labels == 0))
+                tn = np.sum((thr_preds == 0) & (labels == 0))
+                r_list.append(recall_score(labels,thr_preds))
+                fpr_list.append(fp / (fp + tn))
+            r_list, fpr_list = np.array(r_list), np.array(fpr_list)
+            recall_vals, fpr_at_recall_vals = [], []
+            for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
+                try: 
+                    fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
+                    recall_vals.append(check_recall)
+                except ValueError:
+                        continue
+            return recall_vals, fpr_at_recall_vals, auc(recall_vals,fpr_at_recall_vals)
+
         def results_at_best_lr(model):
             if args.lr_list is not None:
-                probes_file_name_list, auc_by_lr = [], []
+                probes_file_name_list, perf_by_lr = []
                 for lr in args.lr_list:
                     for temp in args.sc_temp_list:
                         if temp==0:
@@ -170,8 +199,10 @@ def main():
                         all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                         # print(all_val_pred.shape)
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
-                        auc_by_lr.append(auc_val)
-                best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
+                        _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])                        
+                        perf = aufpr_val if args.best_hyp_using_aufpr else auc_val 
+                        perf_by_lr.append(perf)
+                best_probes_file_name = probes_file_name_list[np.argmax(perf_by_lr)]
                 print(best_probes_file_name)
             else:
                 best_probes_file_name = args.probes_file_name
@@ -200,7 +231,7 @@ def main():
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
                 # best_val_fpr, best_t = 1, 0
-                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0,0.05,0.10,0.15,0.20,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
+                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
                 print(np.histogram(all_val_pred[fold][model], bins='sqrt'))
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
@@ -295,41 +326,41 @@ def main():
             # print('% fixes:',len(fixes_index)/len(check_indexes))
             # print('Index of fixes:',check_indexes[fixes_index])
 
-            r_list, fpr_list = [], []
-            thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
-            for t in thresholds:
-                test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-                if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                    test_pred_model[test_preds[model]<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
-                    test_pred_model[test_preds[model]>t] = 0
-                else:
-                    test_pred_model[test_preds[model]>t] = 1
-                    test_pred_model[test_preds[model]<=t] = 0
-                test_pred_model = np.squeeze(test_pred_model)
-                # print((test_pred_model == 1).shape,(labels == 0).shape,((test_pred_model == 1) & (labels == 0)).shape)
-                fp = np.sum((test_pred_model == 1) & (labels == 0))
-                tn = np.sum((test_pred_model == 0) & (labels == 0))
-                r_list.append(recall_score(labels,test_pred_model))
-                fpr_list.append(fp / (fp + tn))
-                # r, fpr = recall_score(labels,test_pred_model), fp / (fp + tn)
-                # if r>=args.fpr_at_recall:
-                #     if fpr < best_fpr:
-                #         best_fpr = fpr
-            r_list, fpr_list = np.array(r_list), np.array(fpr_list)
-            best_r.append(np.max(r_list))
-            test_fpr_best_r.append(np.min(fpr_list[np.argwhere(r_list==np.max(r_list))]))
-            try: 
-                test_fpr.append(np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)]))
-            except ValueError:
-                test_fpr.append(-10000)
-            if args.fpr_at_recall==-1:
-                recall_vals, fpr_at_recall_vals = [], []
-                for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
-                    try: 
-                        fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
-                        recall_vals.append(check_recall)
-                    except ValueError:
-                        continue
+            # r_list, fpr_list = [], []
+            # thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
+            # for t in thresholds:
+            #     test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
+            #     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
+            #         test_pred_model[test_preds[model]<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
+            #         test_pred_model[test_preds[model]>t] = 0
+            #     else:
+            #         test_pred_model[test_preds[model]>t] = 1
+            #         test_pred_model[test_preds[model]<=t] = 0
+            #     test_pred_model = np.squeeze(test_pred_model)
+            #     # print((test_pred_model == 1).shape,(labels == 0).shape,((test_pred_model == 1) & (labels == 0)).shape)
+            #     fp = np.sum((test_pred_model == 1) & (labels == 0))
+            #     tn = np.sum((test_pred_model == 0) & (labels == 0))
+            #     r_list.append(recall_score(labels,test_pred_model))
+            #     fpr_list.append(fp / (fp + tn))
+            #     # r, fpr = recall_score(labels,test_pred_model), fp / (fp + tn)
+            #     # if r>=args.fpr_at_recall:
+            #     #     if fpr < best_fpr:
+            #     #         best_fpr = fpr
+            # r_list, fpr_list = np.array(r_list), np.array(fpr_list)
+            # best_r.append(np.max(r_list))
+            # test_fpr_best_r.append(np.min(fpr_list[np.argwhere(r_list==np.max(r_list))]))
+            # try: 
+            #     test_fpr.append(np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)]))
+            # except ValueError:
+            #     test_fpr.append(-10000)
+            # if args.fpr_at_recall==-1:
+            #     recall_vals, fpr_at_recall_vals = [], []
+            #     for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
+            #         try: 
+            #             fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
+            #             recall_vals.append(check_recall)
+            #         except ValueError:
+            #             continue
 
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
@@ -343,6 +374,7 @@ def main():
         # seed_results_list.append(np.mean(best_r))
         # seed_results_list.append(np.mean(test_fpr_best_r))
         if args.fpr_at_recall==-1:
+            recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
             fig, axs = plt.subplots(1,1)
             axs.plot(recall_vals,fpr_at_recall_vals)
             for xy in zip(recall_vals,fpr_at_recall_vals):
@@ -351,7 +383,7 @@ def main():
             axs.set_ylabel('FPR')
             axs.title.set_text('FPR at recall')
             fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
-            seed_results_list.append(auc(recall_vals,fpr_at_recall_vals))
+            seed_results_list.append(aucfpr)
             np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
             np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
         else:

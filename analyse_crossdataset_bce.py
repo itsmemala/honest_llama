@@ -163,8 +163,8 @@ def main():
             
             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
             if args.best_threshold:
-                # best_val_perf, best_t = 0, 0.5
-                best_val_fpr, best_t = 1, 0
+                best_val_perf, best_t = 0, 0.5
+                # best_val_fpr, best_t = 1, 0
                 thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0,0.05,0.10,0.15,0.20,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
@@ -177,15 +177,15 @@ def main():
                     cls1_f1 = f1_score(all_val_true[fold][0],val_pred_model)
                     cls0_f1 = f1_score(all_val_true[fold][0],val_pred_model,pos_label=0)
                     recall = recall_score(all_val_true[fold][0],val_pred_model)
-                    # perf = np.mean((cls1_f1,cls0_f1)) # cls1_f1
-                    # if perf>best_val_perf:
-                    #     best_val_perf, best_t = perf, t
-                    fp = np.sum((np.squeeze(val_pred_model) == 1) & (np.squeeze(all_val_true[fold][0]) == 0))
-                    tn = np.sum((np.squeeze(val_pred_model) == 0) & (np.squeeze(all_val_true[fold][0]) == 0))
-                    val_fpr = fp / (fp + tn)
-                    if recall >= 0.95:
-                        if val_fpr<best_val_fpr:
-                            best_val_fpr, best_t = val_fpr, t
+                    perf = np.mean((cls1_f1,cls0_f1)) # cls1_f1
+                    if perf>best_val_perf:
+                        best_val_perf, best_t = perf, t
+                    # fp = np.sum((np.squeeze(val_pred_model) == 1) & (np.squeeze(all_val_true[fold][0]) == 0))
+                    # tn = np.sum((np.squeeze(val_pred_model) == 0) & (np.squeeze(all_val_true[fold][0]) == 0))
+                    # val_fpr = fp / (fp + tn)
+                    # if recall >= 0.95:
+                    #     if val_fpr<best_val_fpr:
+                    #         best_val_fpr, best_t = val_fpr, t
             else:
                 best_t = 0.5
             return best_probes_file_name, all_val_pred, all_val_true, best_t
@@ -288,7 +288,7 @@ def main():
 
             test_preds, model = all_preds, num_layers-1
             r_list, fpr_list = [], []
-            thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
+            thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
             for t in thresholds:
                 test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
