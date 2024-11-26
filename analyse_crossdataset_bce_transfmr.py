@@ -179,7 +179,7 @@ def main():
 
         def results_at_best_lr(model):
             if args.lr_list is not None:
-                probes_file_name_list, perf_by_lr = []
+                probes_file_name_list, perf_by_lr = [], []
                 for lr in args.lr_list:
                     for temp in args.sc_temp_list:
                         if temp==0:
