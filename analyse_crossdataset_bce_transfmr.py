@@ -53,6 +53,7 @@ def main():
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_hyp_using_aufpr", type=bool, default=False, help='local directory with dataset')
+    parser.add_argument("--best_hyp_using_trloss", type=bool, default=False, help='local directory with dataset')
     parser.add_argument("--best_threshold", type=bool, default=False, help='')
     parser.add_argument("--best_threshold_using_recall", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
@@ -199,10 +200,11 @@ def main():
                         all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                         # print(all_val_pred.shape)
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
-                        _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])                        
-                        perf = aufpr_val if args.best_hyp_using_aufpr else auc_val 
+                        _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])
+                        train_loss = np.load(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0][model][-1]  # index fold, model, epoch                  
+                        perf = aufpr_val if args.best_hyp_using_aufpr else train_loss if args.best_hyp_using_trloss else auc_val 
                         perf_by_lr.append(perf)
-                best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if args.best_hyp_using_aufpr else probes_file_name_list[np.argmax(perf_by_lr)]
+                best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if (args.best_hyp_using_aufpr or args.best_hyp_using_trloss) else probes_file_name_list[np.argmax(perf_by_lr)]
                 print(best_probes_file_name)
             else:
                 best_probes_file_name = args.probes_file_name
