@@ -152,8 +152,14 @@ def main():
 
         # val_pred_model,all_val_true[fold][0]
         def my_aufpr(preds,labels):
+            preds, labels = np.squeeze(preds), np.squeeze(labels)
             r_list, fpr_list = [], []
-            thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+            print(np.histogram(preds, bins='sqrt'))
+            preds = (preds - preds.min()) / (preds.max() - preds.min())
+            print(np.histogram(preds))
+            sys.exit()
+            # thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+            thresholds = [x / 100.0 for x in range(0, 100, 5)]
             for t in thresholds:
                 thr_preds = deepcopy(preds) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -162,7 +168,6 @@ def main():
                 else:
                     thr_preds[preds>t] = 1
                     thr_preds[preds<=t] = 0
-                thr_preds, labels = np.squeeze(thr_preds), np.squeeze(labels)
                 assert thr_preds.shape==labels.shape
                 fp = np.sum((thr_preds == 1) & (labels == 0))
                 tn = np.sum((thr_preds == 0) & (labels == 0))
@@ -234,8 +239,10 @@ def main():
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
                 # best_val_fpr, best_t = 1, 0
-                thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
-                print(np.histogram(all_val_pred[fold][model], bins='sqrt'))
+                # thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+                # print(np.histogram(all_val_pred[fold][model], bins='sqrt'))
+                all_val_pred[fold][model] = (all_val_pred[fold][model] - all_val_pred[fold][model].min()) / (all_val_pred[fold][model].max() - all_val_pred[fold][model].min())
+                thresholds = [x / 100.0 for x in range(0, 100, 5)]
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
                     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
