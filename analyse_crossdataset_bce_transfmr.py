@@ -153,7 +153,7 @@ def main():
 
         # val_pred_model,all_val_true[fold][0]
         def my_aufpr(preds,labels):
-            # preds, labels = np.squeeze(preds), np.squeeze(labels)
+            preds, labels = np.squeeze(preds), np.squeeze(labels)
             r_list, fpr_list = [], []
             # print(np.histogram(preds, bins='sqrt'))
             # preds = (preds - preds.min()) / (preds.max() - preds.min()) # min-max-scale distances # not required as we already do this before calling the func
@@ -170,7 +170,6 @@ def main():
                 else:
                     thr_preds[preds>t] = 1
                     thr_preds[preds<=t] = 0
-                thr_preds, labels = np.squeeze(thr_preds), np.squeeze(labels)
                 assert thr_preds.shape==labels.shape
                 fp = np.sum((thr_preds == 1) & (labels == 0))
                 tn = np.sum((thr_preds == 0) & (labels == 0))
