@@ -288,7 +288,6 @@ def main():
             all_preds.append(test_preds[model])
 
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
-            val_pred_model = (val_pred_model - val_pred_model.min()) / (val_pred_model.max() - val_pred_model.min()) # min-max-scale distances
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 val_pred_model[all_val_pred[fold][model]<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
                 val_pred_model[all_val_pred[fold][model]>best_t] = 0
@@ -305,14 +304,14 @@ def main():
             else:
                 incl_layers.append(model)
             
-            test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-            test_pred_model = (test_pred_model - val_pred_model.min()) / (val_pred_model.max() - val_pred_model.min())# min-max-scale distances using val distances
+            test_pred_model,raw_test_pred_model = deepcopy(test_preds[model]),deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
+            raw_test_pred_model = (raw_test_pred_model - all_val_pred[fold][model].min()) / (all_val_pred[fold][model].max() - all_val_pred[fold][model].min())# min-max-scale distances using val distances
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                test_pred_model[test_preds[model]<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
-                test_pred_model[test_preds[model]>best_t] = 0
+                test_pred_model[raw_test_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                test_pred_model[raw_test_pred_model>best_t] = 0
             else:
-                test_pred_model[test_preds[model]>best_t] = 1
-                test_pred_model[test_preds[model]<=best_t] = 0
+                test_pred_model[raw_test_pred_model>best_t] = 1
+                test_pred_model[raw_test_pred_model<=best_t] = 0
             # print(recall_score(labels,test_pred_model),recall_score(labels,np.squeeze(test_pred_model)))
             cls1_f1, cls1_re, cls1_pr = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model), precision_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
@@ -336,42 +335,6 @@ def main():
             # fixes_index = np.where(fixes)[0]
             # print('% fixes:',len(fixes_index)/len(check_indexes))
             # print('Index of fixes:',check_indexes[fixes_index])
-
-            # r_list, fpr_list = [], []
-            # thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [0.0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95,1.0]
-            # for t in thresholds:
-            #     test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-            #     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-            #         test_pred_model[test_preds[model]<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
-            #         test_pred_model[test_preds[model]>t] = 0
-            #     else:
-            #         test_pred_model[test_preds[model]>t] = 1
-            #         test_pred_model[test_preds[model]<=t] = 0
-            #     test_pred_model = np.squeeze(test_pred_model)
-            #     # print((test_pred_model == 1).shape,(labels == 0).shape,((test_pred_model == 1) & (labels == 0)).shape)
-            #     fp = np.sum((test_pred_model == 1) & (labels == 0))
-            #     tn = np.sum((test_pred_model == 0) & (labels == 0))
-            #     r_list.append(recall_score(labels,test_pred_model))
-            #     fpr_list.append(fp / (fp + tn))
-            #     # r, fpr = recall_score(labels,test_pred_model), fp / (fp + tn)
-            #     # if r>=args.fpr_at_recall:
-            #     #     if fpr < best_fpr:
-            #     #         best_fpr = fpr
-            # r_list, fpr_list = np.array(r_list), np.array(fpr_list)
-            # best_r.append(np.max(r_list))
-            # test_fpr_best_r.append(np.min(fpr_list[np.argwhere(r_list==np.max(r_list))]))
-            # try: 
-            #     test_fpr.append(np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)]))
-            # except ValueError:
-            #     test_fpr.append(-10000)
-            # if args.fpr_at_recall==-1:
-            #     recall_vals, fpr_at_recall_vals = [], []
-            #     for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
-            #         try: 
-            #             fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
-            #             recall_vals.append(check_recall)
-            #         except ValueError:
-            #             continue
 
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
