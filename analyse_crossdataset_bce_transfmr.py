@@ -158,8 +158,10 @@ def main():
             # print(np.histogram(preds, bins='sqrt'))
             # preds = (preds - preds.min()) / (preds.max() - preds.min()) # min-max-scale distances # not required as we already do this before calling the func
             # print(np.histogram(preds))
-            # thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
-            thresholds = [x / 100.0 for x in range(0, 100, 5)]
+            if (('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name)) and args.min_max_scale_dist==False:
+                thresholds = np.histogram_bin_edges(preds, bins='sqrt')
+            else:
+                thresholds = [x / 100.0 for x in range(0, 100, 5)]
             for t in thresholds:
                 thr_preds = deepcopy(preds) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -244,7 +246,10 @@ def main():
                 # print(np.histogram(all_val_pred[fold][model], bins='sqrt'))
                 val_dist_min, val_dist_max = all_val_pred[fold][model].min(), all_val_pred[fold][model].max()
                 if args.min_max_scale_dist: all_val_pred[fold][model] = (all_val_pred[fold][model] - val_dist_min) / (val_dist_max - val_dist_min) # min-max-scale distances
-                thresholds = [x / 100.0 for x in range(0, 100, 5)]
+                if (('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name)) and args.min_max_scale_dist==False:
+                    thresholds = np.histogram_bin_edges(preds, bins='sqrt')
+                else:
+                    thresholds = [x / 100.0 for x in range(0, 100, 5)]
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
                     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
