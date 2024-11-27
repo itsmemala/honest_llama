@@ -243,7 +243,7 @@ def main():
                 # thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
                 # print(np.histogram(all_val_pred[fold][model], bins='sqrt'))
                 val_dist_min, val_dist_max = all_val_pred[fold][model].min(), all_val_pred[fold][model].max()
-                all_val_pred[fold][model] = (all_val_pred[fold][model] - val_dist_min) / (val_dist_max - val_dist_min) # min-max-scale distances
+                if args.min_max_scale_dist: all_val_pred[fold][model] = (all_val_pred[fold][model] - val_dist_min) / (val_dist_max - val_dist_min) # min-max-scale distances
                 thresholds = [x / 100.0 for x in range(0, 100, 5)]
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
@@ -307,15 +307,15 @@ def main():
             else:
                 incl_layers.append(model)
             
-            test_pred_model,raw_test_pred_model = deepcopy(test_preds[model]),deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-            raw_test_pred_model = (raw_test_pred_model - val_dist_min) / (val_dist_max - val_dist_min)# min-max-scale distances using val distances
-            print(np.histogram(raw_test_pred_model))
+            if args.min_max_scale_dist: test_preds[model] = (test_preds[model] - val_dist_min) / (val_dist_max - val_dist_min)# min-max-scale distances using val distances
+            test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
+            print(np.histogram(test_preds[model]))
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                test_pred_model[raw_test_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
-                test_pred_model[raw_test_pred_model>best_t] = 0
+                test_pred_model[test_preds[model]<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                test_pred_model[test_preds[model]>best_t] = 0
             else:
-                test_pred_model[raw_test_pred_model>best_t] = 1
-                test_pred_model[raw_test_pred_model<=best_t] = 0
+                test_pred_model[test_preds[model]>best_t] = 1
+                test_pred_model[test_preds[model]<=best_t] = 0
             # print(recall_score(labels,test_pred_model),recall_score(labels,np.squeeze(test_pred_model)))
             cls1_f1, cls1_re, cls1_pr = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model), precision_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
