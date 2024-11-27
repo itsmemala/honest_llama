@@ -51,6 +51,7 @@ def main():
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
+    parser.add_argument("--best_hyp_using_aufpr", type=bool, default=False, help='local directory with dataset')
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
     parser.add_argument('--aufpr_till',type=float, default=100.0)
@@ -148,15 +149,45 @@ def main():
         args.probes_file_name = 'NLSC'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
         seed_results_list = []
 
+        # val_pred_model,all_val_true[fold][0]
+        def my_aufpr(preds,labels):
+            r_list, fpr_list = [], []
+            thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+            for t in thresholds:
+                thr_preds = deepcopy(preds) # Deep copy so as to not touch orig values
+                if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
+                    thr_preds[preds<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
+                    thr_preds[preds>t] = 0
+                else:
+                    thr_preds[preds>t] = 1
+                    thr_preds[preds<=t] = 0
+                thr_preds, labels = np.squeeze(thr_preds), np.squeeze(labels)
+                assert thr_preds.shape==labels.shape
+                fp = np.sum((thr_preds == 1) & (labels == 0))
+                tn = np.sum((thr_preds == 0) & (labels == 0))
+                r_list.append(recall_score(labels,thr_preds))
+                fpr_list.append(fp / (fp + tn))
+            r_list, fpr_list = np.array(r_list), np.array(fpr_list)
+            recall_vals, fpr_at_recall_vals = [], []
+            for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
+                try: 
+                    fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
+                    recall_vals.append(check_recall)
+                except ValueError:
+                        continue
+            return recall_vals, fpr_at_recall_vals, auc(recall_vals,fpr_at_recall_vals)
+
         def results_at_best_lr(model):
             if args.lr_list is not None:
-                probes_file_name_list, auc_by_lr = [], []
+                probes_file_name_list, perf_by_lr = [], []
                 for lr in args.lr_list:
                     probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                     probes_file_name_list.append(probes_file_name)
                     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
-                    auc_by_lr.append(roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model])))
-                best_probes_file_name = probes_file_name_list[np.argmax(auc_by_lr)]
+                    auc_val = roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
+                    _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])
+                    perf_by_lr.append(aufpr_val if args.best_hyp_using_aufpr else auc_val)
+                best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if args.best_hyp_using_aufpr else probes_file_name_list[np.argmax(perf_by_lr)]
                 print(best_probes_file_name)
             else:
                 best_probes_file_name = args.probes_file_name
