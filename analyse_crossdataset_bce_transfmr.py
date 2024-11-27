@@ -58,6 +58,7 @@ def main():
     parser.add_argument("--best_threshold_using_recall", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
     parser.add_argument('--aufpr_till',type=float, default=100.0)
+    parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -155,7 +156,6 @@ def main():
             preds, labels = np.squeeze(preds), np.squeeze(labels)
             r_list, fpr_list = [], []
             # print(np.histogram(preds, bins='sqrt'))
-            preds = (preds - preds.min()) / (preds.max() - preds.min()) # min-max-scale distances
             # print(np.histogram(preds))
             # thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
             thresholds = [x / 100.0 for x in range(0, 100, 5)]
