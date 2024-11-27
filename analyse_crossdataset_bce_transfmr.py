@@ -154,10 +154,9 @@ def main():
         def my_aufpr(preds,labels):
             preds, labels = np.squeeze(preds), np.squeeze(labels)
             r_list, fpr_list = [], []
-            print(np.histogram(preds, bins='sqrt'))
+            # print(np.histogram(preds, bins='sqrt'))
             preds = (preds - preds.min()) / (preds.max() - preds.min())
-            print(np.histogram(preds))
-            sys.exit()
+            # print(np.histogram(preds))
             # thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
             thresholds = [x / 100.0 for x in range(0, 100, 5)]
             for t in thresholds:
