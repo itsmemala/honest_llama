@@ -183,6 +183,7 @@ def main():
                     recall_vals.append(check_recall)
                 except ValueError:
                         continue
+            print('recall vals:',recall_vals)
             return recall_vals, fpr_at_recall_vals, auc(recall_vals,fpr_at_recall_vals)
 
         def results_at_best_lr(model):
@@ -357,7 +358,7 @@ def main():
         # seed_results_list.append(np.mean(best_r))
         # seed_results_list.append(np.mean(test_fpr_best_r))
         if args.fpr_at_recall==-1:
-            print('model:',model)
+            # print('model:',model)
             recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
             fig, axs = plt.subplots(1,1)
             axs.plot(recall_vals,fpr_at_recall_vals)
