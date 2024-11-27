@@ -247,7 +247,7 @@ def main():
                 val_dist_min, val_dist_max = all_val_pred[fold][model].min(), all_val_pred[fold][model].max()
                 if args.min_max_scale_dist: all_val_pred[fold][model] = (all_val_pred[fold][model] - val_dist_min) / (val_dist_max - val_dist_min) # min-max-scale distances
                 if (('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name)) and args.min_max_scale_dist==False:
-                    thresholds = np.histogram_bin_edges(preds, bins='sqrt')
+                    thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt')
                 else:
                     thresholds = [x / 100.0 for x in range(0, 100, 5)]
                 for t in thresholds:
