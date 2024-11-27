@@ -156,6 +156,7 @@ def main():
             preds, labels = np.squeeze(preds), np.squeeze(labels)
             r_list, fpr_list = [], []
             # print(np.histogram(preds, bins='sqrt'))
+            # preds = (preds - preds.min()) / (preds.max() - preds.min()) # min-max-scale distances # not required as we already do this before calling the func
             # print(np.histogram(preds))
             # thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
             thresholds = [x / 100.0 for x in range(0, 100, 5)]
@@ -203,6 +204,7 @@ def main():
                         probes_file_name_list.append(probes_file_name)
                         all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                         # print(all_val_pred.shape)
+                        if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
                         _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])
                         trloss_probes_file_name = probes_file_name.replace('kmeans_','').replace('mahalanobis_centers1_','').replace('_bestusinglast','')
