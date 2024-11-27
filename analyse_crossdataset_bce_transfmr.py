@@ -294,8 +294,7 @@ def main():
             layer_pred_thresholds.append(best_t)
             test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
             labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
-            all_preds.append(test_preds[model])
-
+            
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 val_pred_model[all_val_pred[fold][model]<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
@@ -314,6 +313,7 @@ def main():
                 incl_layers.append(model)
             
             if args.min_max_scale_dist: test_preds[model] = (test_preds[model] - val_dist_min) / (val_dist_max - val_dist_min)# min-max-scale distances using val distances
+            all_preds.append(test_preds[model])
             test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
             print(np.histogram(test_preds[model]))
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
