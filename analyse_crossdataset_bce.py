@@ -152,7 +152,7 @@ def main():
         # val_pred_model,all_val_true[fold][0]
         def my_aufpr(preds,labels):
             r_list, fpr_list = [], []
-            thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+            thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 105, 5)]
             for t in thresholds:
                 thr_preds = deepcopy(preds) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -169,7 +169,7 @@ def main():
                 fpr_list.append(fp / (fp + tn))
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             recall_vals, fpr_at_recall_vals = [], []
-            for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
+            for check_recall in [x / 100.0 for x in range(0, 105, 5) if x<=args.aufpr_till]:
                 try: 
                     fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
                     recall_vals.append(check_recall)
@@ -319,7 +319,7 @@ def main():
 
             test_preds, model = all_preds, num_layers-1
             r_list, fpr_list = [], []
-            thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+            thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 105, 5)]
             for t in thresholds:
                 test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -348,7 +348,7 @@ def main():
                 test_fpr = -10000
             if args.fpr_at_recall==-1:
                 recall_vals, fpr_at_recall_vals = [], []
-                for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
+                for check_recall in [x / 100.0 for x in range(0, 105, 5) if x<=args.aufpr_till]:
                     try: 
                         fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
                         recall_vals.append(check_recall)

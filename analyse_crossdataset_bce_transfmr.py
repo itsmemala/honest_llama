@@ -161,7 +161,7 @@ def main():
             if (('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name)) and args.min_max_scale_dist==False:
                 thresholds = np.histogram_bin_edges(preds, bins='sqrt')
             else:
-                thresholds = [x / 100.0 for x in range(0, 100, 5)]
+                thresholds = [x / 100.0 for x in range(0, 105, 5)]
             for t in thresholds:
                 thr_preds = deepcopy(preds) # Deep copy so as to not touch orig values
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -177,7 +177,7 @@ def main():
                 fpr_list.append(fp / (fp + tn))
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             recall_vals, fpr_at_recall_vals = [], []
-            for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
+            for check_recall in [x / 100.0 for x in range(0, 105, 5) if x<=args.aufpr_till]:
                 try: 
                     fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
                     recall_vals.append(check_recall)
@@ -243,14 +243,14 @@ def main():
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
                 # best_val_fpr, best_t = 1, 0
-                # thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 100, 5)]
+                # thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 105, 5)]
                 # print(np.histogram(all_val_pred[fold][model], bins='sqrt'))
                 val_dist_min, val_dist_max = all_val_pred[fold][model].min(), all_val_pred[fold][model].max()
                 if args.min_max_scale_dist: all_val_pred[fold][model] = (all_val_pred[fold][model] - val_dist_min) / (val_dist_max - val_dist_min) # min-max-scale distances
                 if (('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name)) and args.min_max_scale_dist==False:
                     thresholds = np.histogram_bin_edges(all_val_pred[fold][model], bins='sqrt')
                 else:
-                    thresholds = [x / 100.0 for x in range(0, 100, 5)]
+                    thresholds = [x / 100.0 for x in range(0, 105, 5)]
                 for t in thresholds:
                     val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
                     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
