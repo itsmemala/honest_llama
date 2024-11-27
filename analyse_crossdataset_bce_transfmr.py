@@ -306,6 +306,7 @@ def main():
             
             test_pred_model,raw_test_pred_model = deepcopy(test_preds[model]),deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
             raw_test_pred_model = (raw_test_pred_model - all_val_pred[fold][model].min()) / (all_val_pred[fold][model].max() - all_val_pred[fold][model].min())# min-max-scale distances using val distances
+            print(np.histogram(raw_test_pred_model))
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
                 test_pred_model[raw_test_pred_model<=best_t] = 1 # <= to ensure correct classification when dist = [-1,0]
                 test_pred_model[raw_test_pred_model>best_t] = 0
