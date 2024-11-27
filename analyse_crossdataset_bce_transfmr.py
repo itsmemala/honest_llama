@@ -177,7 +177,7 @@ def main():
                 fpr_list.append(fp / (fp + tn))
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             recall_vals, fpr_at_recall_vals = [], []
-            for check_recall in [x / 100.0 for x in range(0, 100, 5) if x>=15]: # if x<=args.aufpr_till]:
+            for check_recall in [x / 100.0 for x in range(0, 100, 5) if x<=args.aufpr_till]:
                 try: 
                     fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
                     recall_vals.append(check_recall)
