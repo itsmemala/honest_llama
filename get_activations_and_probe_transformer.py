@@ -860,7 +860,7 @@ def main():
                                             # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
                                             if args.shuffle_batch_prompts:
-                                                targets = torch.stack([[labels[k]] for k in batch_input_idxs], dim=0)
+                                                targets = torch.from_numpy(np.stack([[labels[k]] for k in batch_input_idxs], axis=0))
                                             else:
                                                 targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                                             if 'supcon' in args.method:
