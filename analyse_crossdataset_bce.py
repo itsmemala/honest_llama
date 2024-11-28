@@ -200,13 +200,13 @@ def main():
                     probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                     probes_file_name_list.append(probes_file_name)
                     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
-                    try:
-                        if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
-                    except RuntimeWarning:
+                    if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
+                    try:   
+                        auc_val = roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
+                    except ValueError:
                         print(probes_file_name)
                         print(all_val_pred[0][model])
                         sys.exit()
-                    auc_val = roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
                     _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model],getfull=True)
                     perf_by_lr.append(aufpr_val if args.best_hyp_using_aufpr else auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if args.best_hyp_using_aufpr else probes_file_name_list[np.argmax(perf_by_lr)]
