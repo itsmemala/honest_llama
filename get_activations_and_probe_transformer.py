@@ -752,8 +752,7 @@ def main():
                                 ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler) if args.no_batch_sampling==False else DataLoader(ds_train, batch_size=args.bs)
                                 if args.shuffle_batch_prompts:
                                     ds_train = Dataset.from_dict({"inputs_idxs": train_prompt_idxs}).with_format("torch")
-                                    sampler = RandomSampler(ds_train)
-                                    ds_train = DataLoader(ds_train, batch_size=args.bs/num_samples, sampler=sampler, shuffle=True)
+                                    ds_train = DataLoader(ds_train, batch_size=args.bs/num_samples, shuffle=True)
                                 # sampler = RandomSampler(ds_train, replacement=True) # Default: replacement=False
                                 ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                                 ds_val = DataLoader(ds_val, batch_size=args.bs)
