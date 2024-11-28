@@ -336,6 +336,7 @@ def main():
     parser.add_argument('--use_best_val_t',type=bool, default=False)
     parser.add_argument('--use_class_wgt',type=bool, default=False)
     parser.add_argument('--no_batch_sampling',type=bool, default=False)
+    parser.add_argument('--shuffle_batch_prompts',type=bool, default=False)
     parser.add_argument('--acts_per_file',type=int, default=100)
     parser.add_argument('--save_probes',type=bool, default=False)
     parser.add_argument('--device', type=int, default=None)
@@ -657,6 +658,7 @@ def main():
                             method_concat = method_concat + '_' + args.dist_metric + str(args.top_k) if ('knn' in args.method) or ('kmeans' in args.method) else method_concat
                             method_concat = method_concat + 'pca' + str(args.pca_dims) if args.pca_dims is not None else method_concat
                             if args.use_batch_norm: method_concat = method_concat + '_batchnorm'
+                            if args.shuffle_batch_prompts: method_concat = method_concat + '_shufflebp'
 
                             # Probe training
                             np.random.seed(save_seed)
@@ -747,8 +749,12 @@ def main():
                                 samples_weight = torch.from_numpy(np.array([weight[t] for t in train_target])).double()
                                 sampler = WeightedRandomSampler(samples_weight, len(samples_weight)) # Default: replacement=True
                                 ds_train = Dataset.from_dict({"inputs_idxs": cur_probe_train_set_idxs, "labels": cur_probe_y_train}).with_format("torch")
-                                # sampler = RandomSampler(ds_train, replacement=True) # Default: replacement=False
                                 ds_train = DataLoader(ds_train, batch_size=args.bs, sampler=sampler) if args.no_batch_sampling==False else DataLoader(ds_train, batch_size=args.bs)
+                                if args.shuffle_batch_prompts:
+                                    ds_train = Dataset.from_dict({"inputs_idxs": train_prompt_idxs}).with_format("torch")
+                                    sampler = RandomSampler(ds_train)
+                                    ds_train = DataLoader(ds_train, batch_size=args.bs/num_samples, sampler=sampler, shuffle=True)
+                                # sampler = RandomSampler(ds_train, replacement=True) # Default: replacement=False
                                 ds_val = Dataset.from_dict({"inputs_idxs": val_set_idxs, "labels": y_val}).with_format("torch")
                                 ds_val = DataLoader(ds_val, batch_size=args.bs)
                                 if args.test_file_name is not None: 
@@ -841,7 +847,8 @@ def main():
                                                     batch_target_idxs.append(k)
                                                     activations.append(act)
                                             else:
-                                                activations = my_train_acts[batch['inputs_idxs']].to(device)
+                                                batch_input_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in batch['inputs_idxs']], axis=0) if args.shuffle_batch_prompts else batch['inputs_idxs']
+                                                activations = my_train_acts[batch_input_idxs].to(device)
                                                 # act = my_train_acts[idx].to(device)
                                                 # activations.append(act)
                                             if len(activations)==0: continue
@@ -853,7 +860,10 @@ def main():
                                                 # inputs = torch.stack(activations,axis=0)
                                             # if args.norm_input: inputs = F.normalize(inputs, p=2, dim=-1) #inputs / inputs.pow(2).sum(dim=-1).sqrt().unsqueeze(-1)
                                             # if args.norm_input: inputs = (inputs - torch.mean(inputs, dim=-2).unsqueeze(-2))/torch.std(inputs, dim=-2).unsqueeze(-2) # mean normalise
-                                            targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
+                                            if args.shuffle_batch_prompts:
+                                                targets = torch.stack([[labels[k]] for k in batch_input_idxs], dim=0)
+                                            else:
+                                                targets = batch['labels'][np.array(batch_target_idxs)] if 'tagged_tokens' in args.token else batch['labels']
                                             if 'supcon' in args.method:
                                                 # SupCon backward
                                                 if args.continue_ce==False:
