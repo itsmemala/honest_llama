@@ -206,7 +206,7 @@ def main():
                         _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model],getfull=True)
                     except ValueError:
                         print('\n\nVALUE ERROR FOR PROBE:\n\n',probes_file_name)
-                        auc_val, aufpr_val = 
+                        auc_val, aufpr_val = 0, 100
                     perf_by_lr.append(aufpr_val if args.best_hyp_using_aufpr else auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if args.best_hyp_using_aufpr else probes_file_name_list[np.argmax(perf_by_lr)]
                 print(best_probes_file_name)
