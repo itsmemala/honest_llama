@@ -57,6 +57,7 @@ def main():
     parser.add_argument("--best_threshold", type=bool, default=False, help='')
     parser.add_argument("--best_threshold_using_recall", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
+    parser.add_argument('--aufpr_from',type=float, default=0.0)
     parser.add_argument('--aufpr_till',type=float, default=100.0)
     parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
@@ -152,7 +153,7 @@ def main():
         seed_results_list = []
 
         # val_pred_model,all_val_true[fold][0]
-        def my_aufpr(preds,labels):
+        def my_aufpr(preds,labels,getfull=False):
             preds, labels = np.squeeze(preds), np.squeeze(labels)
             r_list, fpr_list = [], []
             # print(np.histogram(preds, bins='sqrt'))
@@ -177,7 +178,11 @@ def main():
                 fpr_list.append(fp / (fp + tn))
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             recall_vals, fpr_at_recall_vals = [], []
-            for check_recall in [x / 100.0 for x in range(0, 105, 5) if x<=args.aufpr_till]:
+            if getfull:
+                check_recall_intervals = [x / 100.0 for x in range(0, 105, 5)]
+            else:
+                check_recall_intervals = [x / 100.0 for x in range(0, 105, 5) if x>=args.aufpr_from and x<=args.aufpr_till]
+            for check_recall in check_recall_intervals:
                 try: 
                     fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
                     recall_vals.append(check_recall)
@@ -209,7 +214,7 @@ def main():
                         # print(all_val_pred.shape)
                         if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
-                        _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])
+                        _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model],getfull=True)
                         trloss_probes_file_name = probes_file_name.replace('kmeans_','').replace('mahalanobis_centers1_','').replace('_bestusinglast','')
                         train_loss = np.load(f'{args.save_path}/probes/{trloss_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()[0][model][-1] if args.best_hyp_using_trloss else 0  # index fold, model, epoch  
                         perf = aufpr_val if args.best_hyp_using_aufpr else train_loss if args.best_hyp_using_trloss else auc_val 

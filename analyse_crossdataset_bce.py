@@ -54,6 +54,7 @@ def main():
     parser.add_argument("--best_hyp_using_aufpr", type=bool, default=False, help='local directory with dataset')
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
+    parser.add_argument('--aufpr_from',type=float, default=0.0)
     parser.add_argument('--aufpr_till',type=float, default=100.0)
     parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
@@ -154,7 +155,7 @@ def main():
         seed_results_list = []
 
         # val_pred_model,all_val_true[fold][0]
-        def my_aufpr(preds,labels):
+        def my_aufpr(preds,labels,getfull=False):
             preds, labels = np.squeeze(preds), np.squeeze(labels)
             r_list, fpr_list = [], []
             # thresholds = np.histogram_bin_edges(preds, bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 105, 5)]
@@ -177,7 +178,11 @@ def main():
                 fpr_list.append(fp / (fp + tn))
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             recall_vals, fpr_at_recall_vals = [], []
-            for check_recall in [x / 100.0 for x in range(0, 105, 5) if x<=args.aufpr_till]:
+            if getfull:
+                check_recall_intervals = [x / 100.0 for x in range(0, 105, 5)]
+            else:
+                check_recall_intervals = [x / 100.0 for x in range(0, 105, 5) if x>=args.aufpr_from and x<=args.aufpr_till]
+            for check_recall in check_recall_intervals:
                 try: 
                     fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
                     recall_vals.append(check_recall)
@@ -194,7 +199,7 @@ def main():
                     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                     if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
                     auc_val = roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
-                    _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model])
+                    _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model],getfull=True)
                     perf_by_lr.append(aufpr_val if args.best_hyp_using_aufpr else auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if args.best_hyp_using_aufpr else probes_file_name_list[np.argmax(perf_by_lr)]
                 print(best_probes_file_name)
@@ -333,43 +338,6 @@ def main():
             # print('# fn:',len(fn_index))
             # print('Index of fn:',fn_index)
 
-            # test_preds, model = all_preds, num_layers-1
-            # r_list, fpr_list = [], []
-            # thresholds = np.histogram_bin_edges(test_preds[model], bins='sqrt') if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else [x / 100.0 for x in range(0, 105, 5)]
-            # for t in thresholds:
-            #     test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
-            #     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-            #         test_pred_model[test_preds[model]<=t] = 1 # <= to ensure correct classification when dist = [-1,0]
-            #         test_pred_model[test_preds[model]>t] = 0
-            #     else:
-            #         test_pred_model[test_preds[model]>t] = 1
-            #         test_pred_model[test_preds[model]<=t] = 0
-            #     test_pred_model = np.squeeze(test_pred_model)
-            #     # print((test_pred_model == 1).shape,(labels == 0).shape,((test_pred_model == 1) & (labels == 0)).shape)
-            #     # sys.exit()
-            #     fp = np.sum((test_pred_model == 1) & (labels == 0))
-            #     tn = np.sum((test_pred_model == 0) & (labels == 0))
-            #     r_list.append(recall_score(labels,test_pred_model))
-            #     fpr_list.append(fp / (fp + tn))
-            #     # r, fpr = recall_score(labels,test_pred_model), fp / (fp + tn)
-            #     # if r>=args.fpr_at_recall:
-            #     #     if fpr < best_fpr:
-            #     #         best_fpr = fpr
-            # r_list, fpr_list = np.array(r_list), np.array(fpr_list)
-            # best_r = np.max(r_list)
-            # test_fpr_best_r = np.min(fpr_list[np.argwhere(r_list==best_r)])
-            # try: 
-            #     test_fpr = np.min(fpr_list[np.argwhere(r_list>=args.fpr_at_recall)])
-            # except ValueError:
-            #     test_fpr = -10000
-            # if args.fpr_at_recall==-1:
-            #     recall_vals, fpr_at_recall_vals = [], []
-            #     for check_recall in [x / 100.0 for x in range(0, 105, 5) if x<=args.aufpr_till]:
-            #         try: 
-            #             fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
-            #             recall_vals.append(check_recall)
-            #         except ValueError:
-            #             continue
             ########################
             # print(layer_pred_thresholds[num_layers-1], fpr_list, r_list)
             seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
