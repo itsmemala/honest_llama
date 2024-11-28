@@ -205,7 +205,7 @@ def main():
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
                         _, _, aufpr_val = my_aufpr(all_val_pred[0][model],all_val_true[0][model],getfull=True)
                     except ValueError:
-                        print('\n\nVALUE ERROR FOR PROBE:\n\n',probes_file_name) # for nlinear probe at lr=0.5 and min_max_scale_dist=True
+                        print('\n\nVALUE ERROR FOR PROBE:',probes_file_name,'\n\n') # for nlinear probe at lr=0.5 and min_max_scale_dist=True
                         auc_val, aufpr_val = 0, 100
                     perf_by_lr.append(aufpr_val if args.best_hyp_using_aufpr else auc_val)
                 best_probes_file_name = probes_file_name_list[np.argmin(perf_by_lr)] if args.best_hyp_using_aufpr else probes_file_name_list[np.argmax(perf_by_lr)]
