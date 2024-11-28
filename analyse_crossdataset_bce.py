@@ -202,7 +202,7 @@ def main():
                     all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                     try:
                         if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
-                    except RuntimeWarning::
+                    except RuntimeWarning:
                         print(probes_file_name)
                         print(all_val_pred[0][model])
                         sys.exit()
