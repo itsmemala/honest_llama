@@ -185,14 +185,12 @@ def main():
             for check_recall in check_recall_intervals:
                 try: 
                     # fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
-                    print(r_list)
-                    print(np.argwhere((r_list>=check_recall) & (r_list<check_recall+0.05)))
-                    print(fpr_list[np.argwhere((r_list>=check_recall) & (r_list<check_recall+0.05))])
-                    sys.exit()
                     fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere((r_list>=check_recall) & (r_list<check_recall+0.05))]))
                     recall_vals.append(check_recall)
                 except ValueError:
                     continue
+            print(recall_vals,fpr_at_recall_vals)
+            sys.exit()
             return recall_vals, fpr_at_recall_vals, auc(recall_vals,fpr_at_recall_vals)
 
         def results_at_best_lr(model):
