@@ -184,7 +184,8 @@ def main():
                 check_recall_intervals = [x / 100.0 for x in range(0, 105, 5) if x>=args.aufpr_from and x<=args.aufpr_till]
             for check_recall in check_recall_intervals:
                 try: 
-                    fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
+                    # fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
+                    fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere((r_list>=check_recall) & (r_list<check_recall+0.05))]))
                     recall_vals.append(check_recall)
                 except ValueError:
                         continue

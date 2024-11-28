@@ -189,8 +189,8 @@ def main():
                     recall_vals.append(check_recall)
                 except ValueError:
                     continue
-            print(recall_vals,fpr_at_recall_vals)
-            sys.exit()
+            # print(recall_vals,fpr_at_recall_vals)
+            # sys.exit()
             return recall_vals, fpr_at_recall_vals, auc(recall_vals,fpr_at_recall_vals)
 
         def results_at_best_lr(model):
