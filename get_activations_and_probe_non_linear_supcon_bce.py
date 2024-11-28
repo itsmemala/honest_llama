@@ -1167,13 +1167,13 @@ def main():
                                                     cluster_centers, cluster_centers_labels = compute_kmeans(train_outputs.data,train_labels,args.top_k)
                                                 else:
                                                     cluster_centers, cluster_centers_labels = None, None
-                                            nh_train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==0],axis=0) # Take all train non-hallucinations
-                                            outputs = nlinear_model.forward_upto_classifier(nh_train_inputs)
-                                            val_preds_batch = compute_knn_dist(train_outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca) if args.token in single_token_types else None
-                                            print(torch.min(val_preds_batch),torch.quantile(val_preds_batch,0.25),torch.quantile(val_preds_batch,0.5),torch.quantile(val_preds_batch,0.75),torch.quantile(val_preds_batch,0.9),torch.max(val_preds_batch),torch.mean(val_preds_batch))
+                                            # nh_train_inputs = torch.stack([my_train_acts[idx][layer].to(device) for idx in train_set_idxs if labels[idx]==0],axis=0) # Take all train non-hallucinations
+                                            # outputs = nlinear_model.forward_upto_classifier(nh_train_inputs)
+                                            # val_preds_batch = compute_knn_dist(train_outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca) if args.token in single_token_types else None
+                                            # print(torch.min(val_preds_batch),torch.quantile(val_preds_batch,0.25),torch.quantile(val_preds_batch,0.5),torch.quantile(val_preds_batch,0.75),torch.quantile(val_preds_batch,0.9),torch.max(val_preds_batch),torch.mean(val_preds_batch))
                                             val_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca) if args.token in single_token_types else None
-                                            print(torch.min(val_preds_batch),torch.quantile(val_preds_batch,0.1),torch.quantile(val_preds_batch,0.25),torch.quantile(val_preds_batch,0.5),torch.quantile(val_preds_batch,0.75),torch.max(val_preds_batch),torch.mean(val_preds_batch))
-                                            sys.exit()
+                                            # print(torch.min(val_preds_batch),torch.quantile(val_preds_batch,0.1),torch.quantile(val_preds_batch,0.25),torch.quantile(val_preds_batch,0.5),torch.quantile(val_preds_batch,0.75),torch.max(val_preds_batch),torch.mean(val_preds_batch))
+                                            # sys.exit()
                                             predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                         else:
                                             predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
