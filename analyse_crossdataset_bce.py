@@ -178,10 +178,7 @@ def main():
                 fpr_list.append(fp / (fp + tn))
             r_list, fpr_list = np.array(r_list), np.array(fpr_list)
             recall_vals, fpr_at_recall_vals = [], []
-            if getfull:
-                check_recall_intervals = [x / 100.0 for x in range(0, 105, 5)]
-            else:
-                check_recall_intervals = [x / 100.0 for x in range(0, 105, 5) if x>=args.aufpr_from and x<=args.aufpr_till]
+            check_recall_intervals = [x / 100.0 for x in range(0, 105, 5)]
             for check_recall in check_recall_intervals:
                 try: 
                     # fpr_at_recall_vals.append(np.min(fpr_list[np.argwhere(r_list>=check_recall)]))
@@ -189,9 +186,18 @@ def main():
                     recall_vals.append(check_recall)
                 except ValueError:
                     continue
-            # print(recall_vals,fpr_at_recall_vals)
-            # sys.exit()
-            return recall_vals, fpr_at_recall_vals, auc(recall_vals,fpr_at_recall_vals)
+            # interpolate and fill missing values
+            print(recall_vals,fpr_at_recall_vals)
+            fpr_at_recall_vals = np.interp(check_recall_intervals, recall_vals, fpr_at_recall_vals)
+            print(check_recall_intervals,fpr_at_recall_vals)
+            sys.exit()
+            if getfull:
+                aufpr = auc(check_recall_intervals,fpr_at_recall_vals)
+            else:
+                aufpr_idxes = (check_recall_intervals>=args.aufpr_from) & (check_recall_intervals<=args.aufpr_till)
+                check_recall_intervals,fpr_at_recall_vals = np.array(check_recall_intervals), np.array(fpr_at_recall_vals)
+                aufpr = auc(check_recall_intervals[aufpr_idxes],fpr_at_recall_vals[aufpr_idxes])
+            return recall_vals, fpr_at_recall_vals, aufpr
 
         def results_at_best_lr(model):
             if args.lr_list is not None:
