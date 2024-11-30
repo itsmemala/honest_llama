@@ -55,7 +55,7 @@ def main():
     parser.add_argument("--best_threshold", type=bool, default=False, help='local directory with dataset')
     parser.add_argument('--fpr_at_recall',type=float, default=0.95)
     parser.add_argument('--aufpr_from',type=float, default=0.0)
-    parser.add_argument('--aufpr_till',type=float, default=100.0)
+    parser.add_argument('--aufpr_till',type=float, default=1.0)
     parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
@@ -196,8 +196,8 @@ def main():
             else:
                 check_recall_intervals,fpr_at_recall_vals = np.array(check_recall_intervals), np.array(fpr_at_recall_vals)
                 aufpr_idxes = (check_recall_intervals>=args.aufpr_from) & (check_recall_intervals<=args.aufpr_till)
-                print(check_recall_intervals[aufpr_idxes])
-                sys.exit()
+                # print(check_recall_intervals[aufpr_idxes])
+                # sys.exit()
                 aufpr = auc(check_recall_intervals[aufpr_idxes],fpr_at_recall_vals[aufpr_idxes])
             return recall_vals, fpr_at_recall_vals, aufpr
 
