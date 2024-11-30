@@ -187,15 +187,17 @@ def main():
                 except ValueError:
                     continue
             # interpolate and fill missing values
-            print(recall_vals,fpr_at_recall_vals)
+            # print(recall_vals,fpr_at_recall_vals)
             fpr_at_recall_vals = np.interp(check_recall_intervals, recall_vals, fpr_at_recall_vals)
-            print(check_recall_intervals,fpr_at_recall_vals)
-            sys.exit()
+            # print(check_recall_intervals,fpr_at_recall_vals)
+            # sys.exit()
             if getfull:
                 aufpr = auc(check_recall_intervals,fpr_at_recall_vals)
             else:
                 aufpr_idxes = (check_recall_intervals>=args.aufpr_from) & (check_recall_intervals<=args.aufpr_till)
                 check_recall_intervals,fpr_at_recall_vals = np.array(check_recall_intervals), np.array(fpr_at_recall_vals)
+                print(check_recall_intervals[aufpr_idxes])
+                sys.exit()
                 aufpr = auc(check_recall_intervals[aufpr_idxes],fpr_at_recall_vals[aufpr_idxes])
             return recall_vals, fpr_at_recall_vals, aufpr
 
