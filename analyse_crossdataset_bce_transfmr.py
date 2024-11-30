@@ -194,7 +194,7 @@ def main():
                 check_recall_intervals,fpr_at_recall_vals = np.array(check_recall_intervals), np.array(fpr_at_recall_vals)
                 aufpr_idxes = (check_recall_intervals>=args.aufpr_from) & (check_recall_intervals<=args.aufpr_till)
                 aufpr = auc(check_recall_intervals[aufpr_idxes],fpr_at_recall_vals[aufpr_idxes])
-            return recall_vals, fpr_at_recall_vals, aufpr
+            return check_recall_intervals, fpr_at_recall_vals, aufpr
 
         def results_at_best_lr(model):
             if args.lr_list is not None:

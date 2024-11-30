@@ -199,7 +199,7 @@ def main():
                 # print(check_recall_intervals[aufpr_idxes])
                 # sys.exit()
                 aufpr = auc(check_recall_intervals[aufpr_idxes],fpr_at_recall_vals[aufpr_idxes])
-            return recall_vals, fpr_at_recall_vals, aufpr
+            return check_recall_intervals, fpr_at_recall_vals, aufpr
 
         def results_at_best_lr(model):
             if args.lr_list is not None:
