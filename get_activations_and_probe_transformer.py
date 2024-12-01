@@ -670,16 +670,19 @@ def main():
                             # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
                             if len(args.dataset_list)==1 and args.ood_test==False:
-                                probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                probes_file_name = f'T{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             elif len(args.dataset_list)>1:
-                                probes_file_name = f'T{save_seed}_{args.model_name}_multi_{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                probes_file_name = f'T{save_seed}_/{args.model_name}_/multi_/{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             elif args.ood_test:
                                 train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
-                                probes_file_name = f'T{save_seed}_{args.model_name}_ood_{train_dataset_name}_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                probes_file_name = f'T{save_seed}_/{args.model_name}_/ood_{train_dataset_name}/_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             plot_name_concat = 'b' if args.use_best_val_t else ''
                             plot_name_concat += 'a' if args.best_using_auc else ''
                             plot_name_concat += 'l' if args.best_as_last else ''
                             probes_file_name += plot_name_concat
+                            # Create dirs if does not exist:
+                            if not os.path.exists(probes_file_name):
+                                os.makedirs(probes_file_name)
 
                             # Individual probes
                             all_supcon_train_loss,all_supcon1_train_loss,all_supcon2_train_loss = {}, {}, {}
@@ -1024,11 +1027,14 @@ def main():
                                         nlinear_model.load_state_dict(best_model_state)
                                         probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
                                         torch.save(nlinear_model, probe_save_path)
+                                        # with open(probe_save_path,'wb') as f:
+                                        #     torch.save(nlinear_model, f)
                                         probes_saved.append(probe_save_path)
 
                                         nlinear_model.load_state_dict(best_model_state_using_auc)
                                         probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_bestusingauc_model{i}'
-                                        torch.save(nlinear_model, probe_save_path, _use_new_zipfile_serialization=False)
+                                        torch.save(nlinear_model, probe_save_path)
+                                        # torch.save(nlinear_model, probe_save_path, _use_new_zipfile_serialization=False)
 
                                         nlinear_model.load_state_dict(best_model_state_using_last)
                                         probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_bestusinglast_model{i}'
