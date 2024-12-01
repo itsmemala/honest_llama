@@ -682,9 +682,9 @@ def main():
                             probes_file_name += plot_name_concat
                             # Create dirs if does not exist:
                             if not os.path.exists(f'{args.save_path}/probes/models/{probes_file_name}'):
-                                os.makedirs(probes_file_name, exist_ok=True)
+                                os.makedirs(f'{args.save_path}/probes/models/{probes_file_name}', exist_ok=True)
                             if not os.path.exists(f'{args.save_path}/probes/{probes_file_name}'):
-                                os.makedirs(probes_file_name, exist_ok=True)
+                                os.makedirs(f'{args.save_path}/probes/{probes_file_name}', exist_ok=True)
 
                             # Individual probes
                             all_supcon_train_loss,all_supcon1_train_loss,all_supcon2_train_loss = {}, {}, {}
