@@ -1028,7 +1028,7 @@ def main():
 
                                         nlinear_model.load_state_dict(best_model_state_using_auc)
                                         probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_bestusingauc_model{i}'
-                                        torch.save(nlinear_model, probe_save_path)
+                                        torch.save(nlinear_model, probe_save_path, _use_new_zipfile_serialization=False)
 
                                         nlinear_model.load_state_dict(best_model_state_using_last)
                                         probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_bestusinglast_model{i}'
