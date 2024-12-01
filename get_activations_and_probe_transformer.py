@@ -574,8 +574,9 @@ def main():
             file_wise_data = {}
             for file_path in unique_file_paths:
                 # file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
-                with np.load(file_path,allow_pickle=True) as my_temp_data:
-                    file_wise_data[file_path] = my_temp_data
+                # with np.load(file_path,allow_pickle=True) as my_temp_data:
+                with open(file_path, "rb") as my_temp_data:
+                    file_wise_data[file_path] = pickle.load(my_temp_data)
             for idx in temp_train_idxs:
                 if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
