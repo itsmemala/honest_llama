@@ -681,7 +681,9 @@ def main():
                             plot_name_concat += 'l' if args.best_as_last else ''
                             probes_file_name += plot_name_concat
                             # Create dirs if does not exist:
-                            if not os.path.exists(probes_file_name):
+                            if not os.path.exists(f'{args.save_path}/probes/models/{probes_file_name}'):
+                                os.makedirs(probes_file_name)
+                            if not os.path.exists(f'{args.save_path}/probes/{probes_file_name}'):
                                 os.makedirs(probes_file_name)
 
                             # Individual probes
