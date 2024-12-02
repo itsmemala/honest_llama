@@ -214,12 +214,12 @@ def main():
                             probes_file_name = fn_left_text + temp + fn_right_text
                             # print(probes_file_name)
                         probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
-                        probes_file_name_list.append(probes_file_name)
                         try:
                             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                         except FileNotFoundError:
                             probes_file_name = probes_file_name.replace("/","")
                             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
+                        probes_file_name_list.append(probes_file_name)
                         # print(all_val_pred.shape)
                         if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in np.squeeze(all_val_pred[0][model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
