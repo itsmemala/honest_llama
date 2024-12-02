@@ -229,6 +229,9 @@ def main():
             else:
                 best_probes_file_name = args.probes_file_name
             
+            # Create dirs if does not exist:
+            # if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
+            #     os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
             # loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
             # loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()
             # loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()
@@ -368,6 +371,9 @@ def main():
         # seed_results_list.append(np.mean(best_r))
         # seed_results_list.append(np.mean(test_fpr_best_r))
         if args.fpr_at_recall==-1:
+            # Create dirs if does not exist:
+            if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
+                os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
             # print('model:',model)
             recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
             fig, axs = plt.subplots(1,1)
