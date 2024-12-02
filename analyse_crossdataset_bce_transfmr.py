@@ -60,6 +60,7 @@ def main():
     parser.add_argument('--aufpr_from',type=float, default=0.0)
     parser.add_argument('--aufpr_till',type=float, default=1.0)
     parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
+    parser.add_argument("--best_hyp_on_test", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -215,10 +216,16 @@ def main():
                             # print(probes_file_name)
                         probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                         try:
-                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
+                            if args.best_hyp_on_test:
+                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
+                            else:
+                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                         except FileNotFoundError:
                             probes_file_name = probes_file_name.replace("/","")
-                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
+                            if args.best_hyp_on_test:
+                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
+                            else:
+                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
                         probes_file_name_list.append(probes_file_name)
                         # print(all_val_pred.shape)
                         if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
@@ -256,7 +263,10 @@ def main():
             # axs.legend()
             # fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
 
-            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
+            if args.best_hyp_on_test:
+                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')
+            else:
+                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
                 # best_val_fpr, best_t = 1, 0
