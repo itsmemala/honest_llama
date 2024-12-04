@@ -209,7 +209,7 @@ def main():
                     probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                     probes_file_name_list.append(probes_file_name)
                     if args.best_hyp_on_test:
-                        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy', allow_pickle=True).item()
+                        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
                     else:
                         all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                     if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
@@ -226,7 +226,7 @@ def main():
                 best_probes_file_name = args.probes_file_name
             
             if args.best_hyp_on_test:
-                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy', allow_pickle=True).item()
+                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')
             else:
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
             if args.best_threshold:
