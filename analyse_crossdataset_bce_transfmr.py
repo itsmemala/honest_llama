@@ -242,7 +242,7 @@ def main():
                 best_probes_file_name = args.probes_file_name
             
             if args.plot_loss:
-                Create dirs if does not exist:
+                # Create dirs if does not exist:
                 if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
                     os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
                 loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
