@@ -57,6 +57,7 @@ def main():
     parser.add_argument('--aufpr_from',type=float, default=0.0)
     parser.add_argument('--aufpr_till',type=float, default=1.0)
     parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
+    parser.add_argument("--best_hyp_on_test", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
 
@@ -207,7 +208,10 @@ def main():
                 for lr in args.lr_list:
                     probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
                     probes_file_name_list.append(probes_file_name)
-                    all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
+                    if args.best_hyp_on_test:
+                        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy', allow_pickle=True).item()
+                    else:
+                        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                     if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
                     try:
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
@@ -221,7 +225,10 @@ def main():
             else:
                 best_probes_file_name = args.probes_file_name
             
-            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
+            if args.best_hyp_on_test:
+                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy', allow_pickle=True).item()
+            else:
+                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
                 # best_val_fpr, best_t = 1, 0
