@@ -98,8 +98,8 @@ class SupConLoss(nn.Module):
             0
         )
         mask = mask * logits_mask # this sets the diagonal elements to 0
-        print(mask)
-        sys.exit()
+        # print(mask)
+        # sys.exit()
         
         # compute log_prob
         exp_logits = torch.exp(logits) * logits_mask
