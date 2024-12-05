@@ -207,11 +207,18 @@ def main():
                 probes_file_name_list, perf_by_lr = [], []
                 for lr in args.lr_list:
                     probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
+                    try:
+                        if args.best_hyp_on_test:
+                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
+                        else:
+                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
+                    except FileNotFoundError:
+                        probes_file_name = probes_file_name.replace("/","")
+                        if args.best_hyp_on_test:
+                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
+                        else:
+                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                     probes_file_name_list.append(probes_file_name)
-                    if args.best_hyp_on_test:
-                        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
-                    else:
-                        all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
                     if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
                     try:
                         auc_val = roc_auc_score(all_val_true[0][model], [-v for v in all_val_pred[0][model]]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(all_val_true[0][model], np.squeeze(all_val_pred[0][model]))
