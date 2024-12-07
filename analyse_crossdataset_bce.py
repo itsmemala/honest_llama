@@ -489,19 +489,19 @@ def main():
             test_fpr_best_f1 = fp / (fp + tn)
 
             ########################
-            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
-            if args.fpr_at_recall==-1:
-                recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(confident_sample_probs,labels)
-                seed_results_list.append(aucfpr)
-            else:
-                seed_results_list.append(test_fpr)
-            seed_results_list.append(test_fpr_best_f1)
-            seed_results_list.append(f1_score(labels,confident_sample_pred))
-            seed_results_list.append(precision_score(labels,confident_sample_pred))
-            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
-            precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
-            seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(confident_sample_probs)]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,confident_sample_probs)) # print(roc_auc_score(labels,confident_sample_probs))
+            # seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            # if args.fpr_at_recall==-1:
+            #     recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(confident_sample_probs,labels)
+            #     seed_results_list.append(aucfpr)
+            # else:
+            #     seed_results_list.append(test_fpr)
+            # seed_results_list.append(test_fpr_best_f1)
+            # seed_results_list.append(f1_score(labels,confident_sample_pred))
+            # seed_results_list.append(precision_score(labels,confident_sample_pred))
+            # seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
+            # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            # seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
+            # seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(confident_sample_probs)]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,confident_sample_probs)) # print(roc_auc_score(labels,confident_sample_probs))
             ########################
 
             #####################################################################################################################################
@@ -590,24 +590,37 @@ def main():
             # print('AUROC:',roc_auc_score(labels,confident_sample_probs))
 
             # Probe selection - d
-            # confident_sample_pred,confident_sample_probs = [], []
-            # for i in range(all_preds.shape[1]):
-            #     sample_pred = np.squeeze(all_preds[:,i]) # Get predictions of each sample across all layers of model
-            #     sample_pred_val = [1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)]
-            #     sample_pred_val = np.array(sample_pred_val)
-            #     class_1_vote_cnt = sum(sample_pred_val[incl_layers])
-            #     maj_vote = 1 if class_1_vote_cnt>=(len(incl_layers)/2) else 0
-            #     confident_sample_pred.append(maj_vote)
-            #     confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
+            confident_sample_pred,confident_sample_probs = [], []
+            for i in range(all_preds.shape[1]):
+                sample_pred = np.squeeze(all_preds[:,i]) # Get predictions of each sample across all layers of model
+                sample_pred_val = [1 if pred>layer_pred_thresholds[layer] else 0 for layer,pred in enumerate(sample_pred)]
+                sample_pred_val = np.array(sample_pred_val)
+                class_1_vote_cnt = sum(sample_pred_val[incl_layers])
+                maj_vote = 1 if class_1_vote_cnt>=(len(incl_layers)/2) else 0
+                confident_sample_pred.append(maj_vote)
+                confident_sample_probs.append(class_1_vote_cnt/sample_pred.shape[0])
             # print('Voting amongst all probes per sample:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
             # print('Voting amongst all probes per sample (excl layers):\n',classification_report(labels,confident_sample_pred))
             
+            confident_sample_pred = np.array(confident_sample_pred)
+            fp = np.sum((confident_sample_pred == 1) & (labels == 0))
+            tn = np.sum((confident_sample_pred == 0) & (labels == 0))
+            test_fpr_best_f1 = fp / (fp + tn)
+
             ########################
-            # seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
-            # seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
-            # precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
-            # seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
-            # seed_results_list.append(roc_auc_score(labels,confident_sample_probs)) # print(roc_auc_score(labels,confident_sample_probs))
+            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            if args.fpr_at_recall==-1:
+                recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(confident_sample_probs,labels)
+                seed_results_list.append(aucfpr)
+            else:
+                seed_results_list.append(test_fpr)
+            seed_results_list.append(test_fpr_best_f1)
+            seed_results_list.append(f1_score(labels,confident_sample_pred))
+            seed_results_list.append(precision_score(labels,confident_sample_pred))
+            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
+            precision, recall, thresholds = precision_recall_curve(labels, confident_sample_probs)
+            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
+            seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(confident_sample_probs)]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,confident_sample_probs)) # print(roc_auc_score(labels,confident_sample_probs))
             ########################
 
             # MC5 Statistics
