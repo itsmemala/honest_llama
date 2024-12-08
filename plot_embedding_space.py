@@ -163,10 +163,10 @@ def main():
                     label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                     test_labels.append(label)
 
-    # fixed_indexes = [ 5, 11 ,23, 40 ,44, 62 ,71, 74, 85, 86, 89, 90]
-    # for idx in fixed_indexes:
-    #     print(idx,test_prompts[idx],'\n')
-    # sys.exit()
+    fixed_indexes =  [3, 12, 46, 52, 54, 64, 67] #[ 5, 11 ,23, 40 ,44, 62 ,71, 74, 85, 86, 89, 90]
+    for idx in fixed_indexes:
+        print(idx,test_prompts[idx],'\n')
+    sys.exit()
 
     if args.dataset_name=='strqa':
         args.acts_per_file = 50
