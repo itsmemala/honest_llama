@@ -672,7 +672,8 @@ def main():
                             if len(args.dataset_list)==1 and args.ood_test==False:
                                 probes_file_name = f'T{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             elif len(args.dataset_list)>1:
-                                probes_file_name = f'T{save_seed}_/{args.model_name}_/multi_/{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                multi_name = 'multi2' if len(args.dataset_list)==2 else 'multi'
+                                probes_file_name = f'T{save_seed}_/{args.model_name}_/{multi_name}_/{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             elif args.ood_test:
                                 train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
                                 probes_file_name = f'T{save_seed}_/{args.model_name}_/ood_{train_dataset_name}/_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
