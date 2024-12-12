@@ -665,7 +665,7 @@ def main():
                             method_concat = method_concat + 'pca' + str(args.pca_dims) if args.pca_dims is not None else method_concat
                             if args.use_batch_norm: method_concat = method_concat + '_batchnorm'
                             if args.shuffle_batch_prompts: method_concat = method_concat + '_shufflebp'
-                            if args.norm_emb and args.norm_cfr and args.cfr_bias: method_concat += '_normcfr'
+                            if args.norm_emb and args.norm_cfr: method_concat += '_normcfr'
 
                             # Probe training
                             np.random.seed(save_seed)
