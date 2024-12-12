@@ -102,6 +102,7 @@ class My_Transformer_Layer(torch.nn.Module):
         x = self.forward_upto_classifier(x)
         if self.supcon or self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         if self.norm_cfr and self.training==False:
+            print(self.training)
             print(x.shape)
             print(self.classifier.weight.shape)
             norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
