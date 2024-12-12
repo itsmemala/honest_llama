@@ -104,9 +104,8 @@ class My_Transformer_Layer(torch.nn.Module):
         if self.norm_cfr and self.training==False:
             norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
             y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
-            print(y_pred)
             y_pred = (y_pred + 1)/2
-            assert y_pred.min().item()==0 and y_pred.max().item()==1
+            assert y_pred.min().item()>=0 and y_pred.max().item()<=1
             return y_pred
         y_pred = self.classifier(x)
         return y_pred
