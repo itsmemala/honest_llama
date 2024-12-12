@@ -51,7 +51,7 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, device='cuda'):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_bias=True, device='cuda'):
         super().__init__()
         d_model = 128 # 256
         dim_feedforward = 1024 # 256
@@ -66,8 +66,10 @@ class My_Transformer_Layer(torch.nn.Module):
         self.transfomer = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.transfomer2 = torch.nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
         self.supcon=supcon
+        self.norm_emb=norm_emb
+        self.norm_cfr=norm_cfr
         self.projection = torch.nn.Linear(d_model,int(d_model/2),bias=False)
-        self.classifier = torch.nn.Linear(d_model, n_outputs, bias)
+        self.classifier = torch.nn.Linear(d_model, n_outputs, bias=cfr_bias)
         # self.classifier = torch.nn.Linear(d_model*n_layers, n_outputs, bias)
         torch.nn.init.normal_(self.class_token, std=0.02)
 
@@ -98,7 +100,16 @@ class My_Transformer_Layer(torch.nn.Module):
         # # x = torch.reshape(x,(x.shape[0],x.shape[1]*x.shape[2])) # Concatenate all token embeddings
         # x = x[:,0,:] # Take first token embedding (CLS token)
         x = self.forward_upto_classifier(x)
-        if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        if self.supcon or self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        if self.norm_cfr and self.training==False:
+            print(x.shape)
+            print(self.classifier.weight.shape)
+            norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
+            y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
+            print(y_pred.shape)
+            print(y_pred)
+            sys.exit()
+            return y_pred
         y_pred = self.classifier(x)
         return y_pred
     
