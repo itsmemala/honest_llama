@@ -103,9 +103,9 @@ class My_Transformer_Layer(torch.nn.Module):
         if self.supcon or self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
         if self.norm_cfr and self.training==False:
             norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
-            print((x * norm_cfr_wgts).shape)
             y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
-            print(y_pred.shape)
+            print(y_pred)
+            y_pred = (y_pred + 1)/2
             print(y_pred)
             sys.exit()
             return y_pred
