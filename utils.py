@@ -106,7 +106,7 @@ class My_Transformer_Layer(torch.nn.Module):
             y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
             y_pred = (y_pred + 1)/2
             assert y_pred.min().item()>=0 and y_pred.max().item()<=1
-            return y_pred
+            return y_pred[None,:]
         y_pred = self.classifier(x)
         return y_pred
     
