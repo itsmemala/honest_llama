@@ -777,7 +777,7 @@ def main():
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 n_blocks = 2 if 'transformer2' in args.method else 1
                                 supcon = True if 'supcon' in args.method else False
-                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=norm_emb, norm_cfr=norm_cfr, cfr_no_bias=cfr_no_bias).to(device)
+                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device)
                                 if args.retrain_model_path is not None:
                                     retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_model_path).state_dict()
