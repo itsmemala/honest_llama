@@ -155,7 +155,7 @@ def main():
     # strqa
     response_data = []
     for end in ['']:
-        with open(f'{args.save_path}/responses/vicuna_7B_strqa_greedy_responsestrain1832{end}.json', 'r') as read_file:
+        with open(f'{args.save_path}/responses/vicuna_7B_strqa_greedy_responses_train1832{end}.json', 'r') as read_file:
             response_data = json.load(read_file)
     response_data_pd = pd.DataFrame.from_dict(response_data)
     print(response_data_pd.columns)
