@@ -144,6 +144,7 @@ class LogisticRegression_Torch(torch.nn.Module):
             norm_cfr_wgts = F.normalize(self.linear.weight, p=2, dim=-1)
             y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
             y_pred = (y_pred + 1)/2 # re-scale to yield probability values
+            print(y_pred)
             assert y_pred.min().item()>=0 and y_pred.max().item()<=1
             return y_pred[:,None] # ensure same shape of output between eval() and train()
         y_pred = self.linear(x)
