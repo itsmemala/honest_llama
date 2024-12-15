@@ -1,5 +1,5 @@
 ################################# transformer n 1 layer ##########################
-# python get_activations.py hl_llama_7B nq_open --token answer_last --file_name nq_open_greedy_responses_train5000  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py hl_llama_7B nq_open -token answer_last --file_name nq_open_greedy_responses_train5000  --device 0 --save_path /home/local/data/ms/honest_llama_data
 # python get_activations.py hl_llama_7B nq_open --token answer_last --file_name nq_open_greedy_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data
 
 # python get_activations_and_probe_transformer.py hl_llama_7B nq_open --train_file_name nq_open_greedy_responses_train5000 --test_file_name nq_open_greedy_responses_validation1800 --train_labels_file_name nq_open_greedy_responses_labels_train5000 --test_labels_file_name nq_open_greedy_responses_labels_validation1800 --len_dataset 5000 --num_folds 1 --using_act layer --token answer_last --method transformer_hallu_pos --bs 128 --epochs 50 --lr_list 0.00005,0.0005,0.005 --save_probes True --save_path /home/local/data/ms/honest_llama_data --fast_mode True  --plot_name transformer-n --tag main-transformer-5kbestauc --use_best_val_t True  --seed_list 42,101,2650 --best_using_auc True
