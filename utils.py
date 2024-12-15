@@ -133,11 +133,19 @@ class My_Transformer_Layer(torch.nn.Module):
 
 class LogisticRegression_Torch(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_outputs, bias):
+    def __init__(self, n_inputs, n_outputs, bias, norm_emb=False, norm_cfr=False, cfr_no_bias=False): # bias should not be used; retained for backward compatibility; use cfr_no_bias instead for alignment with other NLP and Tr networks
         super().__init__()
-        self.linear = torch.nn.Linear(n_inputs, n_outputs, bias)
+        self.norm_emb=norm_emb
+        self.norm_cfr=norm_cfr
+        self.linear = torch.nn.Linear(n_inputs, n_outputs, bias=not cfr_no_bias)
     # make predictions
     def forward(self, x):
+        if self.norm_cfr and self.training==False:
+            norm_cfr_wgts = F.normalize(self.linear.weight, p=2, dim=-1)
+            y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
+            y_pred = (y_pred + 1)/2 # re-scale to yield probability values
+            assert y_pred.min().item()>=0 and y_pred.max().item()<=1
+            return y_pred[:,None] # ensure same shape of output between eval() and train()
         y_pred = self.linear(x)
         return y_pred
     def forward_upto_classifier(self, x):
@@ -180,7 +188,7 @@ class LogisticRegression_Torch(torch.nn.Module):
 #         return out
 
 class My_SupCon_NonLinear_Classifier4(nn.Module):
-    def __init__(self, input_size, output_size=2, bias=True, use_dropout=False, supcon=False, path=None):
+    def __init__(self, input_size, output_size=2, bias=True, use_dropout=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, path=None):
         super().__init__()
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(0.2)
@@ -191,8 +199,10 @@ class My_SupCon_NonLinear_Classifier4(nn.Module):
         self.linear3 = nn.Linear(128, 64)
         self.relu3 = nn.ReLU()
         self.supcon=supcon
+        self.norm_emb=norm_emb
+        self.norm_cfr=norm_cfr
         self.projection = torch.nn.Linear(64,32,bias=False)
-        self.classifier = nn.Linear(64, output_size, bias=bias)
+        self.classifier = nn.Linear(64, output_size, bias=not cfr_no_bias)
     def forward(self,x):
         # if self.use_dropout: x = self.dropout(x)
         # x = self.linear1(x)
@@ -203,7 +213,13 @@ class My_SupCon_NonLinear_Classifier4(nn.Module):
         # x = self.linear3(x)
         # x = self.relu3(x)
         x = self.forward_upto_classifier(x)
-        if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        if self.supcon or self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        if self.norm_cfr and self.training==False:
+            norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
+            y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
+            y_pred = (y_pred + 1)/2 # re-scale to yield probability values
+            assert y_pred.min().item()>=0 and y_pred.max().item()<=1
+            return y_pred[:,None] # ensure same shape of output between eval() and train()
         output = self.classifier(x)
         return output
     def forward_upto_classifier(self, x):
