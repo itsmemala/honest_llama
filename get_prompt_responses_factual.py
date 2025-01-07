@@ -608,10 +608,10 @@ def main():
     else:
         save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
     
-    with open(save_fname, 'r') as read_file:
-        responses = []
-        for line in read_file:
-            responses.append(json.loads(line))
+    # with open(save_fname, 'r') as read_file:
+    #     responses = []
+    #     for line in read_file:
+    #         responses.append(json.loads(line))
     
     # Fix llama-2 generation issue
     # for i,row in enumerate(responses):
@@ -621,15 +621,15 @@ def main():
         # if resp.split("\n")[0]!=resp:
         #     print(i,"\n",resp,"\n\n",resp.split("\n")[0])
     
-    # if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
-    #     with open(save_fname, 'w') as f:
-    #         json.dump(result_dict, f)
-    #     np.save(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}_oom_idxs.npy',oom_err_idxs)
-    # else:
-    #     with open(save_fname, 'w') as outfile:
-    #         for entry in responses:
-    #             json.dump(entry, outfile)
-    #             outfile.write('\n')
+    if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
+        with open(save_fname, 'w') as f:
+            json.dump(result_dict, f)
+        np.save(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}_oom_idxs.npy',oom_err_idxs)
+    else:
+        with open(save_fname, 'w') as outfile:
+            for entry in responses:
+                json.dump(entry, outfile)
+                outfile.write('\n')
 
     
     print('Getting labels for model responses..')
