@@ -374,69 +374,69 @@ def main():
             # sys.exit()
 
             ########################
-            # print(layer_pred_thresholds[num_layers-1], fpr_list, r_list)
-            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
-            # seed_results_list.append(best_r)
-            # seed_results_list.append(test_fpr_best_r)
-            if args.fpr_at_recall==-1:
-                # Create dirs if does not exist:
-                if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
-                    os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
-                test_preds, model = all_preds, num_layers-1
-                recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
-                fig, axs = plt.subplots(1,1)
-                axs.plot(recall_vals,fpr_at_recall_vals)
-                for xy in zip(recall_vals,fpr_at_recall_vals):
-                    axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
-                axs.set_xlabel('Recall')
-                axs.set_ylabel('FPR')
-                axs.title.set_text('FPR at recall')
-                fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
-                seed_results_list.append(aucfpr)
-                np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
-                np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
-            else:
-                seed_results_list.append(test_fpr)
-            seed_results_list.append(test_fpr_best_f1)
-            seed_results_list.append(f1_score(labels,confident_sample_pred))
-            seed_results_list.append(precision_score(labels,confident_sample_pred))
-            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
-            precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1]))
-            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
-            seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(all_preds[num_layers-1])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[num_layers-1]))) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
-            ########################
-
-            # # Best probe from validation data
-            # ma_layer = np.argmax(val_f1_avg)
-            # confident_sample_pred = []
-            # for i in range(all_preds.shape[1]):
-            #     sample_pred = np.squeeze(all_preds[ma_layer,i])
-            #     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-            #         confident_sample_pred.append(1 if sample_pred<=layer_pred_thresholds[ma_layer] else 0)
-            #     else:
-            #         confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[ma_layer] else 0)
-            # # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
-            # # print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
-            
-            # confident_sample_pred = np.array(confident_sample_pred)
-            # fp = np.sum((confident_sample_pred == 1) & (labels == 0))
-            # tn = np.sum((confident_sample_pred == 0) & (labels == 0))
-            # test_fpr_best_f1 = fp / (fp + tn)
-
-            ########################
+            # # print(layer_pred_thresholds[num_layers-1], fpr_list, r_list)
             # seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            # # seed_results_list.append(best_r)
+            # # seed_results_list.append(test_fpr_best_r)
             # if args.fpr_at_recall==-1:
-            #     recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(all_preds[ma_layer],labels)
+            #     # Create dirs if does not exist:
+            #     if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
+            #         os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
+            #     test_preds, model = all_preds, num_layers-1
+            #     recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
+            #     fig, axs = plt.subplots(1,1)
+            #     axs.plot(recall_vals,fpr_at_recall_vals)
+            #     for xy in zip(recall_vals,fpr_at_recall_vals):
+            #         axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
+            #     axs.set_xlabel('Recall')
+            #     axs.set_ylabel('FPR')
+            #     axs.title.set_text('FPR at recall')
+            #     fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
             #     seed_results_list.append(aucfpr)
+            #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
+            #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
             # else:
             #     seed_results_list.append(test_fpr)
             # seed_results_list.append(test_fpr_best_f1)
             # seed_results_list.append(f1_score(labels,confident_sample_pred))
             # seed_results_list.append(precision_score(labels,confident_sample_pred))
             # seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
-            # precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[ma_layer]))
+            # precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1]))
             # seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
-            # seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(all_preds[ma_layer])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[ma_layer]))) # print(roc_auc_score(labels,np.squeeze(all_preds[ma_layer])))
+            # seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(all_preds[num_layers-1])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[num_layers-1]))) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:])))
+            ########################
+
+            # Best probe from validation data
+            ma_layer = np.argmax(val_f1_avg)
+            confident_sample_pred = []
+            for i in range(all_preds.shape[1]):
+                sample_pred = np.squeeze(all_preds[ma_layer,i])
+                if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
+                    confident_sample_pred.append(1 if sample_pred<=layer_pred_thresholds[ma_layer] else 0)
+                else:
+                    confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[ma_layer] else 0)
+            # print('Using best layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
+            # print('Using best layer probe:\n',classification_report(labels,confident_sample_pred))
+            
+            confident_sample_pred = np.array(confident_sample_pred)
+            fp = np.sum((confident_sample_pred == 1) & (labels == 0))
+            tn = np.sum((confident_sample_pred == 0) & (labels == 0))
+            test_fpr_best_f1 = fp / (fp + tn)
+
+            #######################
+            seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
+            if args.fpr_at_recall==-1:
+                recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(all_preds[ma_layer],labels)
+                seed_results_list.append(aucfpr)
+            else:
+                seed_results_list.append(test_fpr)
+            seed_results_list.append(test_fpr_best_f1)
+            seed_results_list.append(f1_score(labels,confident_sample_pred))
+            seed_results_list.append(precision_score(labels,confident_sample_pred))
+            seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
+            precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[ma_layer]))
+            seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
+            seed_results_list.append(roc_auc_score(labels, [-v for v in np.squeeze(all_preds[ma_layer])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[ma_layer]))) # print(roc_auc_score(labels,np.squeeze(all_preds[ma_layer])))
             ########################
 
             #####################################################################################################################################
