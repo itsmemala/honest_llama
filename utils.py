@@ -51,8 +51,9 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, d_model=128, device='cuda'):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, d_model=128, no_act_proj=False, device='cuda'):
         super().__init__()
+        self.no_act_proj = no_act_proj
         d_model = d_model #128 # 256
         dim_feedforward = 1024 # 256
         nhead = 16 # 16 # 8
@@ -113,7 +114,10 @@ class My_Transformer_Layer(torch.nn.Module):
     def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs)
         layer_wise_x = []
         for layer in range(x.shape[-2]):
-            layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+            if self.no_act_proj:
+                layer_wise_x.append(torch.squeeze(x[:,layer,:]))
+            else:
+                layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
         x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
         if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
         x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
