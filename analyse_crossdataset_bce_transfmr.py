@@ -61,6 +61,7 @@ def main():
     parser.add_argument('--aufpr_till',type=float, default=1.0)
     parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
     parser.add_argument("--best_hyp_on_test", type=bool, default=False, help='')
+    parser.add_argument("--show_val_res", type=bool, default=False, help='')
     parser.add_argument("--plot_loss", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
@@ -321,8 +322,12 @@ def main():
             best_probes_file_name, all_val_pred, all_val_true, best_t, val_dist_min, val_dist_max  = results_at_best_lr(model)
             best_probes_per_model.append(best_probes_file_name)
             layer_pred_thresholds.append(best_t)
-            test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
-            labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
+            if args.show_val_res:
+                test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy')[0]
+                labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')[0][0] ## Since labels are same for all models
+            else:
+                test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
+                labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
             
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
