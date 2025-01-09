@@ -319,6 +319,7 @@ def main():
     parser.add_argument('--norm_emb',type=bool, default=False)
     parser.add_argument('--norm_cfr',type=bool, default=False)
     parser.add_argument('--cfr_no_bias',type=bool, default=False)
+    parser.add_argument('--tfr_d_model',type=int, default=128)
     parser.add_argument('--norm_input',type=bool, default=False)
     parser.add_argument('--supcon_temp',type=float, default=0.1)
     parser.add_argument('--sc1_wgt',type=float, default=1)
@@ -666,6 +667,7 @@ def main():
                             if args.use_batch_norm: method_concat = method_concat + '_batchnorm'
                             if args.shuffle_batch_prompts: method_concat = method_concat + '_shufflebp'
                             if args.norm_emb and args.norm_cfr and args.cfr_no_bias: method_concat += '_normcfr'
+                            if args.tfr_d_model!=128: method_concat += '_dmodel' + str(args.tfr_d_model)
 
                             # Probe training
                             np.random.seed(save_seed)
@@ -777,7 +779,7 @@ def main():
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 n_blocks = 2 if 'transformer2' in args.method else 1
                                 supcon = True if 'supcon' in args.method else False
-                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device)
+                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model).to(device)
                                 if args.retrain_model_path is not None:
                                     retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_model_path).state_dict()

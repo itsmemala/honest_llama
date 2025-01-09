@@ -51,9 +51,9 @@ from truthfulqa.evaluate import format_frame, data_to_dict
 
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
-    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, device='cuda'):
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, d_model=128, device='cuda'):
         super().__init__()
-        d_model = 128 # 256
+        d_model = d_model #128 # 256
         dim_feedforward = 1024 # 256
         nhead = 16 # 16 # 8
         max_length = 512*n_layers # max_new_tokens in generation config x num_layers
