@@ -1128,8 +1128,13 @@ def main():
                                     elif args.ood_test:
                                         prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                         prior_probes_file_name += plot_name_concat
-                                    prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}_{layer}_{head}'
-                                    nlinear_model = torch.load(prior_save_path,map_location=device)
+                                    try:
+                                        prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}_{layer}_{head}'
+                                        nlinear_model = torch.load(prior_save_path,map_location=device)
+                                    except FileNotFoundError:
+                                        prior_probes_file_name = prior_probes_file_name.replace("/","") # FOR BACKWARD COMPATIBILITY
+                                        prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}_{layer}_{head}'
+                                        nlinear_model = torch.load(prior_save_path,map_location=device)
                                     probes_file_name += '_' + args.which_checkpoint
                                     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}_{layer}_{head}'
                                     torch.save(nlinear_model, probe_save_path)
