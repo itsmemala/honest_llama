@@ -1135,7 +1135,7 @@ def main():
                                         prior_probes_file_name = prior_probes_file_name.replace("/","") # FOR BACKWARD COMPATIBILITY
                                         prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}_{layer}_{head}'
                                         nlinear_model = torch.load(prior_save_path,map_location=device)
-                                    probes_file_name += '_' + args.which_checkpoint
+                                    if args.which_checkpoint not in probes_file_name: probes_file_name += '_' + args.which_checkpoint
                                     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}_{layer}_{head}'
                                     torch.save(nlinear_model, probe_save_path)
                                 
