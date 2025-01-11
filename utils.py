@@ -153,13 +153,19 @@ class LogisticRegression_Torch(torch.nn.Module):
         self.linear = torch.nn.Linear(n_inputs, n_outputs, bias=not cfr_no_bias)
     # make predictions
     def forward(self, x):
-        if self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
-        if self.norm_cfr and self.training==False:
-            norm_cfr_wgts = F.normalize(self.linear.weight, p=2, dim=-1)
-            y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
-            y_pred = (y_pred + 1)/2 # re-scale to yield probability values
-            assert y_pred.min().item()>=0 and y_pred.max().item()<=1
-            return y_pred[:,None] # ensure same shape of output between eval() and train()
+        try:
+            if self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        except AttributeError:
+            pass
+        try:
+            if self.norm_cfr and self.training==False:
+                norm_cfr_wgts = F.normalize(self.linear.weight, p=2, dim=-1)
+                y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
+                y_pred = (y_pred + 1)/2 # re-scale to yield probability values
+                assert y_pred.min().item()>=0 and y_pred.max().item()<=1
+                return y_pred[:,None] # ensure same shape of output between eval() and train()
+        except AttributeError:
+            pass
         y_pred = self.linear(x)
         return y_pred
     def forward_upto_classifier(self, x):
