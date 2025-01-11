@@ -114,9 +114,12 @@ class My_Transformer_Layer(torch.nn.Module):
     def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs)
         layer_wise_x = []
         for layer in range(x.shape[-2]):
-            if self.no_act_proj:
-                layer_wise_x.append(torch.squeeze(x[:,layer,:]))
-            else:
+            try:
+                if self.no_act_proj:
+                    layer_wise_x.append(torch.squeeze(x[:,layer,:]))
+                else:
+                    layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+            except AttributeError:
                 layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
         x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
         if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
