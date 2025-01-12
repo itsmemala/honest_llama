@@ -276,9 +276,11 @@ def main():
     parser.add_argument('--train_name_list', type=list_of_strs, default=None)
     parser.add_argument('--train_labels_name_list', type=list_of_strs, default=None)
     parser.add_argument('--len_dataset_list', type=list_of_ints, default=None)
+    parser.add_argument('--ds_start_at_list', type=list_of_ints, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <reverse>, <_hallu_pos>)
+    parser.add_argument('--retrain_full_model_path',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
     parser.add_argument('--norm_emb',type=bool, default=False)
@@ -377,7 +379,7 @@ def main():
     args.train_name_list = [args.train_file_name] if args.train_name_list is None else args.train_name_list
     args.train_labels_name_list = [args.train_labels_file_name] if args.train_labels_name_list is None else args.train_labels_name_list
     args.len_dataset_list = [args.len_dataset] if args.len_dataset_list is None else args.len_dataset_list
-    for dataset_name,train_file_name,train_labels_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list):
+    for dataset_name,train_file_name,train_labels_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list,args.ds_start_at_list):
         args.dataset_name = dataset_name
         args.train_file_name = train_file_name
         args.train_labels_file_name = train_labels_file_name
@@ -403,7 +405,8 @@ def main():
                         if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
                         if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
                         labels.append(label)
-            labels = labels[:args.len_dataset]
+            labels = labels[ds_start_at:ds_start_at+args.len_dataset]
+            assert len(labels)==args.len_dataset
             all_labels += labels
         elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
             num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
@@ -439,7 +442,8 @@ def main():
                                 labels.append(label)
                                 sum_over_samples += label
                             if sum_over_samples==0 or sum_over_samples==num_samples: num_samples_with_no_var += 1
-            labels = labels[:args.len_dataset]
+            labels = labels[ds_start_at:ds_start_at+args.len_dataset]
+            assert len(labels)==args.len_dataset
             all_labels += labels
     labels = all_labels
     if args.test_file_name is None:
@@ -650,7 +654,7 @@ def main():
                             ds_prompt_start_idx = 0
                             for dl,tn in zip(args.len_dataset_list,args.train_name_list):
                                 # num_prompts = int(len(train_idxs)/num_samples)
-                                num_samples = 8 if 'strqa' in tn else 8
+                                num_samples = 8 if 'strqa' in tn else 10
                                 num_prompts = dl
                                 # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
                                 # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
@@ -735,6 +739,12 @@ def main():
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
                                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
                                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
+                                if args.retrain_full_model_path is not None:
+                                    retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
+                                    retrain_model_state_dict = torch.load(retrain_full_model_path).state_dict()
+                                    with torch.no_grad():
+                                        for n,param in nlinear_model.named_parameters():
+                                            param.copy_(retrain_model_state_dict[n])
                                 wgt_0 = np.sum(cur_probe_y_train)/len(cur_probe_y_train)
                                 criterion = nn.BCEWithLogitsLoss(weight=torch.FloatTensor([wgt_0,1-wgt_0]).to(device)) if args.use_class_wgt else nn.BCEWithLogitsLoss()
                                 criterion_supcon = SupConLoss(temperature=args.supcon_temp) if 'supconv2' in args.method else NTXentLoss()
