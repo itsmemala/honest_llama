@@ -379,6 +379,7 @@ def main():
     args.train_name_list = [args.train_file_name] if args.train_name_list is None else args.train_name_list
     args.train_labels_name_list = [args.train_labels_file_name] if args.train_labels_name_list is None else args.train_labels_name_list
     args.len_dataset_list = [args.len_dataset] if args.len_dataset_list is None else args.len_dataset_list
+    args.ds_start_at_list = [0 for k in args.dataset_list] if args.ds_start_at_list is None else args.ds_start_at_list
     for dataset_name,train_file_name,train_labels_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list,args.ds_start_at_list):
         args.dataset_name = dataset_name
         args.train_file_name = train_file_name
