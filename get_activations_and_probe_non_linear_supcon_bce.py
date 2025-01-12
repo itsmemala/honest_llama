@@ -1136,7 +1136,7 @@ def main():
                                     elif args.ood_test:
                                         prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                         prior_probes_file_name += plot_name_concat
-                                    elif 'multi' in args.dataset_name:
+                                    else: # multi
                                         prior_probes_file_name = probes_file_name.replace('trivia_qa',test_dataset_name)
                                     try:
                                         prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}_{layer}_{head}'
