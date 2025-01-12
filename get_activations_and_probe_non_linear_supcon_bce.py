@@ -647,33 +647,41 @@ def main():
                         test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
                         cur_probe_train_idxs = train_idxs
                         if 'sampled' in args.train_file_name:
-                            num_prompts = int(len(train_idxs)/num_samples)
-                            # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
-                            # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
-                            labels_sample_dist = []
-                            for k in range(num_prompts):
-                                sample_dist = sum(labels[(k*num_samples):(k*num_samples)+num_samples])
-                                if sample_dist==num_samples:
-                                    labels_sample_dist.append(0)
-                                elif sample_dist==0:
-                                    labels_sample_dist.append(1)
-                                elif sample_dist <= int(num_samples/3):
-                                    labels_sample_dist.append(2)
-                                elif sample_dist > int(2*num_samples/3):
-                                    labels_sample_dist.append(3)
-                                else:
-                                    labels_sample_dist.append(4)
-                            if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(0)] = 3
-                            if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(1)] = 2
-                            if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
-                            if labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
-                            if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
-                            train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
-                            train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
-                            # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
-                            val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
-                            # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
-                            print('Hallu in val:',sum([labels[i] for i in val_set_idxs]),'Hallu in train:',sum([labels[i] for i in train_set_idxs]))
+                            ds_prompt_start_idx = 0
+                            for dl,tn in zip(args.len_dataset_list,args.train_name_list):
+                                # num_prompts = int(len(train_idxs)/num_samples)
+                                num_samples = 8 if 'strqa' in tn else 8
+                                num_prompts = dl
+                                # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
+                                # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+                                labels_sample_dist = []
+                                for k in range(num_prompts):
+                                    cur_prompt_idx = ds_prompt_start_idx+(k*num_samples)
+                                    sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+num_samples])
+                                    if sample_dist==num_samples:
+                                        labels_sample_dist.append(0)
+                                    elif sample_dist==0:
+                                        labels_sample_dist.append(1)
+                                    elif sample_dist <= int(num_samples/3):
+                                        labels_sample_dist.append(2)
+                                    elif sample_dist > int(2*num_samples/3):
+                                        labels_sample_dist.append(3)
+                                    else:
+                                        labels_sample_dist.append(4)
+                                if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(0)] = 3
+                                if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(1)] = 2
+                                if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
+                                if labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
+                                if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
+                                train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
+                                # train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
+                                train_set_idxs = np.concatenate([np.arange(ds_prompt_start_idx+(k*num_samples),ds_prompt_start_idx+(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
+                                # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
+                                # val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
+                                val_set_idxs = np.array([ds_prompt_start_idx+(k*num_samples) for k in val_prompt_idxs])
+                                # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
+                                print('Hallu in val:',sum([labels[i] for i in val_set_idxs]),'Hallu in train:',sum([labels[i] for i in train_set_idxs]))
+                                ds_prompt_start_idx += num_samples*num_prompts
                         else:
                             # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
                             # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
@@ -1128,6 +1136,8 @@ def main():
                                     elif args.ood_test:
                                         prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                         prior_probes_file_name += plot_name_concat
+                                    elif 'multi' in args.dataset_name:
+                                        prior_probes_file_name = probes_file_name.replace('trivia_qa',test_dataset_name)
                                     try:
                                         prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}_{layer}_{head}'
                                         nlinear_model = torch.load(prior_save_path,map_location=device)
