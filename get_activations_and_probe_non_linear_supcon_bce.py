@@ -1148,6 +1148,7 @@ def main():
                                         prior_probes_file_name += plot_name_concat
                                     else: # multi
                                         prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa')
+                                        prior_probes_file_name += plot_name_concat
                                     try:
                                         prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}_{layer}_{head}'
                                         nlinear_model = torch.load(prior_save_path,map_location=device)
