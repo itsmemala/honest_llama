@@ -233,13 +233,19 @@ class My_SupCon_NonLinear_Classifier4(nn.Module):
         # x = self.linear3(x)
         # x = self.relu3(x)
         x = self.forward_upto_classifier(x)
-        if self.supcon or self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
-        if self.norm_cfr and self.training==False:
-            norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
-            y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
-            y_pred = (y_pred + 1)/2 # re-scale to yield probability values
-            assert y_pred.min().item()>=0 and y_pred.max().item()<=1
-            return y_pred[:,None] # ensure same shape of output between eval() and train()
+        try:
+            if self.supcon or self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        except AttributeError:
+            if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        try:
+            if self.norm_cfr and self.training==False:
+                norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
+                y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
+                y_pred = (y_pred + 1)/2 # re-scale to yield probability values
+                assert y_pred.min().item()>=0 and y_pred.max().item()<=1
+                return y_pred[:,None] # ensure same shape of output between eval() and train()
+        except AttributeError:
+            pass
         output = self.classifier(x)
         return output
     def forward_upto_classifier(self, x):
