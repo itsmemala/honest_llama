@@ -685,6 +685,11 @@ def main():
                                 # val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
                                 val_set_idxs = np.array([ds_prompt_start_idx+(k*num_samples) for k in val_prompt_idxs])
                                 # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
+                                print(min(train_prompt_idxs),max(train_prompt_idxs))
+                                print(min(val_prompt_idxs),max(val_prompt_idxs))
+                                print(min(train_set_idxs),max(train_set_idxs))
+                                print(min(val_set_idxs),max(val_set_idxs))
+                                print(len(labels))
                                 print('Hallu in val:',sum([labels[i] for i in val_set_idxs]),'Hallu in train:',sum([labels[i] for i in train_set_idxs]))
                                 ds_prompt_start_idx += num_samples*num_prompts
                         else:
