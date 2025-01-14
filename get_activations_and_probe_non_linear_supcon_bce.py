@@ -530,7 +530,7 @@ def main():
         print("Loading acts...")
         act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
         my_train_acts, my_test_acts = [], []
-        for dataset_name,train_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.len_dataset_list):
+        for dataset_name,train_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.len_dataset_list,args.ds_start_at_list):
             args.dataset_name = dataset_name
             args.train_file_name = train_file_name
             args.len_dataset = len_dataset
@@ -540,7 +540,7 @@ def main():
                 args.acts_per_file = 20
             else:
                 args.acts_per_file = 100
-            temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(args.len_dataset)
+            temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(ds_start_at,ds_start_at+args.len_dataset)
             act_wise_file_paths, unique_file_paths = [], []
             for idx in temp_train_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
