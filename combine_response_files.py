@@ -70,53 +70,53 @@ def main():
     #         json.dump(entry, outfile)
             # outfile.write('\n')
     
-    greedy_resp_data = []
-    with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_greedy_responses_train5000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_resp_data.append(json.loads(line))
-    greedy_resp_data = greedy_resp_data#[:2000]
-    sampled_resp_data = []
-    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_train2000.json', 'r') as read_file:
+    # greedy_resp_data = []
+    # with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_greedy_responses_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_resp_data.append(json.loads(line))
+    # greedy_resp_data = greedy_resp_data#[:2000]
+    # sampled_resp_data = []
+    # # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_train2000.json', 'r') as read_file:
+    # #     for line in read_file:
+    # #         sampled_resp_data.append(json.loads(line))
+    # with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampled_responses_train5000.json', 'r') as read_file:
     #     for line in read_file:
     #         sampled_resp_data.append(json.loads(line))
-    with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampled_responses_train5000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_resp_data.append(json.loads(line))
-    for i,s_row in enumerate(sampled_resp_data):
-        greedy_i = ''
-        for k,g_row in enumerate(greedy_resp_data):
-            if g_row['prompt']==s_row['prompt']: greedy_i = k
-        sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
+    # for i,s_row in enumerate(sampled_resp_data):
+    #     greedy_i = ''
+    #     for k,g_row in enumerate(greedy_resp_data):
+    #         if g_row['prompt']==s_row['prompt']: greedy_i = k
+    #     sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
 
-    print(len(sampled_resp_data))    
-    with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampledplus_responses_train5000.json', 'w') as outfile:
-        for entry in sampled_resp_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print(len(sampled_resp_data))    
+    # with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampledplus_responses_train5000.json', 'w') as outfile:
+    #     for entry in sampled_resp_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
     
-    greedy_labels_data = []
-    with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_labels_data.append(json.loads(line))
-    greedy_labels_data = greedy_labels_data#[:2000]
-    sampled_labels_data = []
-    # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
+    # greedy_labels_data = []
+    # with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_greedy_responses_labels_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_labels_data.append(json.loads(line))
+    # greedy_labels_data = greedy_labels_data#[:2000]
+    # sampled_labels_data = []
+    # # with open(f'{args.save_path}/responses/alpaca_7B_trivia_qa_sampled_responses_labels_train2000.json', 'r') as read_file:
+    # #     for line in read_file:
+    # #         sampled_labels_data.append(json.loads(line))
+    # with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampled_responses_labels_train5000.json', 'r') as read_file:
     #     for line in read_file:
     #         sampled_labels_data.append(json.loads(line))
-    with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampled_responses_labels_train5000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_labels_data.append(json.loads(line))
-    for i,s_row in enumerate(sampled_resp_data):
-        greedy_i = ''
-        for k,g_row in enumerate(greedy_resp_data):
-            if g_row['prompt']==s_row['prompt']: greedy_i = k
-        sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
+    # for i,s_row in enumerate(sampled_resp_data):
+    #     greedy_i = ''
+    #     for k,g_row in enumerate(greedy_resp_data):
+    #         if g_row['prompt']==s_row['prompt']: greedy_i = k
+    #     sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
         
-    print(len(sampled_labels_data))
-    with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampledplus_responses_labels_train5000.json', 'w') as outfile:
-        for entry in sampled_labels_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print(len(sampled_labels_data))
+    # with open(f'{args.save_path}/responses/vicuna_7B_trivia_qa_sampledplus_responses_labels_train5000.json', 'w') as outfile:
+    #     for entry in sampled_labels_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
 
     # labels_data = []
@@ -210,24 +210,24 @@ def main():
     # with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses_test.json', 'w') as outfile:
     #     json.dump(test.to_dict(orient='list'), outfile)
 
-    # with open(f'{args.save_path}/responses/alpaca_7B_strqa_baseline_responses_train.json', 'r') as read_file:
-    #     greedy_train_data = json.load(read_file)
-    # with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampled_responses_train.json', 'r') as read_file:
-    #     sampled_train_data = json.load(read_file)
-    # # print(len(sampled_train_data['is_correct']))
-    # # print(sampled_train_data.keys())
-    # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
-    # for i in range(len(sampled_train_data['is_correct'])):
-    #     if len(sampled_train_data['is_correct'][i])>0:
-    #         # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
-    #         result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]])
-    #         result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][i]])
-    #         result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
-    #         result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
+    with open(f'{args.save_path}/responses/vicuna_7B_strqa_baseline_responses_train.json', 'r') as read_file:
+        greedy_train_data = json.load(read_file)
+    with open(f'{args.save_path}/responses/vicuna_7B_strqa_sampled_responses_train5000.json', 'r') as read_file:
+        sampled_train_data = json.load(read_file)
+    # print(len(sampled_train_data['is_correct']))
+    # print(sampled_train_data.keys())
+    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
+    for i in range(len(sampled_train_data['is_correct'])):
+        if len(sampled_train_data['is_correct'][i])>0:
+            # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
+            result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]])
+            result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][i]])
+            result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
+            result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
     
-    # print(len(result_dict['is_correct'])) # 1831
-    # with open(f'{args.save_path}/responses/alpaca_7B_strqa_sampledplus_responses_train.json', 'w') as f:
-    #         json.dump(result_dict, f)
+    print(len(result_dict['is_correct'])) # 1831
+    with open(f'{args.save_path}/responses/vicuna_7B_strqa_sampledplus_responses_train.json', 'w') as f:
+            json.dump(result_dict, f)
     ##
 
     ##gsm8k
