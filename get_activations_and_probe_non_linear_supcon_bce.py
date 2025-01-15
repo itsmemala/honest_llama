@@ -656,7 +656,7 @@ def main():
                             for dl,tn in zip(args.len_dataset_list,args.train_name_list):
                                 # num_prompts = int(len(train_idxs)/num_samples)
                                 num_samples = 9 if 'strqa' in tn else 11
-                                num_prompts = dl/num_samples
+                                num_prompts = int(dl/num_samples)
                                 # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
                                 # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
                                 labels_sample_dist = []
