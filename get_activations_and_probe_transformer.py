@@ -728,7 +728,7 @@ def main():
                                             labels_sample_dist.append(4)
                                     print(Counter(labels_sample_dist))
                                     if labels_sample_dist.count(0)==1 or labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
-                                    if labels_sample_dist.count(1)==1 or if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
+                                    if labels_sample_dist.count(1)==1 or labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
                                     if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
                                     if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(4)] = 0
                                     if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
