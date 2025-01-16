@@ -727,15 +727,12 @@ def main():
                                         else:
                                             labels_sample_dist.append(4)
                                     print(Counter(labels_sample_dist))
-                                    if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(0)] = 3
-                                    if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(1)] = 2
-                                    if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
-                                    if labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
+                                    if labels_sample_dist.count(0)==1 or labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
+                                    if labels_sample_dist.count(1)==1 or if labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
                                     if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
-                                    if len(np.unique(labels_sample_dist))==1:
-                                        train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(train_idxs, labels, stratify=labels,test_size=0.2)
-                                    else:
-                                        train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
+                                    if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(4)] = 0
+                                    if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
+                                    train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
                                     train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
                                     # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
                                     val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
