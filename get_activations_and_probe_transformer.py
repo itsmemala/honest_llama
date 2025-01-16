@@ -1065,14 +1065,14 @@ def main():
                                         prior_probes_file_name += plot_name_concat
                                     else: # multi
                                         prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa')
+                                    try:
                                         if plot_name_concat not in prior_probes_file_name: prior_probes_file_name += plot_name_concat
                                         if args.which_checkpoint not in prior_probes_file_name: prior_probes_file_name += '_' + args.which_checkpoint
-                                    try:
-                                        prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}'
+                                        prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
                                         nlinear_model = torch.load(prior_save_path,map_location=device)
                                     except FileNotFoundError:
                                         prior_probes_file_name = prior_probes_file_name.replace("/","") # FOR BACKWARD COMPATIBILITY
-                                        prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_{args.which_checkpoint}_model{i}'
+                                        prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
                                         nlinear_model = torch.load(prior_save_path,map_location=device)
                                     if args.which_checkpoint not in probes_file_name: probes_file_name += '_' + args.which_checkpoint
                                     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
