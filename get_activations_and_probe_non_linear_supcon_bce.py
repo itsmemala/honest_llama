@@ -621,7 +621,7 @@ def main():
                         probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                     elif len(args.dataset_list)>1:
                         multi_name = 'multi2' if len(args.dataset_list)==2 else 'multi'
-                        multi_name += 'sampledplus' if 'sampledplus' in args.train_name_list[0]
+                        if 'sampledplus' in args.train_name_list[0]: multi_name += 'sampledplus'
                         probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{multi_name}_/{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                     elif args.ood_test:
                         train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
