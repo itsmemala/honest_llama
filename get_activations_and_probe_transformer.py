@@ -305,6 +305,7 @@ def main():
     parser.add_argument('--train_name_list', type=list_of_strs, default=None)
     parser.add_argument('--train_labels_name_list', type=list_of_strs, default=None)
     parser.add_argument('--len_dataset_list', type=list_of_ints, default=None)
+    parser.add_argument('--ds_start_at_list', type=list_of_ints, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--max_tokens',type=int, default=25)
@@ -418,7 +419,8 @@ def main():
     args.train_name_list = [args.train_file_name] if args.train_name_list is None else args.train_name_list
     args.train_labels_name_list = [args.train_labels_file_name] if args.train_labels_name_list is None else args.train_labels_name_list
     args.len_dataset_list = [args.len_dataset] if args.len_dataset_list is None else args.len_dataset_list
-    for dataset_name,train_file_name,train_labels_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list):
+    args.ds_start_at_list = [0 for k in args.dataset_list] if args.ds_start_at_list is None else args.ds_start_at_list
+    for dataset_name,train_file_name,train_labels_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list,args.ds_start_at_list):
         args.dataset_name = dataset_name
         args.train_file_name = train_file_name
         args.train_labels_file_name = train_labels_file_name
@@ -454,7 +456,7 @@ def main():
                         if sum_over_samples==0: all_nh_prompts.append(i)
                     else:
                         hetero_prompts_sum.append(sum_over_samples)
-            labels = labels[:args.len_dataset]
+            labels = labels[ds_start_at:ds_start_at+args.len_dataset]
             all_labels += labels
         elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
             num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
@@ -485,7 +487,7 @@ def main():
                                 if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
                                 if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
                                 labels.append(label)
-            labels = labels[:args.len_dataset]
+            labels = labels[ds_start_at:ds_start_at+args.len_dataset]
             all_labels += labels
     labels = all_labels
     test_labels = []
@@ -559,7 +561,7 @@ def main():
         print("Loading acts...")
         print('\n\nStart time of loading:',datetime.datetime.now(),'\n\n')
         my_train_acts, my_test_acts = [], []
-        for dataset_name,train_file_name,len_dataset in zip(args.dataset_list,args.train_name_list,args.len_dataset_list):
+        for dataset_name,train_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.len_dataset_list,args.ds_start_at_list):
             args.dataset_name = dataset_name
             args.train_file_name = train_file_name
             args.len_dataset = len_dataset
@@ -569,7 +571,7 @@ def main():
                 args.acts_per_file = 20
             else:
                 args.acts_per_file = 100
-            temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(args.len_dataset)
+            temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(ds_start_at,ds_start_at+args.len_dataset)
             act_wise_file_paths, unique_file_paths = [], []
             for idx in temp_train_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
@@ -711,34 +713,40 @@ def main():
                                 train_idxs = np.concatenate([fold_idxs[j] for j in range(args.num_folds) if j != i]) if args.num_folds>1 else train_idxs
                                 test_idxs = fold_idxs[i] if args.num_folds>1 else test_idxs
                                 if 'sampled' in args.train_file_name:
-                                    num_prompts = int(len(train_idxs)/num_samples)
-                                    # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
-                                    # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
-                                    labels_sample_dist = []
-                                    for k in range(num_prompts):
-                                        sample_dist = sum(labels[(k*num_samples):(k*num_samples)+num_samples])
-                                        if sample_dist==num_samples:
-                                            labels_sample_dist.append(0)
-                                        elif sample_dist==0:
-                                            labels_sample_dist.append(1)
-                                        elif sample_dist <= int(num_samples/3):
-                                            labels_sample_dist.append(2)
-                                        elif sample_dist > int(2*num_samples/3):
-                                            labels_sample_dist.append(3)
-                                        else:
-                                            labels_sample_dist.append(4)
-                                    print(Counter(labels_sample_dist))
-                                    if labels_sample_dist.count(0)==1 or labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
-                                    if labels_sample_dist.count(1)==1 or labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
-                                    if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
-                                    if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(4)] = 0
-                                    if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
-                                    train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
-                                    train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
-                                    # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
-                                    val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
-                                    # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
-                                    print('Hallu in val:',sum([labels[i] for i in val_set_idxs])/len(val_set_idxs),'Hallu in train:',sum([labels[i] for i in train_set_idxs])/len(train_set_idxs))
+                                    ds_prompt_start_idx = 0
+                                    for dl,tn in zip(args.len_dataset_list,args.train_name_list):
+                                        # num_prompts = int(len(train_idxs)/num_samples)
+                                        num_samples = 9 if 'strqa' in tn else 11
+                                        num_prompts = int(dl/num_samples)
+                                        # train_set_idxs = train_idxs[:int(num_prompts*(1-0.2))*num_samples] # First 80%
+                                        # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
+                                        labels_sample_dist = []
+                                        for k in range(num_prompts):
+                                            cur_prompt_idx = ds_prompt_start_idx+(k*num_samples)
+                                            sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+num_samples])
+                                            if sample_dist==num_samples:
+                                                labels_sample_dist.append(0)
+                                            elif sample_dist==0:
+                                                labels_sample_dist.append(1)
+                                            elif sample_dist <= int(num_samples/3):
+                                                labels_sample_dist.append(2)
+                                            elif sample_dist > int(2*num_samples/3):
+                                                labels_sample_dist.append(3)
+                                            else:
+                                                labels_sample_dist.append(4)
+                                        if labels_sample_dist.count(0)==1 or labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
+                                        if labels_sample_dist.count(1)==1 or labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
+                                        if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
+                                        if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(4)] = 0
+                                        if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
+                                        train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
+                                        # train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
+                                        train_set_idxs = np.concatenate([np.arange(ds_prompt_start_idx+(k*num_samples),ds_prompt_start_idx+(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
+                                        # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
+                                        # val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
+                                        val_set_idxs = np.array([ds_prompt_start_idx+(k*num_samples) for k in val_prompt_idxs])
+                                        # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
+                                        print('Hallu in val:',sum([labels[i] for i in val_set_idxs])/len(val_set_idxs),'Hallu in train:',sum([labels[i] for i in train_set_idxs])/len(train_set_idxs))
                                 else:
                                     # train_set_idxs = np.random.choice(train_idxs, size=int(len(train_idxs)*(1-0.2)), replace=False)
                                     # val_set_idxs = np.array([x for x in train_idxs if x not in train_set_idxs])
@@ -783,6 +791,12 @@ def main():
                                 n_blocks = 2 if 'transformer2' in args.method else 1
                                 supcon = True if 'supcon' in args.method else False
                                 nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj).to(device)
+                                if args.retrain_full_model_path is not None:
+                                    retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
+                                    retrain_model_state_dict = torch.load(retrain_full_model_path).state_dict()
+                                    with torch.no_grad():
+                                        for n,param in nlinear_model.named_parameters():
+                                            param.copy_(retrain_model_state_dict[n])
                                 if args.retrain_model_path is not None:
                                     retrain_model_path = f'{args.save_path}/probes/models/{args.retrain_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_model_path).state_dict()
