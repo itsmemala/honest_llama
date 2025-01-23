@@ -95,7 +95,7 @@ def main():
     # args.dataset_name = dataset_name
     args.train_file_name = args.train_labels_file_name # train_file_name
     # args.train_labels_file_name = train_labels_file_name
-    args.len_dataset = len_dataset
+    # args.len_dataset = len_dataset
     if args.dataset_name == 'counselling':
         pass
         # file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
