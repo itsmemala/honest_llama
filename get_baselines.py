@@ -249,6 +249,7 @@ def main():
                 # print(probs[use_samples,use_entropy_idx].shape,np.count_nonzero(~np.isnan(probs[use_samples,use_entropy_idx])))
                 probs = train_probs if sample_set=='train' else test_probs
                 labels = train_labels if sample_set=='train' else test_labels
+                print(np.shape(probs),np.shape(use_samples))
                 threshold_data = probs[use_samples,use_entropy_idx][~np.isnan(probs[use_samples,use_entropy_idx])]
                 threshold_data_labels = [labels[i] for i in use_samples[~np.isnan(probs[use_samples,use_entropy_idx])]]
                 thresholds = np.histogram_bin_edges(threshold_data, bins='auto')
