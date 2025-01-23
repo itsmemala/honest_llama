@@ -255,8 +255,8 @@ def main():
 
                 pr, recall, f1 = [], [], []
                 for t in thresholds:
-                    # pred = threshold_data<t # accepted/non-hallucinated if below threshold
-                    pred = not threshold_data<t # accepted/non-hallucinated if below threshold; NH=0
+                    pred = threshold_data<t # accepted/non-hallucinated if below threshold
+                    pred = [not value for value in pred] # set NH=0
                     p, r, f, _ = precision_recall_fscore_support(threshold_data_labels,pred)
                     pr.append(list(p))
                     recall.append(list(r))
@@ -265,12 +265,12 @@ def main():
                 idx_best_f1_avg = np.argmax(np.mean(np.array(f1),axis=1)) # threshold for best averaged f1
                 
                 print('Computing with',sample_set,'samples and entropy idx',use_entropy_idx,':')
-                # threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]   
-                threshold_pred = not test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]    
+                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]      
+                threshold_pred = [not value for value in threshold_pred] # set NH=0
                 a,b = f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0)          
                 print('Optimising for cls1:',a,b,np.mean(a,b))
-                # threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
-                threshold_pred = not test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
+                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
+                threshold_pred = [not value for value in threshold_pred] # set NH=0
                 a,b = f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0)
                 print('Optimising for avg:',a,b,np.mean(a,b))
                 # # Note: we load the labels above with 0 being the hallu cls
