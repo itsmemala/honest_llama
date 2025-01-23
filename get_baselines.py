@@ -93,8 +93,8 @@ def main():
     all_labels = []
     # for dataset_name,train_file_name,train_labels_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list,args.ds_start_at_list):
     # args.dataset_name = dataset_name
-    args.train_file_name = train_labels_file_name # train_file_name
-    args.train_labels_file_name = train_labels_file_name
+    args.train_file_name = args.train_labels_file_name # train_file_name
+    # args.train_labels_file_name = train_labels_file_name
     args.len_dataset = len_dataset
     if args.dataset_name == 'counselling':
         pass
