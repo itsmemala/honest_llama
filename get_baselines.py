@@ -104,7 +104,7 @@ def main():
         # prompts = tokenized_mi(file_path, tokenizer)
     elif args.dataset_name == 'gsm8k' or args.dataset_name == 'strqa' or ('baseline' in args.train_file_name or 'dola' in args.train_file_name):
         num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'gsm8k_sampled' in args.train_file_name else 9 if 'sampled' in args.train_file_name else 1
-        # file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
+        file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
         # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
         # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
         labels = []
