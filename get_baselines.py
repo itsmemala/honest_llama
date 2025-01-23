@@ -167,7 +167,7 @@ def main():
     args.test_labels_file_name = args.dataset_name + "_" + args.test_labels_file_name
     args.test_file_name = args.test_labels_file_name
     if 'gsm8k' in args.test_file_name or 'strqa' in args.test_file_name:
-        # file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
+        file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
         # test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file_v2(file_path, tokenizer)
         test_labels = []
         with open(file_path, 'r') as read_file:
