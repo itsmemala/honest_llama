@@ -255,7 +255,8 @@ def main():
 
                 pr, recall, f1 = [], [], []
                 for t in thresholds:
-                    pred = threshold_data<t # accepted/non-hallucinated if below threshold
+                    # pred = threshold_data<t # accepted/non-hallucinated if below threshold
+                    pred = not threshold_data<t # accepted/non-hallucinated if below threshold; NH=0
                     p, r, f, _ = precision_recall_fscore_support(threshold_data_labels,pred)
                     pr.append(list(p))
                     recall.append(list(r))
@@ -264,16 +265,19 @@ def main():
                 idx_best_f1_avg = np.argmax(np.mean(np.array(f1),axis=1)) # threshold for best averaged f1
                 
                 print('Computing with',sample_set,'samples and entropy idx',use_entropy_idx,':')
-                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]                
-                print('Optimising for cls1:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
-                threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
-                print('Optimising for avg:',f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
-                # Note: we load the labels above with 0 being the hallu cls
-                print('Recall for cls0 (=hallu class):',recall_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
+                # threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]   
+                threshold_pred = not test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]    
+                a,b = f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0)          
+                print('Optimising for cls1:',a,b,np.mean(a,b))
+                # threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
+                threshold_pred = not test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
+                a,b = f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0)
+                print('Optimising for avg:',a,b,np.mean(a,b))
+                # # Note: we load the labels above with 0 being the hallu cls
+                # print('Recall for cls0 (=hallu class):',recall_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
                 recall, pr = [r0 for r0,r1 in recall], [p0 for p0,p1 in pr]
-                print('AUPR for cls0 (=hallu class):',auc(recall,pr))
-                print(sum(np.isnan(test_probs[test_idxs,use_entropy_idx])))
-                print('AuROC for cls0 (=hallu class):',roc_auc_score(np.array([test_labels[i] for i in test_idxs])[~np.isnan(test_probs[test_idxs,use_entropy_idx])]
+                print('AUPR:',auc(recall,pr))
+                print('AuROC:',roc_auc_score(np.array([test_labels[i] for i in test_idxs])[~np.isnan(test_probs[test_idxs,use_entropy_idx])]
                                                                     ,test_probs[test_idxs,use_entropy_idx][~np.isnan(test_probs[test_idxs,use_entropy_idx])]))
                 print('NANs in test:',sum(np.isnan(test_probs[test_idxs,use_entropy_idx])))
             
