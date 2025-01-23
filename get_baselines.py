@@ -204,6 +204,7 @@ def main():
     # except FileNotFoundError:
     #     pass
 
+    print(len(test_labels))
 
     # Set seed
     np.random.seed(42)
