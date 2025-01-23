@@ -277,8 +277,11 @@ def main():
                 print('Optimising for avg:',a,b,np.mean((a,b)))
                 # # Note: we load the labels above with 0 being the hallu cls
                 # print('Recall for cls0 (=hallu class):',recall_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
-                recall, pr = [r0 for r0,r1 in recall], [p0 for p0,p1 in pr]
-                print('AUPR:',auc(recall,pr))
+                # recall, pr = [r0 for r0,r1 in recall], [p0 for p0,p1 in pr]
+                # recall, pr = [r1 for r0,r1 in recall], [p1 for p0,p1 in pr]
+                # print('AUPR:',auc(recall,pr))
+                print(np.min(test_probs),np.max(test_probs))
+                sys.exit()
                 print('AuROC:',roc_auc_score(np.array([test_labels[i] for i in test_idxs])[~np.isnan(test_probs[test_idxs,use_entropy_idx])]
                                                                     ,test_probs[test_idxs,use_entropy_idx][~np.isnan(test_probs[test_idxs,use_entropy_idx])]))
                 print('NANs in test:',sum(np.isnan(test_probs[test_idxs,use_entropy_idx])))
