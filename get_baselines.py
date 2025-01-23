@@ -268,11 +268,11 @@ def main():
                 threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_cls1]      
                 threshold_pred = [not value for value in threshold_pred] # set NH=0
                 a,b = f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0)          
-                print('Optimising for cls1:',a,b,np.mean(a,b))
+                print('Optimising for cls1:',a,b,np.mean((a,b)))
                 threshold_pred = test_probs[test_idxs,use_entropy_idx]<thresholds[idx_best_f1_avg]
                 threshold_pred = [not value for value in threshold_pred] # set NH=0
                 a,b = f1_score([test_labels[i] for i in test_idxs],threshold_pred),f1_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0)
-                print('Optimising for avg:',a,b,np.mean(a,b))
+                print('Optimising for avg:',a,b,np.mean((a,b)))
                 # # Note: we load the labels above with 0 being the hallu cls
                 # print('Recall for cls0 (=hallu class):',recall_score([test_labels[i] for i in test_idxs],threshold_pred,pos_label=0))
                 recall, pr = [r0 for r0,r1 in recall], [p0 for p0,p1 in pr]
