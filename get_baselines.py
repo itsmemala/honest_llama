@@ -93,6 +93,7 @@ def main():
     all_labels = []
     # for dataset_name,train_file_name,train_labels_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.train_labels_name_list,args.len_dataset_list,args.ds_start_at_list):
     # args.dataset_name = dataset_name
+    args.train_labels_file_name = args.dataset_name + "_" + args.train_labels_file_name
     args.train_file_name = args.train_labels_file_name # train_file_name
     # args.train_labels_file_name = train_labels_file_name
     # args.len_dataset = len_dataset
@@ -162,6 +163,7 @@ def main():
         labels = labels[ds_start_at:ds_start_at+args.len_dataset]
         all_labels += labels
     train_labels = all_labels
+    args.test_labels_file_name = args.dataset_name + "_" + args.test_labels_file_name
     args.test_file_name = args.test_labels_file_name
     if 'gsm8k' in args.test_file_name or 'strqa' in args.test_file_name:
         # file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
