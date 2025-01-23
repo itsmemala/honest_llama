@@ -314,6 +314,7 @@ def main():
     parser.add_argument('--use_pe',type=bool, default=False)
     parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
     parser.add_argument('--retrain_model_path',type=str, default=None)
+    parser.add_argument('--retrain_full_model_path',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--use_batch_norm',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)

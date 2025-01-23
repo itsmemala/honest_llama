@@ -7,6 +7,8 @@
 # python analyse_crossdataset_bce.py hl_llama_7B trivia_qa --using_act layer --token answer_last --probes_file_name NLSC101_hl_llama_7B_ood_trivia_qa_strqa_5000_1_layerFalse_answer_last_individual_linear_hallu_pos_bs128_epochs50_ --probes_file_name_concat ba --lr_list 0.00005,0.0005,0.005,0.05,0.5 --best_threshold True --save_path /home/local/data/ms/honest_llama_data
 # python analyse_crossdataset_bce.py hl_llama_7B trivia_qa --using_act layer --token answer_last --probes_file_name NLSC2650_hl_llama_7B_ood_trivia_qa_strqa_5000_1_layerFalse_answer_last_individual_linear_hallu_pos_bs128_epochs50_ --probes_file_name_concat ba --lr_list 0.00005,0.0005,0.005,0.05,0.5 --best_threshold True --save_path /home/local/data/ms/honest_llama_data
 
+python analyse_crossdataset_bce.py hl_llama_7B trivia_qa --using_act layer --token answer_last --probes_file_name NLSC42_/hl_llama_7B_/ood_trivia_qa/_gsm8k_5000_1_layerFalse_answer_last_individual_linear_hallu_pos_bs128_epochs50_ --probes_file_name_concat ba_bestusingauc --lr_list 0.00005,0.0005,0.005,0.05,0.5 --best_threshold True --save_path /home/local/data/ms/honest_llama_data  --seed_list 42,101,2650 --fpr_at_recall -1
+
 # ###################### Non-linear ##############
 
 # python analyse_crossdataset_bce.py hl_llama_7B trivia_qa --using_act layer --token answer_last --probes_file_name NLSC42_hl_llama_7B_ood_trivia_qa_nq_open_5000_1_layerFalse_answer_last_individual_non_linear_4_hallu_pos_bs128_epochs50_ --probes_file_name_concat ba --lr_list 0.00005,0.0005,0.005,0.05,0.5 --best_threshold True --save_path /home/local/data/ms/honest_llama_data
