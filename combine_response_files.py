@@ -25,8 +25,16 @@ def main():
     with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampledplus_responses_labels_train5000.json', 'r') as read_file:
         for line in read_file:
             sampled_labels_data.append(json.loads(line))
-            print(json.loads(line))
-            break
+            # print(json.loads(line))
+            # break
+    for i,s_row in enumerate(sampled_labels_data):
+        for j in range(1,11,1):
+            sampled_labels_data[i]['rouge1_to_target_response'+str(j)] = sampled_labels_data[i]['rouge1_to_target_response11']
+
+    with open(f'{args.save_path}/responses/hl_llama_7B_trivia_qa_sampledplussl_responses_labels_train5000.json', 'w') as outfile:
+        for entry in sampled_labels_data:
+            json.dump(entry, outfile)
+            outfile.write('\n')
     ###
 
 
