@@ -46,8 +46,8 @@ def main():
         # break
         sampled_train_data['is_correct'][i] = temp_labels_list
     
-    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplussl_responses_train.json', 'w') as f:
-    #     json.dump(sampled_train_data, f)
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplussl_responses_train.json', 'w') as f:
+        json.dump(sampled_train_data, f)
 
     ###
 
