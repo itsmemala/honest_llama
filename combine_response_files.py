@@ -37,7 +37,7 @@ def main():
     #         outfile.write('\n')
 
     # strqa, gsm8k
-    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampledplus_responses_train5000.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampledplus_responses_train5000.json', 'r') as read_file:
         sampled_train_data = json.load(read_file)
     for i in range(len(sampled_train_data['is_correct'])):
         # print(sampled_train_data['is_correct'][i])
@@ -46,7 +46,7 @@ def main():
         # break
         sampled_train_data['is_correct'][i] = temp_labels_list
     
-    with open(f'{args.save_path}/responses/alpaca_7B_gsm8k_sampledplussl_responses_train5000.json', 'w') as f:
+    with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampledplussl_responses_train5000.json', 'w') as f:
         json.dump(sampled_train_data, f)
 
     ###
