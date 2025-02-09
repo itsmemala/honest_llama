@@ -22,7 +22,7 @@ def main():
 
     ### update labels ###
     sampled_labels_data = []
-    with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampledplus_responses_labels_train5000.json', 'r') as read_file:
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampledplus_responses_labels_train5000.json', 'r') as read_file:
         for line in read_file:
             sampled_labels_data.append(json.loads(line))
             # print(json.loads(line))
@@ -31,7 +31,7 @@ def main():
         for j in range(1,11,1):
             sampled_labels_data[i]['rouge1_to_target_response'+str(j)] = sampled_labels_data[i]['rouge1_to_target_response11']
 
-    with open(f'{args.save_path}/responses/hl_llama_7B_nq_open_sampledplussl_responses_labels_train5000.json', 'w') as outfile:
+    with open(f'{args.save_path}/responses/alpaca_7B_nq_open_sampledplussl_responses_labels_train5000.json', 'w') as outfile:
         for entry in sampled_labels_data:
             json.dump(entry, outfile)
             outfile.write('\n')
