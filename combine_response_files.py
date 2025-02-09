@@ -41,8 +41,9 @@ def main():
         sampled_train_data = json.load(read_file)
     for i in range(len(sampled_train_data['is_correct'])):
         print(sampled_train_data['is_correct'][i])
-        break
         temp_labels_list = [sampled_train_data['is_correct'][i][-1] for j in range(len(sampled_train_data['is_correct'][i]))]
+        print(temp_labels_list)
+        break
         sampled_train_data['is_correct'][i] = temp_labels_list
     
     # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplussl_responses_train.json', 'w') as f:
