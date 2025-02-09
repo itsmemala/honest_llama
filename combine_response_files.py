@@ -21,20 +21,33 @@ def main():
     args = parser.parse_args()
 
     ### update labels ###
-    sampled_labels_data = []
-    with open(f'{args.save_path}/responses/vicuna_7B_nq_open_sampledplus_responses_labels_train5000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_labels_data.append(json.loads(line))
-            # print(json.loads(line))
-            # break
-    for i,s_row in enumerate(sampled_labels_data):
-        for j in range(1,11,1):
-            sampled_labels_data[i]['rouge1_to_target_response'+str(j)] = sampled_labels_data[i]['rouge1_to_target_response11']
+    # sampled_labels_data = []
+    # with open(f'{args.save_path}/responses/vicuna_7B_nq_open_sampledplus_responses_labels_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_labels_data.append(json.loads(line))
+    #         # print(json.loads(line))
+    #         # break
+    # for i,s_row in enumerate(sampled_labels_data):
+    #     for j in range(1,11,1):
+    #         sampled_labels_data[i]['rouge1_to_target_response'+str(j)] = sampled_labels_data[i]['rouge1_to_target_response11']
 
-    with open(f'{args.save_path}/responses/vicuna_7B_nq_open_sampledplussl_responses_labels_train5000.json', 'w') as outfile:
-        for entry in sampled_labels_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # with open(f'{args.save_path}/responses/vicuna_7B_nq_open_sampledplussl_responses_labels_train5000.json', 'w') as outfile:
+    #     for entry in sampled_labels_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
+
+    # strqa
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplus_responses_train.json', 'r') as read_file:
+        sampled_train_data = json.load(read_file)
+    for i in range(len(sampled_train_data['is_correct'])):
+        print(sampled_train_data[i]['is_correct'])
+        break
+        temp_labels_list = [sampled_train_data[i]['is_correct'][-1] for j in range(len(sampled_train_data[i]['is_correct']))]
+        sampled_train_data[i]['is_correct'] = temp_labels_list
+    
+    # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampledplussl_responses_train.json', 'w') as f:
+    #     json.dump(sampled_train_data, f)
+
     ###
 
 
