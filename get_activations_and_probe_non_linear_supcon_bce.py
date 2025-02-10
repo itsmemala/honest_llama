@@ -544,7 +544,8 @@ def main():
             act_wise_file_paths, unique_file_paths = [], []
             for idx in temp_train_idxs:
                 file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                acts_train_file_name = args.train_file_name.replace('plussl','plus') if ('gsm8k' in args.train_file_name) or ('strqa' in args.train_file_name) else args.train_file_name
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{acts_train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                 act_wise_file_paths.append(file_path)
                 if file_path not in unique_file_paths: unique_file_paths.append(file_path)
             file_wise_data = {}
