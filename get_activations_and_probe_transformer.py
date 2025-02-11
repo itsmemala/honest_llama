@@ -312,7 +312,8 @@ def main():
     parser.add_argument('--tokens_first',type=bool, default=False) # Specifies order of tokens and layers when using_act='tagged_tokens'
     parser.add_argument('--no_sep',type=bool, default=False)
     parser.add_argument('--use_pe',type=bool, default=False)
-    parser.add_argument('--method',type=str, default='transfomer') # (<_hallu_pos>)
+    parser.add_argument('--method',type=str, default='transformer_hallu_pos') # (<_hallu_pos>)
+    parser.add_argument('--use_layers_list',type=list_of_ints, default=None)
     parser.add_argument('--retrain_model_path',type=str, default=None)
     parser.add_argument('--retrain_full_model_path',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
@@ -370,7 +371,7 @@ def main():
     parser.add_argument('--plot_name',type=str, default=None) # Wandb args
     parser.add_argument('--tag',type=str, default=None) # Wandb args
     args = parser.parse_args()
-
+    
     # torch.set_default_dtype(torch.float16)
 
     print('\n\nStart time of main:',datetime.datetime.now(),'\n\n')
@@ -412,6 +413,8 @@ def main():
         #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
         num_heads = 32
+    num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+    args.use_layers_list = np.array(args.use_layers_list) if args.use_layers_list is not None else np.array([k for k in range(num_layers)])
     device = "cuda" if args.device is None else args.device
 
     print("Loading prompts and model responses..")
@@ -599,6 +602,10 @@ def main():
                     # try:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
+                    print(act.shape)
+                    act = act[args.use_layers_list]
+                    print(act.shape)
+                    break
                     # except torch.cuda.OutOfMemoryError:
                     #     device_id += 1
                     #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
@@ -767,7 +774,6 @@ def main():
                                 all_val_logits[i], all_test_logits[i] = [], []
                                 all_val_sim[i], all_test_sim[i] = [], []
                                 model_wise_mc_sample_idxs, probes_saved = [], []
-                                num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                                 
                                 cur_probe_train_set_idxs = train_set_idxs
                                 cur_probe_y_train = np.stack([[labels[i]] for i in cur_probe_train_set_idxs], axis = 0)
@@ -792,7 +798,8 @@ def main():
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 n_blocks = 2 if 'transformer2' in args.method else 1
                                 supcon = True if 'supcon' in args.method else False
-                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj).to(device)
+                                num_layers_to_use = num_layers if args.use_layers_list is None else len(args.use_layers_list)
+                                nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers_to_use, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj).to(device)
                                 if args.retrain_full_model_path is not None:
                                     retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_full_model_path).state_dict()
