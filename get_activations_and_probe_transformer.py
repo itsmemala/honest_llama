@@ -601,11 +601,11 @@ def main():
                 else:
                     # try:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
-                    print(act.shape)
-                    act = act[args.use_layers_list]
-                    print(act.shape)
-                    break
+                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][args.use_layers_list]
+                    # print(act.shape)
+                    # act = act[args.use_layers_list]
+                    # print(act.shape)
+                    # break
                     # except torch.cuda.OutOfMemoryError:
                     #     device_id += 1
                     #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
@@ -630,7 +630,7 @@ def main():
                         act = torch.cat((act,sep_token), dim=1)
                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
-                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device)
+                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file][args.use_layers_list]).to(device)
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
         my_test_acts = torch.stack(my_test_acts)
