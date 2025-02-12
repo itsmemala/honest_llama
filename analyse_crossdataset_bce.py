@@ -337,7 +337,7 @@ def main():
         
         fig, axs = plt.subplots(1,1)
         axs.plot(auroc_by_layer)
-        fig.savefig(f'~/fig/{best_probes_file_name}_auc_layerwise.png')
+        fig.savefig(f'../fig/{best_probes_file_name}_auc_layerwise.png')
 
         ########################
         # seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
