@@ -347,7 +347,7 @@ def main():
         # axs.title.set_text(f'{args.model_name} {args.dataset_name} Seed {seed} Macro-F1 Layerwise')
         # fig.savefig(f'../fig/{best_probes_file_name}_mf1_layerwise.png')
         # fig, axs = plt.subplots(1,1)
-        print(', '.join(map(str,auroc_by_layer))
+        print(', '.join(map(str,auroc_by_layer)))
         # axs.plot(auroc_by_layer)
         # axs.title.set_text(f'{args.model_name} {args.dataset_name} Seed {seed} AUC Layerwise')
         # fig.savefig(f'../fig/{best_probes_file_name}_auc_layerwise.png')
