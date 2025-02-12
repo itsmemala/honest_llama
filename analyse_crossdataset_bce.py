@@ -290,8 +290,8 @@ def main():
             best_probes_per_model.append(best_probes_file_name)
             layer_pred_thresholds.append(best_t)
             if args.show_val_res:
-                test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy')[0]
-                labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')[0][0] ## Since labels are same for all models
+                test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy',allow_pickle=True).item()[0]
+                labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy',allow_pickle=True).item()[0][0] ## Since labels are same for all models
             else:
                 test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
                 labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
