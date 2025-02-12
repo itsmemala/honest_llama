@@ -421,8 +421,8 @@ def main():
         all_preds = np.stack(all_preds, axis=0)
 
         all_results_list.append(np.array(seed_results_list))
-    print(', '.join(np.mean(np.stack(all_results_list)*100,axis=0).tolist()))
-    print(', '.join(np.std(np.stack(all_results_list)*100,axis=0).tolist()))
+    print(', '.join(str(np.mean(np.stack(all_results_list)*100,axis=0).tolist())))
+    print(', '.join(str(np.std(np.stack(all_results_list)*100,axis=0).tolist())))
 
 if __name__ == '__main__':
     main()
