@@ -340,6 +340,7 @@ def main():
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
         
+        print("\nAcc by layers\n")
         # fig, axs = plt.subplots(1,1)
         print(np.mean(np.stack((np.array(test_f1_cls0),np.array(test_f1_cls1)),axis=-1),axis=1))
         # axs.plot(np.mean(np.stack((np.array(test_f1_cls0),np.array(test_f1_cls1)),axis=-1),axis=1))
