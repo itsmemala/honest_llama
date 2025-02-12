@@ -336,7 +336,7 @@ def main():
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
         
         fig, axs = plt.subplots(1,1)
-        axs.plot(np.mean(np.concatenate((np.array(test_f1_cls0),np.array(test_f1_cls1)),axis=1),axis=1))
+        axs.plot(np.mean(np.stack((np.array(test_f1_cls0),np.array(test_f1_cls1))),axis=1))
         fig.savefig(f'../fig/{best_probes_file_name}_mf1_layerwise.png')
         fig, axs = plt.subplots(1,1)
         axs.plot(auroc_by_layer)
