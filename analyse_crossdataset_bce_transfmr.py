@@ -20,6 +20,8 @@ def list_of_ints(arg):
     return list(map(int, arg.split(',')))
 def list_of_floats(arg):
     return list(map(float, arg.split(',')))
+def list_of_strs(arg):
+    return list(map(str, arg.split(',')))
 
 # def get_probe_wgts(fold,model,results_file_name,save_path,args):
 #     act_dims = {'mlp':4096,'mlp_l1':11008,'ah':128}
@@ -52,6 +54,7 @@ def main():
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
+    parser.add_argument('--layers_range_list',default=None,type=list_of_strs,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_hyp_using_aufpr", type=bool, default=False, help='local directory with dataset')
     parser.add_argument("--best_hyp_using_trloss", type=bool, default=False, help='local directory with dataset')
     parser.add_argument("--best_threshold", type=bool, default=False, help='')
@@ -151,8 +154,10 @@ def main():
 
     all_results_list = []
 
-    for seed in args.seed_list:
+    for seed_i,seed in enumerate(args.seed_list):
         args.probes_file_name = 'T'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
+        if layers_range_list is not None:
+            args.probes_file_name = re.sub("transformer_hallu_pos_[0-9]+_[0-9]+_[0-9]+","transformer_hallu_pos_"+layers_range_list[seed_i],args.probes_file_name)
         seed_results_list = []
 
         # val_pred_model,all_val_true[fold][0]
