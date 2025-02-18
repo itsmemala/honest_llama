@@ -159,7 +159,7 @@ def main():
     for seed_i,seed in enumerate(args.seed_list):
         args.probes_file_name = 'T'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
         if args.layers_range_list is not None:
-            args.probes_file_name = re.sub("transformer_hallu_pos_[0-9]+_[0-9]+_[0-9]+","transformer_hallu_pos_"+args.layers_range_list[seed_i],args.probes_file_name)
+            args.probes_file_name = re.sub("hallu_pos_[0-9]+_[0-9]+_[0-9]+","hallu_pos_"+args.layers_range_list[seed_i],args.probes_file_name)
         seed_results_list = []
 
         # val_pred_model,all_val_true[fold][0]
