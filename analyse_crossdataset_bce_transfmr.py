@@ -69,7 +69,7 @@ def main():
     parser.add_argument("--plot_loss", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
-    if args.dataset_name not in args.probes_file_name: raise ValueError("dataset name mismatch")
+    if args.model_name not in args.probes_file_name: raise ValueError("model name mismatch")
 
     device = 0
 
