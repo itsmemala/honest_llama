@@ -314,6 +314,7 @@ def main():
     parser.add_argument('--use_pe',type=bool, default=False)
     parser.add_argument('--method',type=str, default='transformer_hallu_pos') # (<_hallu_pos>)
     parser.add_argument('--use_layers_list',type=list_of_ints, default=None)
+    parser.add_argument('--filt_prompts_catg_list',type=list_of_ints, default=None)
     parser.add_argument('--retrain_model_path',type=str, default=None)
     parser.add_argument('--retrain_full_model_path',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
@@ -682,6 +683,7 @@ def main():
                             if args.tfr_d_model!=128: method_concat += '_dmodel' + str(args.tfr_d_model)
                             if args.no_act_proj: method_concat += 'noactproj'
                             if len(args.use_layers_list)!=num_layers: method_concat += '_'+str(min(args.use_layers_list))+'_'+str(max(args.use_layers_list))+'_'+str(len(args.use_layers_list))
+                            if args.filt_prompts_catg_list is None: method_concat += '_'.join(map(str,filt_prompts_catg_list))
 
                             # Probe training
                             np.random.seed(save_seed)
@@ -744,12 +746,18 @@ def main():
                                                 labels_sample_dist.append(3)
                                             else:
                                                 labels_sample_dist.append(4)
-                                        if labels_sample_dist.count(0)==1 or labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
-                                        if labels_sample_dist.count(1)==1 or labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
-                                        if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
-                                        if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(4)] = 0
-                                        if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
-                                        train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(np.arange(num_prompts), labels_sample_dist, stratify=labels_sample_dist, test_size=0.2)
+                                        # print(Counter(labels_sample_dist))
+                                        # sys.exit()
+                                        if args.filt_prompts_catg_list is None:
+                                            if labels_sample_dist.count(0)==1 or labels_sample_dist.count(3)==1: labels_sample_dist[labels_sample_dist.index(3)] = 0
+                                            if labels_sample_dist.count(1)==1 or labels_sample_dist.count(2)==1: labels_sample_dist[labels_sample_dist.index(2)] = 1
+                                            if labels_sample_dist.count(4)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
+                                            if labels_sample_dist.count(0)==1: labels_sample_dist[labels_sample_dist.index(4)] = 0
+                                            if labels_sample_dist.count(1)==1: labels_sample_dist[labels_sample_dist.index(4)] = 1
+                                        prompt_idxs_filt = np.arange(num_prompts) if args.filt_prompts_catg_list is None else [k for k in np.arange(num_prompts) if labels_sample_dist[k] in args.filt_prompts_catg_list]
+                                        labels_sample_dist_filt = labels_sample_dist if args.filt_prompts_catg_list is None else [labels_sample_dist[k] for k in np.arange(num_prompts) if labels_sample_dist[k] in args.filt_prompts_catg_list]
+                                        print("\n\nUsing a total of ",len(prompt_idxs_filt)," prompts.\n\n")
+                                        train_prompt_idxs, val_prompt_idxs, _, _ = train_test_split(prompt_idxs_filt, labels_sample_dist_filt, stratify=labels_sample_dist_filt, test_size=0.2)
                                         # train_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
                                         train_set_idxs = np.concatenate([np.arange(ds_prompt_start_idx+(k*num_samples),ds_prompt_start_idx+(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
                                         # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
