@@ -683,7 +683,7 @@ def main():
                             if args.tfr_d_model!=128: method_concat += '_dmodel' + str(args.tfr_d_model)
                             if args.no_act_proj: method_concat += 'noactproj'
                             if len(args.use_layers_list)!=num_layers: method_concat += '_'+str(min(args.use_layers_list))+'_'+str(max(args.use_layers_list))+'_'+str(len(args.use_layers_list))
-                            if args.filt_prompts_catg_list is None: method_concat += '_'.join(map(str,filt_prompts_catg_list))
+                            if args.filt_prompts_catg_list is not None: method_concat += '_'.join(map(str,filt_prompts_catg_list))
 
                             # Probe training
                             np.random.seed(save_seed)
