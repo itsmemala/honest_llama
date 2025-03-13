@@ -26,7 +26,8 @@ import torch.distributed as dist
 from torch import nn
 from torch.nn import functional as F
 
-from transformers.generation.candidate_generator import AssistantVocabTranslatorCache
+# from transformers.generation.candidate_generator import AssistantVocabTranslatorCache
+from .candidate_generator import AssistantVocabTranslatorCache
 
 from ..cache_utils import (
     Cache,
