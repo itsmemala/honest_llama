@@ -161,7 +161,8 @@ dependencies:
   - pyparsing=3.0.9=py38h06a4308_0
   - pyrsistent=0.18.0=py38heee7806_0
   - pysocks=1.7.1=py38h06a4308_0
-  - python=3.8.15=h3fd9d12_0
+  # - python=3.8.15=h3fd9d12_0
+  - python=3.9.0
   - python-dateutil=2.8.2=pyhd3eb1b0_0
   - python-fastjsonschema=2.16.2=py38h06a4308_0
   - pytorch=1.13.0=py3.8_cuda11.6_cudnn8.3.2_0
