@@ -13,7 +13,7 @@
 # limitations under the License.
 from typing import TYPE_CHECKING
 
-from transformers_4_45_2.utils import (
+from transformers.utils import (
     OptionalDependencyNotAvailable,
     _LazyModule,
     is_sentencepiece_available,
