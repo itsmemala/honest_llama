@@ -1,4 +1,4 @@
-name: iti
+name: iti-up
 channels:
   - pytorch
   - nvidia
