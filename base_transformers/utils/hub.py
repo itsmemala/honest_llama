@@ -49,7 +49,7 @@ from huggingface_hub.utils import (
     GatedRepoError,
     HfHubHTTPError,
     LocalEntryNotFoundError,
-    OfflineModeIsEnabled,
+    # OfflineModeIsEnabled,
     RepositoryNotFoundError,
     RevisionNotFoundError,
     build_hf_headers,
@@ -57,6 +57,7 @@ from huggingface_hub.utils import (
     hf_raise_for_status,
     send_telemetry,
 )
+from huggingface_hub.errors import OfflineModeIsEnabled
 from requests.exceptions import HTTPError
 
 from . import __version__, logging
