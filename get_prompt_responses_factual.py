@@ -387,11 +387,12 @@ def main():
     torch.cuda.manual_seed_all(args.seed)
 
     print('Loading model..')
-    tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
     # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
     if "llama3" in args.model_name:
+        tokenizer = llama3.LlamaTokenizer.from_pretrained(MODEL)
         model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     else:
+        tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
     device = "cuda"
