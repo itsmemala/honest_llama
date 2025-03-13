@@ -12,7 +12,7 @@ import json
 import jsonlines
 import random
 import llama
-import llama3
+from transformers.models import llama3
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
