@@ -197,7 +197,7 @@ class LlamaMLP(nn.Module):
     def forward(self, x):
         # down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
         up_proj = self.up_proj_out(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
-            down_proj = self.down_proj(up_proj)
+        down_proj = self.down_proj(up_proj)
         return down_proj
 
 
