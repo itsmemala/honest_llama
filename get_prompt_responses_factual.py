@@ -12,8 +12,10 @@ import json
 import jsonlines
 import random
 import llama
-from transformers_4_45_2 import AutoTokenizer
-from transformers_4_45_2.models import llama3
+# from transformers_4_45_2 import AutoTokenizer
+# from transformers_4_45_2.models import llama3
+from transformers import AutoTokenizer
+from base_transformers.models import llama3
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
