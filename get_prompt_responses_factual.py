@@ -12,6 +12,7 @@ import json
 import jsonlines
 import random
 import llama
+import llama3
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
@@ -387,7 +388,10 @@ def main():
     print('Loading model..')
     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
     # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
-    model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    if "llama3" in args.model_name:
+        model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    else:
+        model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
     device = "cuda"
     # device = 'cpu' # for debugging
