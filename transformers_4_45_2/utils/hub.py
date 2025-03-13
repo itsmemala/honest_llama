@@ -52,7 +52,7 @@ from huggingface_hub.utils import (
     HfHubHTTPError,
     HFValidationError,
     LocalEntryNotFoundError,
-    OfflineModeIsEnabled,
+    # OfflineModeIsEnabled,
     RepositoryNotFoundError,
     RevisionNotFoundError,
     build_hf_headers,
@@ -60,6 +60,7 @@ from huggingface_hub.utils import (
     hf_raise_for_status,
     send_telemetry,
 )
+from huggingface_hub.errors import OfflineModeIsEnabled
 from huggingface_hub.utils._deprecation import _deprecate_method
 from requests.exceptions import HTTPError
 
