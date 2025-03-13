@@ -186,6 +186,7 @@ from .import_utils import (
     is_seqio_available,
     is_sklearn_available,
     is_soundfile_availble,
+    is_torch_greater_or_equal,
     is_torch_flex_attn_available,
     is_spacy_available,
     is_speech_available,
