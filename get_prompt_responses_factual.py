@@ -13,7 +13,7 @@ import jsonlines
 import random
 import llama
 from transformers import AutoTokenizer
-from transformers-4.45.2.models import llama3
+from transformers_4.45.2.models import llama3
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
