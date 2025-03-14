@@ -463,8 +463,8 @@ def main():
                     article = val['article']
                     cur_prompt = f"Article: {article}\n Summarize the article in two to three sentences. Summary: "
                 prompts.append(cur_prompt)
-                tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
-                tokenized_prompts.append(tokenized_prompt)
+                # tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
+                # tokenized_prompts.append(tokenized_prompt)
         else:
             # Load greedy responses
             greedy_resp_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_greedy_responses_{args.use_split}{args.len_dataset}.json'
