@@ -15,7 +15,7 @@ import llama
 # from transformers_4_45_2 import AutoTokenizer
 # from transformers_4_45_2.models import llama3
 from transformers import AutoTokenizer
-from base_transformers.models import llama3
+from base_transformers.models import llama3,gemma
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
@@ -353,7 +353,8 @@ HF_NAMES = {
     'llama2_chat_13B': 'meta-llama/Llama-2-13b-chat-hf', 
     'llama2_chat_70B': 'meta-llama/Llama-2-70b-chat-hf', 
     'flan_33B': 'timdettmers/qlora-flan-33b',
-    'llama3.1_8B': 'meta-llama/Llama-3.1-8B'
+    'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
+    'gemma_2B': 'google/gemma-2b'
 }
 
 def main(): 
@@ -394,6 +395,9 @@ def main():
     if "llama3" in args.model_name:
         tokenizer = AutoTokenizer.from_pretrained(MODEL)
         model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    elif "gemma" in args.model_name:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        model = gemma.GemmaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
