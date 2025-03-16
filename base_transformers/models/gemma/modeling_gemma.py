@@ -93,9 +93,12 @@ class GemmaMLP(nn.Module):
         self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN[config.hidden_act]
+        self.up_proj_out = nn.Identity()
 
     def forward(self, x):
-        down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+        # down_proj = self.down_proj(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+        up_proj = self.up_proj_out(self.act_fn(self.gate_proj(x)) * self.up_proj(x))
+        down_proj = self.down_proj(up_proj)
         return down_proj
 
 
@@ -257,6 +260,9 @@ class GemmaAttention(nn.Module):
         self.o_proj = nn.Linear(
             config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.attention_bias
         )
+        self.att_out = nn.Identity()
+        self.value_out = nn.Identity()
+        self.head_out = nn.Identity()
 
     def forward(
         self,
@@ -304,6 +310,7 @@ class GemmaAttention(nn.Module):
         )
 
         attn_output = attn_output.reshape(*input_shape, -1).contiguous()
+        attn_output = self.head_out(attn_output)
         attn_output = self.o_proj(attn_output)
         return attn_output, attn_weights
 
@@ -318,6 +325,7 @@ class GemmaDecoderLayer(nn.Module):
         self.mlp = GemmaMLP(config)
         self.input_layernorm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.layer_out = nn.Identity()
 
     def forward(
         self,
@@ -353,7 +361,7 @@ class GemmaDecoderLayer(nn.Module):
         residual = hidden_states
         hidden_states = self.post_attention_layernorm(hidden_states)
         hidden_states = self.mlp(hidden_states)
-        hidden_states = residual + hidden_states
+        hidden_states = self.layer_out(residual + hidden_states)
 
         outputs = (hidden_states,)
         if output_attentions:
