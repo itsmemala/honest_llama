@@ -37,17 +37,17 @@ def main():
     #         outfile.write('\n')
 
     # strqa, gsm8k
-    with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampledplus_responses_train5000.json', 'r') as read_file:
-        sampled_train_data = json.load(read_file)
-    for i in range(len(sampled_train_data['is_correct'])):
-        # print(sampled_train_data['is_correct'][i])
-        temp_labels_list = [sampled_train_data['is_correct'][i][-1] for j in range(len(sampled_train_data['is_correct'][i]))]
-        # print(temp_labels_list)
-        # break
-        sampled_train_data['is_correct'][i] = temp_labels_list
+    # with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampledplus_responses_train5000.json', 'r') as read_file:
+    #     sampled_train_data = json.load(read_file)
+    # for i in range(len(sampled_train_data['is_correct'])):
+    #     # print(sampled_train_data['is_correct'][i])
+    #     temp_labels_list = [sampled_train_data['is_correct'][i][-1] for j in range(len(sampled_train_data['is_correct'][i]))]
+    #     # print(temp_labels_list)
+    #     # break
+    #     sampled_train_data['is_correct'][i] = temp_labels_list
     
-    with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampledplussl_responses_train5000.json', 'w') as f:
-        json.dump(sampled_train_data, f)
+    # with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampledplussl_responses_train5000.json', 'w') as f:
+    #     json.dump(sampled_train_data, f)
 
     ###
 
@@ -265,28 +265,28 @@ def main():
     ##
 
     ##gsm8k
-    # with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
-    #     greedy_train_data = json.load(read_file)
-    # with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
-    #     sampled_train_data = json.load(read_file)
-    # # print(len(sampled_train_data['is_correct']))
-    # # print(sampled_train_data.keys())
-    # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
-    # for i in range(len(sampled_train_data['is_correct'])):
-    #     if len(sampled_train_data['is_correct'][i])>0:
-    #         # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
-    #         greedy_i = ''
-    #         for j in range(len(greedy_train_data['full_input_text'])):
-    #             if greedy_train_data['full_input_text'][j]==sampled_train_data['full_input_text'][i][0]: greedy_i=j # needed to match rows when generated using parallel gpus
-    #         if greedy_i == '': print(i,sampled_train_data['full_input_text'][i])
-    #         result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][greedy_i]])
-    #         result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][greedy_i]])
-    #         result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][greedy_i]])
-    #         result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][greedy_i]])
+    with open(f'{args.save_path}/responses/gemma_2B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
+        greedy_train_data = json.load(read_file)
+    with open(f'{args.save_path}/responses/gemma_2B_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
+        sampled_train_data = json.load(read_file)
+    # print(len(sampled_train_data['is_correct']))
+    # print(sampled_train_data.keys())
+    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
+    for i in range(len(sampled_train_data['is_correct'])):
+        if len(sampled_train_data['is_correct'][i])>0:
+            # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
+            greedy_i = ''
+            for j in range(len(greedy_train_data['full_input_text'])):
+                if greedy_train_data['full_input_text'][j]==sampled_train_data['full_input_text'][i][0]: greedy_i=j # needed to match rows when generated using parallel gpus
+            if greedy_i == '': print(i,sampled_train_data['full_input_text'][i])
+            result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][greedy_i]])
+            result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][greedy_i]])
+            result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][greedy_i]])
+            result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][greedy_i]])
     
-    # print(len(result_dict['is_correct'])) # 1999
-    # with open(f'{args.save_path}/responses/vicuna_7B_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
-    #         json.dump(result_dict, f)
+    print(len(result_dict['is_correct'])) # 1999
+    with open(f'{args.save_path}/responses/gemma_2B_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
+            json.dump(result_dict, f)
 
     ## this was not needed since start_at doesn't apply to gsm8k in get_prompt_responses_factual.py
     # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
