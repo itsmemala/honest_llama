@@ -353,7 +353,9 @@ HF_NAMES = {
     'llama2_chat_13B': 'meta-llama/Llama-2-13b-chat-hf', 
     'llama2_chat_70B': 'meta-llama/Llama-2-70b-chat-hf', 
     'flan_33B': 'timdettmers/qlora-flan-33b',
-    'llama3.1_8B': 'meta-llama/Llama-3.1-8B'
+    'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
+    'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
+    'gemma_2B': 'google/gemma-2b'
 }
 
 def main(): 

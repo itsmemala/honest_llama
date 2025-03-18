@@ -102,30 +102,30 @@ def main():
     #         json.dump(entry, outfile)
             # outfile.write('\n')
     
-    greedy_resp_data = []
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_greedy_responses_train5000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_resp_data.append(json.loads(line))
-    greedy_resp_data = greedy_resp_data#[:2000]
-    sampled_resp_data = []
-    # for end in [1000,2000,3000,4000,5000]:
-    #     with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train{end}.json', 'r') as read_file:
-    #         for line in read_file:
-    #             sampled_resp_data.append(json.loads(line))
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train5000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_resp_data.append(json.loads(line))
-    for i,s_row in enumerate(sampled_resp_data):
-        greedy_i = ''
-        for k,g_row in enumerate(greedy_resp_data):
-            if g_row['prompt']==s_row['prompt']: greedy_i = k
-        sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
+    # greedy_resp_data = []
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_greedy_responses_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_resp_data.append(json.loads(line))
+    # greedy_resp_data = greedy_resp_data#[:2000]
+    # sampled_resp_data = []
+    # # for end in [1000,2000,3000,4000,5000]:
+    # #     with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train{end}.json', 'r') as read_file:
+    # #         for line in read_file:
+    # #             sampled_resp_data.append(json.loads(line))
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_resp_data.append(json.loads(line))
+    # for i,s_row in enumerate(sampled_resp_data):
+    #     greedy_i = ''
+    #     for k,g_row in enumerate(greedy_resp_data):
+    #         if g_row['prompt']==s_row['prompt']: greedy_i = k
+    #     sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
 
-    print(len(sampled_resp_data))    
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampledplus_responses_train5000.json', 'w') as outfile:
-        for entry in sampled_resp_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print(len(sampled_resp_data))    
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampledplus_responses_train5000.json', 'w') as outfile:
+    #     for entry in sampled_resp_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
     
     greedy_labels_data = []
     with open(f'{args.save_path}/responses/gemma_2B_nq_open_greedy_responses_labels_train5000.json', 'r') as read_file:
