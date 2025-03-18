@@ -187,19 +187,19 @@ def main():
 
 
     # strqa
-    response_data = []
-    for end in ['']:
-        with open(f'{args.save_path}/responses/gemma_2B_strqa_greedy_responses_train5000.json', 'r') as read_file:
-            response_data = json.load(read_file)
-    response_data_pd = pd.DataFrame.from_dict(response_data)
-    print(response_data_pd.columns)
-    response_data_pd['index'] = response_data_pd.index
-    print(response_data_pd.columns)
-    train, test = train_test_split(response_data_pd, test_size=0.2, stratify=response_data_pd['is_correct'])
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'w') as outfile:
-        json.dump(train.to_dict(orient='list'), outfile)
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_test.json', 'w') as outfile:
-        json.dump(test.to_dict(orient='list'), outfile)
+    # response_data = []
+    # for end in ['']:
+    #     with open(f'{args.save_path}/responses/gemma_2B_strqa_greedy_responses_train5000.json', 'r') as read_file:
+    #         response_data = json.load(read_file)
+    # response_data_pd = pd.DataFrame.from_dict(response_data)
+    # print(response_data_pd.columns)
+    # response_data_pd['index'] = response_data_pd.index
+    # print(response_data_pd.columns)
+    # train, test = train_test_split(response_data_pd, test_size=0.2, stratify=response_data_pd['is_correct'])
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'w') as outfile:
+    #     json.dump(train.to_dict(orient='list'), outfile)
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_test.json', 'w') as outfile:
+    #     json.dump(test.to_dict(orient='list'), outfile)
     
     # with open(f'{args.save_path}/responses/hl_llama_7B_strqa_dola_0to16_responses.json', 'r') as read_file:
     #     mitigated_response_data = json.load(read_file)
@@ -220,54 +220,33 @@ def main():
     #     response_data = json.load(read_file)
     # print(sum(response_data['is_correct'])/len(response_data['is_correct']))
 
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'r') as read_file:
-        train_data = json.load(read_file)
-    train_data_pd = pd.DataFrame.from_dict(train_data)
-    # print(len(train_data_pd))
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_test.json', 'r') as read_file:
-        test_data = json.load(read_file)
-    test_data_pd = pd.DataFrame.from_dict(test_data)
-    # print(len(test_data_pd))
-    # print(train_data_pd[:2])
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train5000.json', 'r') as read_file:
-        response_data = json.load(read_file)
-    response_data_pd = pd.DataFrame.from_dict(response_data)
-    response_data_pd['index'] = response_data_pd.index
-    # print(len(response_data_pd))
-    train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
-    test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
-    # print(train[:2])
-    # print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()),len(response_data_pd['index']))
-    print(len(train),len(test))
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train.json', 'w') as outfile:
-        json.dump(train.to_dict(orient='list'), outfile)
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_test.json', 'w') as outfile:
-        json.dump(test.to_dict(orient='list'), outfile)
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'r') as read_file:
+    #     train_data = json.load(read_file)
+    # train_data_pd = pd.DataFrame.from_dict(train_data)
+    # # print(len(train_data_pd))
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_test.json', 'r') as read_file:
+    #     test_data = json.load(read_file)
+    # test_data_pd = pd.DataFrame.from_dict(test_data)
+    # # print(len(test_data_pd))
+    # # print(train_data_pd[:2])
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train5000.json', 'r') as read_file:
+    #     response_data = json.load(read_file)
+    # response_data_pd = pd.DataFrame.from_dict(response_data)
+    # response_data_pd['index'] = response_data_pd.index
+    # # print(len(response_data_pd))
+    # train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
+    # test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
+    # # print(train[:2])
+    # # print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()),len(response_data_pd['index']))
+    # print(len(train),len(test))
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train.json', 'w') as outfile:
+    #     json.dump(train.to_dict(orient='list'), outfile)
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_test.json', 'w') as outfile:
+    #     json.dump(test.to_dict(orient='list'), outfile)
 
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'r') as read_file:
-        greedy_train_data = json.load(read_file)
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train.json', 'r') as read_file:
-        sampled_train_data = json.load(read_file)
-    # print(len(sampled_train_data['is_correct']))
-    # print(sampled_train_data.keys())
-    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
-    for i in range(len(sampled_train_data['is_correct'])):
-        if len(sampled_train_data['is_correct'][i])>0:
-            # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
-            result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]])
-            result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][i]])
-            result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
-            result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
-    
-    print(len(result_dict['is_correct'])) # 1831
-    with open(f'{args.save_path}/responses/gemma_2B_strqa_sampledplus_responses_train.json', 'w') as f:
-            json.dump(result_dict, f)
-    ##
-
-    # ##gsm8k
-    # with open(f'{args.save_path}/responses/gemma_2B_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'r') as read_file:
     #     greedy_train_data = json.load(read_file)
-    # with open(f'{args.save_path}/responses/gemma_2B_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train.json', 'r') as read_file:
     #     sampled_train_data = json.load(read_file)
     # # print(len(sampled_train_data['is_correct']))
     # # print(sampled_train_data.keys())
@@ -275,18 +254,39 @@ def main():
     # for i in range(len(sampled_train_data['is_correct'])):
     #     if len(sampled_train_data['is_correct'][i])>0:
     #         # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
-    #         greedy_i = ''
-    #         for j in range(len(greedy_train_data['full_input_text'])):
-    #             if greedy_train_data['full_input_text'][j]==sampled_train_data['full_input_text'][i][0]: greedy_i=j # needed to match rows when generated using parallel gpus
-    #         if greedy_i == '': print(i,sampled_train_data['full_input_text'][i])
-    #         result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][greedy_i]])
-    #         result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][greedy_i]])
-    #         result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][greedy_i]])
-    #         result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][greedy_i]])
+    #         result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][i]])
+    #         result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][i]])
+    #         result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][i]])
+    #         result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][i]])
     
-    # print(len(result_dict['is_correct'])) # 1999
-    # with open(f'{args.save_path}/responses/gemma_2B_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
+    # print(len(result_dict['is_correct'])) # 1831
+    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampledplus_responses_train.json', 'w') as f:
     #         json.dump(result_dict, f)
+    ##
+
+    # ##gsm8k
+    with open(f'{args.save_path}/responses/llama3.1_8B_Instruct_gsm8k_greedy_responses_train5000.json', 'r') as read_file:
+        greedy_train_data = json.load(read_file)
+    with open(f'{args.save_path}/responses/llama3.1_8B_Instruct_gsm8k_sampled_responses_train5000.json', 'r') as read_file:
+        sampled_train_data = json.load(read_file)
+    # print(len(sampled_train_data['is_correct']))
+    # print(sampled_train_data.keys())
+    result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
+    for i in range(len(sampled_train_data['is_correct'])):
+        if len(sampled_train_data['is_correct'][i])>0:
+            # print(sampled_train_data['is_correct'][i], [greedy_train_data['is_correct'][i]])
+            greedy_i = ''
+            for j in range(len(greedy_train_data['full_input_text'])):
+                if greedy_train_data['full_input_text'][j]==sampled_train_data['full_input_text'][i][0]: greedy_i=j # needed to match rows when generated using parallel gpus
+            if greedy_i == '': print(i,sampled_train_data['full_input_text'][i])
+            result_dict['is_correct'].append(sampled_train_data['is_correct'][i] + [greedy_train_data['is_correct'][greedy_i]])
+            result_dict['model_answer'].append(sampled_train_data['model_answer'][i] + [greedy_train_data['model_answer'][greedy_i]])
+            result_dict['model_completion'].append(sampled_train_data['model_completion'][i] + [greedy_train_data['model_completion'][greedy_i]])
+            result_dict['full_input_text'].append(sampled_train_data['full_input_text'][i] + [greedy_train_data['full_input_text'][greedy_i]])
+    
+    print(len(result_dict['is_correct'])) # 1999
+    with open(f'{args.save_path}/responses/llama3.1_8B_Instruct_gsm8k_sampledplus_responses_train5000.json', 'w') as f:
+            json.dump(result_dict, f)
 
     ## this was not needed since start_at doesn't apply to gsm8k in get_prompt_responses_factual.py
     # result_dict = {'is_correct': [], 'model_answer': [], 'model_completion': [], 'full_input_text': []}
