@@ -539,7 +539,7 @@ def main():
                     response.append(model.generate(tokenized_prompt, max_new_tokens=512,
                                         # num_beams=1,
                                         temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
-                                        eos_token_id=period_token_id,
+                                        # eos_token_id=period_token_id,
                                         bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
                                         )[:, tokenized_prompt.shape[-1]:])
                     print(tokenizer.decode(response[0][0], skip_special_tokens=True))
