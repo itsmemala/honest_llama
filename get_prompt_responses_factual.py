@@ -505,7 +505,8 @@ def main():
         eos_tokens = ["Q:", "\n\n##"]
         checkgens = ["Q:", "\n\n##"]
     if args.dataset_name=='gsm8k':
-        period_token_id = tokenizer(".")['input_ids']
+        # period_token_id = tokenizer(".")['input_ids']
+        period_token_id = None
         eos_tokens = ["Q:", "\end{code}"]
         checkgens = ["Q:", "\end{code}"]
     elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
