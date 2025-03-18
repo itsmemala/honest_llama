@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import datasets
 from datasets import load_dataset
@@ -382,6 +383,7 @@ def main():
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--seed',type=int, default=42)
+    parser.add_argument('--debug',type=bool, default=False)
     args = parser.parse_args()
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
@@ -533,6 +535,15 @@ def main():
             #                             )[:, tokenized_prompt.shape[-1]:]
             response = []
             for j in range(args.num_ret_seq):
+                if args.debug:
+                    response.append(model.generate(tokenized_prompt, max_new_tokens=512,
+                                        # num_beams=1,
+                                        temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
+                                        eos_token_id=period_token_id,
+                                        bad_words_ids=question_framing_ids + [tokenized_prompt.tolist()[0]]
+                                        )[:, tokenized_prompt.shape[-1]:])
+                    print(tokenizer.decode(response[0][0], skip_special_tokens=True))
+                    sys.exit()
                 response.append(model.generate(tokenized_prompt, max_new_tokens=512,
                                         # num_beams=1,
                                         temperature=args.temperature, top_p=args.top_p, do_sample=args.do_sample, num_return_sequences=1,
