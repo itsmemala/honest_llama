@@ -30,6 +30,7 @@ HF_NAMES = {
     'llama_30B': 'huggyllama/llama-30b',
     'flan_33B': 'timdettmers/qlora-flan-33b',
     'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
+    'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
     'gemma_2B': 'google/gemma-2b'
 }
 
