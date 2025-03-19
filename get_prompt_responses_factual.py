@@ -459,8 +459,9 @@ def main():
             start_row, end_row = int(0.8*len(file_data)), len(file_data)
         sys.exit()
         for i in range(start_row,end_row,1):
-            prompts.append(file_data[i]['prompt'])
-            tokenized_prompt = tokenizer(, return_tensors = 'pt').input_ids
+            cur_prompt = file_data[i]['prompt']
+            prompts.append(cur_prompt)
+            tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
             gt_answers.append(file_data[i]['correct_answer'])
     else:
