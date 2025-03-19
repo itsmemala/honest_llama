@@ -486,7 +486,7 @@ def main():
                             for j in range(1,num_samples+1,1):
                                 if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
                                 if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
-                                labels.append(label)
+                                test_labels.append(label)
                                 sum_over_samples += label
                             if sum_over_samples==0 or sum_over_samples==10: test_num_samples_with_no_var += 1
 
