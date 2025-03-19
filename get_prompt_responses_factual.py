@@ -446,6 +446,23 @@ def main():
             all_input_texts.append(input_text)
             tokenized_prompt = tokenizer(input_text, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
+    elif args.dataset_name in ['city_country','movie_cast','player_date_birth']:
+        prompts = []
+        tokenized_prompts = []
+        gt_answers = []
+        file_data = json.loads(f'args.dataset_name.json')
+        print(len(file_data))
+        print(file_data[1])
+        if args.use_split=='train':
+            start_row, end_row = 0, int(0.8*len(file_data))
+        else:
+            start_row, end_row = int(0.8*len(file_data)), len(file_data)
+        sys.exit()
+        for i in range(start_row,end_row,1):
+            prompts.append(file_data[i]['prompt'])
+            tokenized_prompt = tokenizer(, return_tensors = 'pt').input_ids
+            tokenized_prompts.append(tokenized_prompt)
+            gt_answers.append(file_data[i]['correct_answer'])
     else:
         if args.dataset_name=='nq_open':
             hf_dataset_name = 'nq_open'
