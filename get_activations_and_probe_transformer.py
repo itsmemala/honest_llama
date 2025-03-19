@@ -572,55 +572,55 @@ def main():
         print("Loading acts...")
         print('\n\nStart time of loading:',datetime.datetime.now(),'\n\n')
         my_train_acts, my_test_acts = [], []
-        if args.skip_train==False:
-            for dataset_name,train_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.len_dataset_list,args.ds_start_at_list):
-                args.dataset_name = dataset_name
-                args.train_file_name = train_file_name
-                args.len_dataset = len_dataset
-                if args.dataset_name=='strqa':
-                    args.acts_per_file = 50
-                elif args.dataset_name=='gsm8k':
-                    args.acts_per_file = 20
+        # if args.skip_train==False:
+        for dataset_name,train_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.len_dataset_list,args.ds_start_at_list):
+            args.dataset_name = dataset_name
+            args.train_file_name = train_file_name
+            args.len_dataset = len_dataset
+            if args.dataset_name=='strqa':
+                args.acts_per_file = 50
+            elif args.dataset_name=='gsm8k':
+                args.acts_per_file = 20
+            else:
+                args.acts_per_file = 100
+            temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(ds_start_at,ds_start_at+args.len_dataset)
+            act_wise_file_paths, unique_file_paths = [], []
+            for idx in temp_train_idxs:
+                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                acts_train_file_name = args.train_file_name.replace('plussl','plus') if ('gsm8k' in args.train_file_name) or ('strqa' in args.train_file_name) else args.train_file_name
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{acts_train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                act_wise_file_paths.append(file_path)
+                if file_path not in unique_file_paths: unique_file_paths.append(file_path)
+            file_wise_data = {}
+            for file_path in unique_file_paths:
+                # file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
+                # with np.load(file_path,allow_pickle=True) as my_temp_data:
+                with open(file_path, "rb") as my_temp_data:
+                    file_wise_data[file_path] = pickle.load(my_temp_data)
+            for idx in temp_train_idxs:
+                if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
+                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    act = combine_acts(idx,args.train_file_name,args)
+                    if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
+                    if args.no_sep==False:
+                        sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
+                        act = torch.cat((act,sep_token), dim=1)
+                    act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
-                    args.acts_per_file = 100
-                temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(ds_start_at,ds_start_at+args.len_dataset)
-                act_wise_file_paths, unique_file_paths = [], []
-                for idx in temp_train_idxs:
-                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                    acts_train_file_name = args.train_file_name.replace('plussl','plus') if ('gsm8k' in args.train_file_name) or ('strqa' in args.train_file_name) else args.train_file_name
-                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{acts_train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                    act_wise_file_paths.append(file_path)
-                    if file_path not in unique_file_paths: unique_file_paths.append(file_path)
-                file_wise_data = {}
-                for file_path in unique_file_paths:
-                    # file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
-                    # with np.load(file_path,allow_pickle=True) as my_temp_data:
-                    with open(file_path, "rb") as my_temp_data:
-                        file_wise_data[file_path] = pickle.load(my_temp_data)
-                for idx in temp_train_idxs:
-                    if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
-                        # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                        act = combine_acts(idx,args.train_file_name,args)
-                        if args.tokens_first: act = torch.swapaxes(act, 0, 1) # (layers,tokens,act_dims) -> (tokens,layers,act_dims)
-                        if args.no_sep==False:
-                            sep_token = torch.zeros(act.shape[0],1,act.shape[2]).to(device)
-                            act = torch.cat((act,sep_token), dim=1)
-                        act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
-                    else:
-                        # try:
-                        # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                        act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][args.use_layers_list]
-                        # print(act.shape)
-                        # act = act[args.use_layers_list]
-                        # print(act.shape)
-                        # break
-                        # except torch.cuda.OutOfMemoryError:
-                        #     device_id += 1
-                        #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
-                        #     print('Loading on device',device_id)
-                        #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                    my_train_acts.append(act)
-            my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)#.type(torch.float16)
+                    # try:
+                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][args.use_layers_list]
+                    # print(act.shape)
+                    # act = act[args.use_layers_list]
+                    # print(act.shape)
+                    # break
+                    # except torch.cuda.OutOfMemoryError:
+                    #     device_id += 1
+                    #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+                    #     print('Loading on device',device_id)
+                    #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                my_train_acts.append(act)
+        my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)#.type(torch.float16)
 
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
@@ -1123,6 +1123,7 @@ def main():
 
                                 # Val and Test performance
                                 print('\n\nStart time of val and test perf:',datetime.datetime.now(),'\n\n')
+                                # if args.skip_train==False:
                                 pred_correct = 0
                                 y_val_pred, y_val_true = [], []
                                 val_preds = []

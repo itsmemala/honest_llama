@@ -530,43 +530,43 @@ def main():
         print("Loading acts...")
         act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
         my_train_acts, my_test_acts = [], []
-        if args.skip_train==False:
-            for dataset_name,train_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.len_dataset_list,args.ds_start_at_list):
-                args.dataset_name = dataset_name
-                args.train_file_name = train_file_name
-                args.len_dataset = len_dataset
-                if args.dataset_name=='strqa':
-                    args.acts_per_file = 50
-                elif args.dataset_name=='gsm8k':
-                    args.acts_per_file = 20
-                else:
-                    args.acts_per_file = 100
-                temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(ds_start_at,ds_start_at+args.len_dataset)
-                act_wise_file_paths, unique_file_paths = [], []
-                for idx in temp_train_idxs:
-                    file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                    acts_train_file_name = args.train_file_name.replace('plussl','plus') if ('gsm8k' in args.train_file_name) or ('strqa' in args.train_file_name) else args.train_file_name
-                    file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{acts_train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                    act_wise_file_paths.append(file_path)
-                    if file_path not in unique_file_paths: unique_file_paths.append(file_path)
-                file_wise_data = {}
-                for file_path in unique_file_paths:
-                    file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
-                for idx in temp_train_idxs:
-                    # file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
-                    # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                    # try:
-                        # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
-                    # except IndexError:
-                    #     print(idx)
-                    # except (torch.cuda.OutOfMemoryError, RuntimeError):
-                    #     device_id += 1
-                    #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
-                    #     print('Loading on device',device_id)
-                    #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                    my_train_acts.append(act)
-            my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
+        # if args.skip_train==False:
+        for dataset_name,train_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.len_dataset_list,args.ds_start_at_list):
+            args.dataset_name = dataset_name
+            args.train_file_name = train_file_name
+            args.len_dataset = len_dataset
+            if args.dataset_name=='strqa':
+                args.acts_per_file = 50
+            elif args.dataset_name=='gsm8k':
+                args.acts_per_file = 20
+            else:
+                args.acts_per_file = 100
+            temp_train_idxs = train_idxs if args.dataset_list is None else np.arange(ds_start_at,ds_start_at+args.len_dataset)
+            act_wise_file_paths, unique_file_paths = [], []
+            for idx in temp_train_idxs:
+                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                acts_train_file_name = args.train_file_name.replace('plussl','plus') if ('gsm8k' in args.train_file_name) or ('strqa' in args.train_file_name) else args.train_file_name
+                file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{acts_train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                act_wise_file_paths.append(file_path)
+                if file_path not in unique_file_paths: unique_file_paths.append(file_path)
+            file_wise_data = {}
+            for file_path in unique_file_paths:
+                file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
+            for idx in temp_train_idxs:
+                # file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                # try:
+                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
+                # except IndexError:
+                #     print(idx)
+                # except (torch.cuda.OutOfMemoryError, RuntimeError):
+                #     device_id += 1
+                #     device = 'cuda:'+str(device_id) # move to next gpu when prev is filled; test data load and rest of the processing can happen on the last gpu
+                #     print('Loading on device',device_id)
+                #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                my_train_acts.append(act)
+        my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
         
         if args.test_file_name is not None:
             print("Loading test acts...",len(test_labels))
@@ -1183,6 +1183,7 @@ def main():
                                     torch.save(nlinear_model, probe_save_path)
                                 
                                 # Val and Test performance
+                                # if args.skip_train==False:
                                 pred_correct = 0
                                 y_val_pred, y_val_true = [], []
                                 val_preds = []
