@@ -620,6 +620,7 @@ def main():
 
                     if len(args.dataset_list)==1 and args.ood_test==False:
                         probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        if 'sampled' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_{args.test_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                     elif len(args.dataset_list)>1:
                         multi_name = 'multi2' if len(args.dataset_list)==2 else 'multi'
                         if 'sampledplus' in args.train_name_list[0]: multi_name += 'sampledplus'
@@ -1154,6 +1155,8 @@ def main():
                                     elif args.ood_test:
                                         prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                         prior_probes_file_name += plot_name_concat
+                                    elif 'sampled' in args.test_file_name:
+                                        prior_probes_file_name = probes_file_name.replace(args.test_file_name+'_','')
                                     else: # multi
                                         prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa')
                                         if plot_name_concat not in prior_probes_file_name: prior_probes_file_name += plot_name_concat
