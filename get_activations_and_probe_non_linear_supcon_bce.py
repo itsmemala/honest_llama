@@ -568,6 +568,7 @@ def main():
         my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
         
         if args.test_file_name is not None:
+            print("Loading test acts...",len(test_labels))
             if 'strqa' in args.test_file_name:
                 args.acts_per_file = 50
             elif 'gsm8k' in args.test_file_name:
