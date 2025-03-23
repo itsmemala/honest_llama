@@ -16,7 +16,7 @@ import llama
 # from transformers_4_45_2 import AutoTokenizer
 # from transformers_4_45_2.models import llama3
 from transformers import AutoTokenizer
-from base_transformers.models import llama3,gemma
+# from base_transformers.models import llama3,gemma
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
@@ -450,14 +450,18 @@ def main():
         prompts = []
         tokenized_prompts = []
         gt_answers = []
-        file_data = json.loads(f'args.dataset_name.json')
+        with open(f'{args.dataset_name}.json') as f:
+            file_data = json.load(f)
         print(len(file_data))
-        print(file_data[1])
+        # print(file_data[1])
+        train_len = int(0.8*len(file_data))
+        print(train_len)
         if args.use_split=='train':
-            start_row, end_row = 0, int(0.8*len(file_data))
+            args.len_dataset = train_len
+            start_row, end_row = 0, train_len
         else:
-            start_row, end_row = int(0.8*len(file_data)), len(file_data)
-        sys.exit()
+            args.len_dataset = len(file_data) - train_len
+            start_row, end_row = train_len, len(file_data)
         for i in range(start_row,end_row,1):
             cur_prompt = file_data[i]['prompt']
             prompts.append(cur_prompt)
@@ -527,7 +531,7 @@ def main():
         period_token_id = None
         eos_tokens = ["Q:", "\end{code}"]
         checkgens = ["Q:", "\end{code}"]
-    elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
+    elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa' or args.dataset_name in ['city_country','movie_cast','player_date_birth']:
         # period_token_id = tokenizer('. ')['input_ids'][1]
         period_token_id = tokenizer('.')['input_ids']
         eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
@@ -679,6 +683,8 @@ def main():
     print('Getting labels for model responses..')
     labels = []
     if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
+        pass
+    elif args.dataset_name in ['city_country','movie_cast','player_date_birth']:
         pass
     else:
         rouge = evaluate.load('rouge')
