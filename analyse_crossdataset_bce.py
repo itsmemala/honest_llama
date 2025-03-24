@@ -320,7 +320,7 @@ def main():
                     elif sample_dist > int(2*args.num_samples/3) and args.filt_testprompts_catg==3: #3
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
                         num_prompts_in_catg += 1
-                    else: #4
+                    elif args.filt_testprompts_catg==4: #4
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
                         num_prompts_in_catg += 1
                 select_instances = np.array(select_instances)
