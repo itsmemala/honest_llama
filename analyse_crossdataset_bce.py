@@ -327,7 +327,7 @@ def main():
                 test_preds, labels = test_preds[:,select_instances], labels[select_instances]
                 print('test_preds shape:',test_preds.shape,' labels shape:',labels.shape)
                 print('num_prompts_in_catg:',num_prompts_in_catg,'\n\n')
-                sys.exit()
+                # sys.exit()
             
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
