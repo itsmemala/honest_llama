@@ -464,7 +464,7 @@ def main():
         elif 'nq_open' in args.test_file_name or 'trivia_qa' in args.test_file_name:
             # num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 11 if 'sampled' in args.test_file_name else 1
             file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
-            test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,num_samples)
+            test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,args.test_num_samples)
             if 'se_labels' in args.test_labels_file_name:
                 file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.test_labels_file_name}.npy'
                 test_labels = np.load(file_path)
