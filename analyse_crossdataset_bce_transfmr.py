@@ -53,7 +53,7 @@ def main():
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
     parser.add_argument('--filt_testprompts_catg',type=int, default=None)
-    parser.add_argument('--num_samples',type=int, default=None)
+    parser.add_argument('--test_num_samples',type=int, default=None)
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
@@ -339,28 +339,28 @@ def main():
                 labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
             
             if args.filt_testprompts_catg is not None:
-                num_prompts = int(len(test_preds[0])/args.num_samples)
+                num_prompts = int(len(test_preds[0])/args.test_num_samples)
                 print('\n\ntest_preds shape:',test_preds.shape,' num_prompts:',num_prompts)
                 select_instances, num_prompts_in_catg = [], 0
                 for k in range(num_prompts):
-                    cur_prompt_idx = k*args.num_samples
-                    sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+args.num_samples])
-                    # print(labels[cur_prompt_idx:cur_prompt_idx+args.num_samples])
+                    cur_prompt_idx = k*args.test_num_samples
+                    sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+args.test_num_samples])
+                    # print(labels[cur_prompt_idx:cur_prompt_idx+args.test_num_samples])
                     # if k==2: sys.exit()
-                    if sample_dist==args.num_samples and args.filt_testprompts_catg==0: #0
-                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
+                    if sample_dist==args.test_num_samples and args.filt_testprompts_catg==0: #0
+                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
                     elif sample_dist==0  and args.filt_testprompts_catg==1: #1
-                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
+                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist>0 and sample_dist <= int(args.num_samples/3) and args.filt_testprompts_catg==2: #2
-                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
+                    elif sample_dist>0 and sample_dist <= int(args.test_num_samples/3) and args.filt_testprompts_catg==2: #2
+                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist > int(2*args.num_samples/3) and sample_dist<args.num_samples and args.filt_testprompts_catg==3: #3
-                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
+                    elif sample_dist > int(2*args.test_num_samples/3) and sample_dist<args.test_num_samples and args.filt_testprompts_catg==3: #3
+                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist > int(args.num_samples/3) and sample_dist <= int(2*args.num_samples/3) and args.filt_testprompts_catg==4: #4
-                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
+                    elif sample_dist > int(args.test_num_samples/3) and sample_dist <= int(2*args.test_num_samples/3) and args.filt_testprompts_catg==4: #4
+                        select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
                 select_instances = np.array(select_instances)
                 test_preds, labels = test_preds[:,select_instances], labels[select_instances]
