@@ -304,22 +304,22 @@ def main():
                 print('\n\ntest_preds shape:',test_preds.shape,' num_prompts:',num_prompts)
                 select_instances, num_prompts_in_catg = [], 0
                 for k in range(num_prompts):
-                    cur_prompt_idx = k*num_samples
-                    sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+num_samples])
-                    if sample_dist==num_samples and args.filt_testprompts_catg==0: #0
-                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                    cur_prompt_idx = k*args.num_samples
+                    sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+args.num_samples])
+                    if sample_dist==args.num_samples and args.filt_testprompts_catg==0: #0
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1)
                         num_prompts_in_catg += 1
                     elif sample_dist==0  and args.filt_testprompts_catg==1: #1
-                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1)
                         num_prompts_in_catg += 1
-                    elif sample_dist <= int(num_samples/3) and args.filt_testprompts_catg==2: #2
-                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                    elif sample_dist <= int(args.num_samples/3) and args.filt_testprompts_catg==2: #2
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1)
                         num_prompts_in_catg += 1
-                    elif sample_dist > int(2*num_samples/3) and args.filt_testprompts_catg==3: #3
-                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                    elif sample_dist > int(2*args.num_samples/3) and args.filt_testprompts_catg==3: #3
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1)
                         num_prompts_in_catg += 1
                     else: #4
-                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1)
                         num_prompts_in_catg += 1
                 select_instances = np.array(select_instances)
                 test_preds, labels = test_preds[:,select_instances], labels[select_instances]
