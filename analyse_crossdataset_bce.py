@@ -306,6 +306,8 @@ def main():
                 for k in range(num_prompts):
                     cur_prompt_idx = k*args.num_samples
                     sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+args.num_samples])
+                    print(labels[cur_prompt_idx:cur_prompt_idx+args.num_samples])
+                    if k==2: sys.exit()
                     if sample_dist==args.num_samples and args.filt_testprompts_catg==0: #0
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
                         num_prompts_in_catg += 1
