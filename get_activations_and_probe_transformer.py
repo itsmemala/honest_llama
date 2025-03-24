@@ -529,7 +529,9 @@ def main():
                             if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
                             if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
                             test_labels.append(label)
-    
+    print(len(test_labels))
+    sys.exit()
+
     # print(num_samples_with_no_var)
     # print(len(all_hallu_prompts),len(all_nh_prompts))
     # print(np.histogram(hetero_prompts_sum, bins=num_samples-1))
