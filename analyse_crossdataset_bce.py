@@ -314,10 +314,10 @@ def main():
                     elif sample_dist==0  and args.filt_testprompts_catg==1: #1
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist <= int(args.num_samples/3) and args.filt_testprompts_catg==2: #2
+                    elif sample_dist>0 and sample_dist <= int(args.num_samples/3) and args.filt_testprompts_catg==2: #2
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist > int(2*args.num_samples/3) and args.filt_testprompts_catg==3: #3
+                    elif sample_dist > int(2*args.num_samples/3) and sample_dist<args.num_samples and args.filt_testprompts_catg==3: #3
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.num_samples,1))
                         num_prompts_in_catg += 1
                     elif sample_dist > int(args.num_samples/3) and sample_dist <= int(2*args.num_samples/3) and args.filt_testprompts_catg==4: #4
