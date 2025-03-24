@@ -49,6 +49,8 @@ def main():
     parser.add_argument("--mitigated_responses_file_name", type=str, default='', help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
+    parser.add_argument('--filt_testprompts_catg',type=int, default=None)
+    parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_hyp_using_aufpr", type=bool, default=False, help='local directory with dataset')
@@ -296,6 +298,32 @@ def main():
             else:
                 test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
                 labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
+            
+            if args.filt_testprompts_catg is not None:
+                num_prompts = int(len(test_preds[0])/args.num_samples)
+                print('\n\ntest_preds shape:',test_preds.shape,' num_prompts:',num_prompts)
+                select_instances, num_prompts_in_catg = [], 0
+                for k in range(num_prompts):
+                    cur_prompt_idx = k*num_samples
+                    sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+num_samples])
+                    if sample_dist==num_samples and args.filt_testprompts_catg==0: #0
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                        num_prompts_in_catg += 1
+                    elif sample_dist==0  and args.filt_testprompts_catg==1: #1
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                        num_prompts_in_catg += 1
+                    elif sample_dist <= int(num_samples/3) and args.filt_testprompts_catg==2: #2
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                        num_prompts_in_catg += 1
+                    elif sample_dist > int(2*num_samples/3) and args.filt_testprompts_catg==3: #3
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                        num_prompts_in_catg += 1
+                    else: #4
+                        select_instances += np.arange(cur_prompt_idx,cur_prompt_idx+num_samples,1)
+                        num_prompts_in_catg += 1
+                select_instances = np.array(select_instances)
+                test_preds, labels = test_preds[:,select_instances], labels[select_instances]
+                print('test_preds shape:',test_preds.shape,' labels shape',labels.shape,'\n\n')
             
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
