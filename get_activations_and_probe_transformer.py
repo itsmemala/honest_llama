@@ -333,6 +333,7 @@ def main():
     parser.add_argument('--dist_metric',type=str, default='euclidean')
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
+    parser.add_argument('--test_num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--bs',type=int, default=4)
     parser.add_argument('--epochs',type=int, default=3)
@@ -516,6 +517,7 @@ def main():
             test_labels = np.load(file_path)
         else:
             test_labels = []
+            print(args.test_labels_file_name)
             file_path = f'{args.save_path}/responses/{args.test_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json'
             with open(file_path, 'r') as read_file:
                 for line in read_file:
@@ -525,7 +527,7 @@ def main():
                         if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                         test_labels.append(label)
                     else:
-                        for j in range(1,num_samples+1,1):
+                        for j in range(1,args.test_num_samples+1,1):
                             if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
                             if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
                             test_labels.append(label)

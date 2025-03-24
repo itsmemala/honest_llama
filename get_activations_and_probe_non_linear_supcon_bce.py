@@ -295,6 +295,7 @@ def main():
     parser.add_argument('--dist_metric',type=str, default='euclidean')
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
+    parser.add_argument('--test_num_samples',type=int, default=None)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--supcon_bs',type=int, default=128)
     parser.add_argument('--bs',type=int, default=4)
@@ -461,7 +462,7 @@ def main():
                 if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
                 test_labels.append(label)
         elif 'nq_open' in args.test_file_name or 'trivia_qa' in args.test_file_name:
-            num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 11 if 'sampled' in args.test_file_name else 1
+            # num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 11 if 'sampled' in args.test_file_name else 1
             file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
             test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,num_samples)
             if 'se_labels' in args.test_labels_file_name:
@@ -483,7 +484,7 @@ def main():
                             # test_squad_scores.append(data['squad_f1'])
                         else:
                             sum_over_samples = 0
-                            for j in range(1,num_samples+1,1):
+                            for j in range(1,args.test_num_samples+1,1):
                                 if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
                                 if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
                                 test_labels.append(label)
