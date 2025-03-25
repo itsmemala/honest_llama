@@ -143,7 +143,7 @@ def main():
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
         np.save(f'{args.save_path}/responses/{args.model_name}_{args.file_name}_response_start_token_idx.npy', answer_token_idxes)
-    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa':
+    elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name in ['city_country','movie_cast','player_date_birth']:
         num_samples = args.num_samples if ('sampled' in args.file_name and args.num_samples is not None) else 11 if 'sampled' in args.file_name else 1
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.file_name}.json'
         prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
@@ -211,6 +211,8 @@ def main():
         # print(load_ranges[-1])
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(len(prompts)/20)+1)] # all responses
+    elif args.dataset_name in ['city_country','movie_cast','player_date_birth']:
+        load_ranges = [(a*100,(a*100)+100) for a in range(int(len(prompts)/20)+1)]
 
     # load_ranges = [(0,len(prompts))]
     # load_ranges = [(16450,16500)]

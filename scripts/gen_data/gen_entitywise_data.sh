@@ -1,0 +1,6 @@
+python get_activations.py hl_llama_7B city_country --token answer_last --file_name city_country_greedy_responses_train6323  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py hl_llama_7B city_country --token answer_last --file_name city_country_greedy_responses_test1581  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py hl_llama_7B player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_test1498  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py hl_llama_7B player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_train5989  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py hl_llama_7B movie_cast --token answer_last --file_name movie_cast_greedy_responses_train --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py hl_llama_7B movie_cast --token answer_last --file_name movie_cast_greedy_responses_test  --device 0 --save_path /home/local/data/ms/honest_llama_data
