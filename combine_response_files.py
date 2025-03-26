@@ -102,19 +102,19 @@ def main():
     #         json.dump(entry, outfile)
             # outfile.write('\n')
     
-    greedy_resp_data = []
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_greedy_responses_train5000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_resp_data.append(json.loads(line))
-    greedy_resp_data = greedy_resp_data#[:2000]
-    sampled_resp_data = []
-    # for end in [1000,2000,3000,4000,5000]:
-    #     with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train{end}.json', 'r') as read_file:
-    #         for line in read_file:
-    #             sampled_resp_data.append(json.loads(line))
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train5000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_resp_data.append(json.loads(line))
+    # greedy_resp_data = []
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_greedy_responses_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_resp_data.append(json.loads(line))
+    # greedy_resp_data = greedy_resp_data#[:2000]
+    # sampled_resp_data = []
+    # # for end in [1000,2000,3000,4000,5000]:
+    # #     with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train{end}.json', 'r') as read_file:
+    # #         for line in read_file:
+    # #             sampled_resp_data.append(json.loads(line))
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_resp_data.append(json.loads(line))
     # for i,s_row in enumerate(sampled_resp_data):
     #     greedy_i = ''
     #     for k,g_row in enumerate(greedy_resp_data):
@@ -127,30 +127,30 @@ def main():
     #         json.dump(entry, outfile)
     #         outfile.write('\n')
     
-    greedy_labels_data = []
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_greedy_responses_labels_train5000.json', 'r') as read_file:
-        for line in read_file:
-            greedy_labels_data.append(json.loads(line))
-    greedy_labels_data = greedy_labels_data#[:2000]
-    sampled_labels_data = []
-    # for end in [1000,2000,3000,4000,5000]:
-    #     with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_labels_train{end}.json', 'r') as read_file:
-    #         for line in read_file:
-    #             sampled_labels_data.append(json.loads(line))
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_labels_train5000.json', 'r') as read_file:
-        for line in read_file:
-            sampled_labels_data.append(json.loads(line))
-    for i,s_row in enumerate(sampled_resp_data):
-        greedy_i = ''
-        for k,g_row in enumerate(greedy_resp_data):
-            if g_row['prompt']==s_row['prompt']: greedy_i = k
-        sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
+    # greedy_labels_data = []
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_greedy_responses_labels_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         greedy_labels_data.append(json.loads(line))
+    # greedy_labels_data = greedy_labels_data#[:2000]
+    # sampled_labels_data = []
+    # # for end in [1000,2000,3000,4000,5000]:
+    # #     with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_labels_train{end}.json', 'r') as read_file:
+    # #         for line in read_file:
+    # #             sampled_labels_data.append(json.loads(line))
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampled_responses_labels_train5000.json', 'r') as read_file:
+    #     for line in read_file:
+    #         sampled_labels_data.append(json.loads(line))
+    # for i,s_row in enumerate(sampled_resp_data):
+    #     greedy_i = ''
+    #     for k,g_row in enumerate(greedy_resp_data):
+    #         if g_row['prompt']==s_row['prompt']: greedy_i = k
+    #     sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
         
-    print(len(sampled_labels_data))
-    with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampledplus_responses_labels_train5000.json', 'w') as outfile:
-        for entry in sampled_labels_data:
-            json.dump(entry, outfile)
-            outfile.write('\n')
+    # print(len(sampled_labels_data))
+    # with open(f'{args.save_path}/responses/gemma_2B_nq_open_sampledplus_responses_labels_train5000.json', 'w') as outfile:
+    #     for entry in sampled_labels_data:
+    #         json.dump(entry, outfile)
+    #         outfile.write('\n')
 
 
     # labels_data = []
@@ -220,29 +220,29 @@ def main():
     #     response_data = json.load(read_file)
     # print(sum(response_data['is_correct'])/len(response_data['is_correct']))
 
-    # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'r') as read_file:
-    #     train_data = json.load(read_file)
-    # train_data_pd = pd.DataFrame.from_dict(train_data)
-    # # print(len(train_data_pd))
-    # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_test.json', 'r') as read_file:
-    #     test_data = json.load(read_file)
-    # test_data_pd = pd.DataFrame.from_dict(test_data)
-    # # print(len(test_data_pd))
-    # # print(train_data_pd[:2])
-    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train5000.json', 'r') as read_file:
-    #     response_data = json.load(read_file)
-    # response_data_pd = pd.DataFrame.from_dict(response_data)
-    # response_data_pd['index'] = response_data_pd.index
-    # # print(len(response_data_pd))
-    # train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
-    # test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
-    # # print(train[:2])
-    # # print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()),len(response_data_pd['index']))
-    # print(len(train),len(test))
-    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_train.json', 'w') as outfile:
-    #     json.dump(train.to_dict(orient='list'), outfile)
-    # with open(f'{args.save_path}/responses/gemma_2B_strqa_sampled_responses_test.json', 'w') as outfile:
-    #     json.dump(test.to_dict(orient='list'), outfile)
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_train.json', 'r') as read_file:
+        train_data = json.load(read_file)
+    train_data_pd = pd.DataFrame.from_dict(train_data)
+    # print(len(train_data_pd))
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_baseline_responses_test.json', 'r') as read_file:
+        test_data = json.load(read_file)
+    test_data_pd = pd.DataFrame.from_dict(test_data)
+    # print(len(test_data_pd))
+    # print(train_data_pd[:2])
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train5000.json', 'r') as read_file:
+        response_data = json.load(read_file)
+    response_data_pd = pd.DataFrame.from_dict(response_data)
+    response_data_pd['index'] = response_data_pd.index
+    # print(len(response_data_pd))
+    train = response_data_pd.loc[response_data_pd['index'].isin(train_data_pd['index'].tolist())]
+    test = response_data_pd.loc[response_data_pd['index'].isin(test_data_pd['index'].tolist())]
+    # print(train[:2])
+    # print(len(train_data_pd['index'].tolist()),len(test_data_pd['index'].tolist()),len(response_data_pd['index']))
+    print(len(train),len(test))
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_train.json', 'w') as outfile:
+        json.dump(train.to_dict(orient='list'), outfile)
+    with open(f'{args.save_path}/responses/hl_llama_7B_strqa_sampled_responses_test.json', 'w') as outfile:
+        json.dump(test.to_dict(orient='list'), outfile)
 
     # with open(f'{args.save_path}/responses/gemma_2B_strqa_baseline_responses_train.json', 'r') as read_file:
     #     greedy_train_data = json.load(read_file)
