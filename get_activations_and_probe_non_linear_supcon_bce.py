@@ -410,7 +410,7 @@ def main():
             labels = labels[ds_start_at:ds_start_at+args.len_dataset]
             assert len(labels)==args.len_dataset
             all_labels += labels
-        elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen':
+        elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen' or args.dataset_name in ['city_country','movie_cast','player_date_birth']:
             num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
             file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
             prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
@@ -461,7 +461,7 @@ def main():
                 if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
                 if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
                 test_labels.append(label)
-        elif 'nq_open' in args.test_file_name or 'trivia_qa' in args.test_file_name:
+        elif 'nq_open' in args.test_file_name or 'trivia_qa' in args.test_file_name or 'city_country' in args.test_file_name or 'movie_cast' in args.test_file_name or 'player_date_birth' in args.test_file_name:
             # num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 11 if 'sampled' in args.test_file_name else 1
             file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
             test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,args.test_num_samples)
@@ -718,8 +718,8 @@ def main():
                         all_val_sim[i], all_test_sim[i] = [], []
                         model_wise_mc_sample_idxs, probes_saved = [], []
                         num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
-                        # loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
-                        loop_layers = [32]
+                        loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
+                        # loop_layers = [32]
                         for layer in tqdm(loop_layers):
                             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
                             for head in loop_heads:
