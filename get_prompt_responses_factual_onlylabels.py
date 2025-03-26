@@ -8,6 +8,7 @@ import numpy as np
 import pickle
 import string
 import re
+from thefuzz import fuzz
 import json
 import jsonlines
 import random
@@ -489,8 +490,8 @@ def main():
         for i in range(start_row,end_row,1):
             cur_prompt = file_data[i]['prompt']
             prompts.append(cur_prompt)
-            tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
-            tokenized_prompts.append(tokenized_prompt)
+            # tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
+            # tokenized_prompts.append(tokenized_prompt)
             gt_answers.append(file_data[i]['correct_answer'])
     else:
         if args.dataset_name=='nq_open':
