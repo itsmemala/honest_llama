@@ -102,7 +102,7 @@ def main():
     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name): 
         print('\n\nSETTING NUM_LAYERS=1\n\n')
         num_layers, num_models = 1, 1 # We only ran these for the last layer
-    num_models = 1
+    num_layers, num_models = 1, 1
 
     if args.dataset_name=='strqa':
         acts_per_file = 50
