@@ -404,7 +404,10 @@ def main():
             test_precision_cls1.append(cls1_pr)
             precision, recall, _ = precision_recall_curve(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else precision_recall_curve(labels, np.squeeze(test_preds[model]))
             aupr_by_layer.append(auc(recall,precision))
-            auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
+            if args.filt_testprompts_catg!=0: 
+                auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
+            else:
+                auc_val = 0
             auroc_by_layer.append(auc_val)
 
             test_pred_model = np.squeeze(test_pred_model)
