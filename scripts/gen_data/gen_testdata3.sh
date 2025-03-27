@@ -1,0 +1,3 @@
+python get_activations.py hl_llama_7B strqa --token answer_last --file_name strqa_sampled_responses_test  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 8
+python get_activations.py alpaca_7B strqa --token answer_last --file_name strqa_sampled_responses_test  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 8
+python get_activations.py vicuna_7B strqa --token answer_last --file_name strqa_sampled_responses_test  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 8

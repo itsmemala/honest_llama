@@ -501,14 +501,20 @@ def main():
         test_prompts, test_labels = [], [] # No test file
     elif 'gsm8k' in args.test_file_name or 'strqa' in args.test_file_name:
         file_path = f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
-        test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file_v2(file_path, tokenizer)
+        test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, args.test_num_samples)
         test_labels = []
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
-            if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
-            if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
-            test_labels.append(label)
+            if num_samples==1:
+                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+                test_labels.append(label)
+            else:
+                for j in range(args.test_num_samples):
+                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
+                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    test_labels.append(label)
     else:
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
         test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,args.test_num_samples)
