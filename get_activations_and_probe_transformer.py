@@ -50,7 +50,10 @@ HF_NAMES = {
     'llama2_chat_70B': 'meta-llama/Llama-2-70b-chat-hf',
     'llama_13B': 'huggyllama/llama-13b',
     'llama_30B': 'huggyllama/llama-30b',
-    'flan_33B': 'timdettmers/qlora-flan-33b'
+    'flan_33B': 'timdettmers/qlora-flan-33b',
+    'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
+    'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
+    'gemma_2B': 'google/gemma-2b'
 }
 
 act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
@@ -415,7 +418,7 @@ def main():
         #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
         num_heads = 32
-    num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+    num_layers = 18 if '2B' args.model_name in else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
     args.use_layers_list = np.array(args.use_layers_list) if args.use_layers_list is not None else np.array([k for k in range(num_layers)])
     device = "cuda" if args.device is None else args.device
 
