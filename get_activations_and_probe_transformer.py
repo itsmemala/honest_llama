@@ -824,7 +824,7 @@ def main():
                                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                                act_dims = 4096
+                                act_dims =  2048 if '2B' in args.model_name else 4096
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 n_blocks = 2 if 'transformer2' in args.method else 1
                                 supcon = True if 'supcon' in args.method else False
