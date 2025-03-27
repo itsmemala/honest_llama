@@ -726,7 +726,7 @@ def main():
                         all_val_logits[i], all_test_logits[i] = [], []
                         all_val_sim[i], all_test_sim[i] = [], []
                         model_wise_mc_sample_idxs, probes_saved = [], []
-                        num_layers = 18 if '2B' args.model_name in else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+                        num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                         loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
                         # loop_layers = [32]
                         for layer in tqdm(loop_layers):
