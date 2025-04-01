@@ -364,7 +364,7 @@ def main():
             test_recall_cls1.append(cls1_re)
             precision, recall, _ = precision_recall_curve(labels, np.squeeze(test_preds[model]))
             aupr_by_layer.append(auc(recall,precision))
-            if args.filt_testprompts_catg!=0: auroc_by_layer.append(roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model])))
+            if args.filt_testprompts_catg not in [0,1]: auroc_by_layer.append(roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model])))
         # print('\nValidation performance:\n',val_f1_avg)
         incl_layers = np.array(incl_layers)
         print('\nExcluded layers:',excl_layers)
@@ -454,7 +454,7 @@ def main():
             seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
             precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1]))
             seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
-            if args.filt_testprompts_catg!=0: 
+            if args.filt_testprompts_catg not in [0,1]: 
                 auc_result_temp = roc_auc_score(labels, [-v for v in np.squeeze(all_preds[num_layers-1])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[num_layers-1])) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:]))
             else:
                 auc_result_temp = 0
