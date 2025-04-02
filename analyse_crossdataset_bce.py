@@ -102,7 +102,7 @@ def main():
     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name): 
         print('\n\nSETTING NUM_LAYERS=1\n\n')
         num_layers, num_models = 1, 1 # We only ran these for the last layer
-    num_layers, num_models = 1, 1
+    # num_layers, num_models = 1, 1
 
     if args.dataset_name=='strqa':
         acts_per_file = 50
@@ -424,7 +424,7 @@ def main():
             # print('Index of fn:',fn_index)
             # sys.exit()
 
-            ########################
+            #######################
             # print(layer_pred_thresholds[num_layers-1], fpr_list, r_list)
             seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
             # seed_results_list.append(best_r)
