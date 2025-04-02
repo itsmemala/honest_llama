@@ -42,7 +42,7 @@ dependencies:
       - async-timeout==5.0.1
       - attrs==25.3.0
       - babel==2.17.0
-      - baukit==0.0.1
+      # - baukit==0.0.1
       - blis==1.2.0
       - catalogue==2.0.10
       - certifi==2025.1.31
