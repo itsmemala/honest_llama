@@ -53,7 +53,7 @@ dependencies:
       - multidict==6.1.0
       - multiprocess==0.70.16
       - networkx==3.2.1
-      - numpy==2.0.2
+      - numpy==1.26.0
       - nvidia-cublas-cu12==12.4.5.8
       - nvidia-cuda-cupti-cu12==12.4.127
       - nvidia-cuda-nvrtc-cu12==12.4.127
