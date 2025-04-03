@@ -1,5 +1,5 @@
-python get_prompt_responses_factual_onlylabels.py llama3.1_8B_Instruct nq_open --len_dataset 5000 --start_at 0 --use_split train --device 0 --save_path ~/Desktop/honest_llama_data
-python get_prompt_responses_factual_onlylabels.py llama3.1_8B_Instruct nq_open --len_dataset 1800 --start_at 0 --use_split validation --device 0 --save_path ~/Desktop/honest_llama_data
+python get_prompt_responses_factual.py llama3.1_8B_Instruct nq_open --len_dataset 5000 --start_at 0 --use_split train --device 0 --save_path ~/Desktop/honest_llama_data
+python get_prompt_responses_factual.py llama3.1_8B_Instruct nq_open --len_dataset 1800 --start_at 0 --use_split validation --device 0 --save_path ~/Desktop/honest_llama_data
 python get_prompt_responses_factual.py llama3.1_8B_Instruct nq_open --len_dataset 5000 --start_at 0 --use_split train --device 0 --save_path ~/Desktop/honest_llama_data --do_sample True --num_ret_seq 10
 python get_prompt_responses_factual.py llama3.1_8B_Instruct nq_open --len_dataset 1800 --start_at 0 --use_split validation --device 0 --save_path ~/Desktop/honest_llama_data --do_sample True --num_ret_seq 10
 
