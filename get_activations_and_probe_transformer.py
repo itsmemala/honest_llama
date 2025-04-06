@@ -509,7 +509,7 @@ def main():
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
-            if num_samples==1:
+            if args.test_num_samples==1:
                 if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
                 if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
                 test_labels.append(label)
