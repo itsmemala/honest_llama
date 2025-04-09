@@ -300,7 +300,7 @@ def compute_wp_dist(outputs,labels,metric='euclidean'):
         for i,o_i in enumerate(outputs):
             o_dist_same, o_dist_opp = [], []
             for j,o_j in enumerate(outputs):
-                print(o_i.shape, o_j.shape, torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0])
+                # print(o_i.shape, o_j.shape, torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0])
                 if i!=j and labels[i]==labels[j]: 
                     o_dist_same.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
                 elif i!=j and labels[i]!=labels[j]: 
@@ -309,9 +309,10 @@ def compute_wp_dist(outputs,labels,metric='euclidean'):
             dist_opp.append(torch.cat(o_dist_opp).mean())
     dist_same = torch.stack(dist_same)
     dist_opp = torch.stack(dist_opp)
-    print(torch.tensor([dist_same, dist_opp]))
+    dist = torch.stack([dist_same, dist_opp], dim=1)
+    print(dist,dist.shape)
     sys.exit()
-    return torch.tensor([dist_same, dist_opp])
+    return dist
 
 def main(): 
     """
