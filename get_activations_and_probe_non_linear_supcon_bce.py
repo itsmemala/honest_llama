@@ -587,11 +587,19 @@ def main():
                 args.acts_per_file = 20
             else:
                 args.acts_per_file = 100
+            act_wise_file_paths, unique_file_paths = [], []
             for idx in test_idxs:
-                file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
+                file_end = idx-(idx%args.test_acts_per_file)+args.test_acts_per_file # 487: 487-(87)+100
                 test_dataset_name = args.test_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa').replace('city','city_country').replace('movie','movie_cast').replace('player','player_date_birth')
                 file_path = f'{args.save_path}/features/{args.model_name}_{test_dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
-                act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
+                act_wise_file_paths.append(file_path)
+                if file_path not in unique_file_paths: unique_file_paths.append(file_path)
+            file_wise_data = {}
+            for file_path in unique_file_paths:
+                with open(file_path, "rb") as my_temp_data:
+                    file_wise_data[file_path] = pickle.load(my_temp_data)
+            for idx in test_idxs:
+                act = file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file][args.use_layers_list]
                 my_test_acts.append(act)
         my_test_acts = torch.stack(my_test_acts)
 

@@ -301,9 +301,9 @@ def compute_wp_dist(outputs,labels,metric='euclidean'):
             o_dist_same, o_dist_opp = [], []
             for j,o_j in enumerate(outputs):
                 print(o_i.shape, o_j.shape, torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0])
-                if i!=j and label[i]==label[j]: 
+                if i!=j and labels[i]==labels[j]: 
                     o_dist_same.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
-                elif i!=j and label[i]!=label[j]: 
+                elif i!=j and labels[i]!=labels[j]: 
                     o_dist_opp.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
             dist_same.append(torch.cat(o_dist_same).mean())
             dist_opp.append(torch.cat(o_dist_opp).mean())
@@ -670,8 +670,6 @@ def main():
                 if file_path not in unique_file_paths: unique_file_paths.append(file_path)
             file_wise_data = {}
             for file_path in unique_file_paths:
-                # file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
-                # with np.load(file_path,allow_pickle=True) as my_temp_data:
                 with open(file_path, "rb") as my_temp_data:
                     file_wise_data[file_path] = pickle.load(my_temp_data)
             for idx in test_idxs:
@@ -688,7 +686,7 @@ def main():
                     act = file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file][args.use_layers_list]
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
-        my_test_acts = torch.stack(my_test_acts)
+        my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
         print('\n\nEnd time of loading:',datetime.datetime.now(),'\n\n')
 
     if args.multi_gpu:
