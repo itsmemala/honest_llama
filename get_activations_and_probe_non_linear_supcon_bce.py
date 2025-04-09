@@ -280,6 +280,7 @@ def main():
     parser.add_argument('--train_labels_name_list', type=list_of_strs, default=None)
     parser.add_argument('--len_dataset_list', type=list_of_ints, default=None)
     parser.add_argument('--ds_start_at_list', type=list_of_ints, default=None)
+    parser.add_argument('--multi_probe_dataset_name',type=str, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <reverse>, <_hallu_pos>)
@@ -1170,7 +1171,7 @@ def main():
                                     elif 'sampled' in args.test_file_name:
                                         prior_probes_file_name = probes_file_name.replace(args.test_file_name+'_','')
                                     else: # multi
-                                        prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa')
+                                        prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa' if args.multi_probe_dataset_name is None else args.multi_probe_dataset_name)
                                         if plot_name_concat not in prior_probes_file_name: prior_probes_file_name += plot_name_concat
                                         if args.which_checkpoint not in prior_probes_file_name: prior_probes_file_name += '_' + args.which_checkpoint
                                     try:

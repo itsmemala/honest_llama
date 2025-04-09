@@ -35,7 +35,12 @@ def main():
         greedy_i = ''
         for k,g_row in enumerate(greedy_resp_data):
             if g_row['prompt']==s_row['prompt']: greedy_i = k
-        sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
+        if greedy_i=='': print('cant find prompt at row',i, 'prompt:',s_row['prompt'])
+        try:
+            sampled_resp_data[i]['response11'] = greedy_resp_data[greedy_i]['response1']
+        except TypeError:
+            print(greedy_i)
+            sampled_resp_data[i]['response11'] = ''
 
     print(len(sampled_resp_data))    
     with open(f'{args.save_path}/responses/{args.model}_nq_open_sampledplus_responses_train5000.json', 'w') as outfile:
@@ -60,7 +65,10 @@ def main():
         greedy_i = ''
         for k,g_row in enumerate(greedy_resp_data):
             if g_row['prompt']==s_row['prompt']: greedy_i = k
-        sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
+        try:
+            sampled_labels_data[i]['rouge1_to_target_response11'] = greedy_labels_data[greedy_i]['rouge1_to_target']
+        except TypeError:
+            sampled_labels_data[i]['rouge1_to_target_response11'] = 0
         
     print(len(sampled_labels_data))
     with open(f'{args.save_path}/responses/{args.model}_nq_open_sampledplus_responses_labels_train5000.json', 'w') as outfile:

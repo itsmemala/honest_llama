@@ -294,6 +294,25 @@ def compute_knn_dist(outputs,train_outputs,device,train_labels=None,metric='eucl
         raise ValueError('Metric not implemented.')
     return dist
 
+def compute_wp_dist(outputs,labels,metric='euclidean'):
+    dist_same, dist_opp = [], []
+    if metric=='euclidean':
+        for i,o_i in enumerate(outputs):
+            o_dist_same, o_dist_opp = [], []
+            for j,o_j in enumerate(outputs):
+                print(o_i.shape, o_j.shape, torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0])
+                if i!=j and label[i]==label[j]: 
+                    o_dist_same.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
+                elif i!=j and label[i]!=label[j]: 
+                    o_dist_opp.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
+            dist_same.append(torch.cat(o_dist_same).mean())
+            dist_opp.append(torch.cat(o_dist_opp).mean())
+    dist_same = torch.stack(dist_same)
+    dist_opp = torch.stack(dist_opp)
+    print(torch.tensor([dist_same, dist_opp]))
+    sys.exit()
+    return torch.tensor([dist_same, dist_opp])
+
 def main(): 
     """
     Specify dataset name as the first command line argument. Current options are 
@@ -309,6 +328,7 @@ def main():
     parser.add_argument('--train_labels_name_list', type=list_of_strs, default=None)
     parser.add_argument('--len_dataset_list', type=list_of_ints, default=None)
     parser.add_argument('--ds_start_at_list', type=list_of_ints, default=None)
+    parser.add_argument('--multi_probe_dataset_name',type=str, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument('--max_tokens',type=int, default=25)
@@ -361,6 +381,9 @@ def main():
     parser.add_argument("--train_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--test_labels_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--ood_test', type=bool, default=False)
+    parser.add_argument('--wp_dist', type=bool, default=False)
+    parser.add_argument('--wpdist_metric', type=str, default=None)
+    parser.add_argument('--test_bs', type=int, default=None)
     parser.add_argument('--save_path',type=str, default='')
     parser.add_argument('--fast_mode',type=bool, default=False) # use when GPU space is free, dataset is small and using only 1 token per sample
     # parser.add_argument('--seed',type=int, default=42)
@@ -638,10 +661,20 @@ def main():
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
         if args.test_file_name is not None:
+            act_wise_file_paths, unique_file_paths = [], []
             for idx in test_idxs:
                 file_end = idx-(idx%args.test_acts_per_file)+args.test_acts_per_file # 487: 487-(87)+100
                 test_dataset_name = args.test_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa').replace('city','city_country').replace('movie','movie_cast').replace('player','player_date_birth')
                 file_path = f'{args.save_path}/features/{args.model_name}_{test_dataset_name}_{args.token}/{args.model_name}_{args.test_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
+                act_wise_file_paths.append(file_path)
+                if file_path not in unique_file_paths: unique_file_paths.append(file_path)
+            file_wise_data = {}
+            for file_path in unique_file_paths:
+                # file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
+                # with np.load(file_path,allow_pickle=True) as my_temp_data:
+                with open(file_path, "rb") as my_temp_data:
+                    file_wise_data[file_path] = pickle.load(my_temp_data)
+            for idx in test_idxs:
                 if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device)
                     act = combine_acts(idx,args.test_file_name,args)
@@ -651,7 +684,8 @@ def main():
                         act = torch.cat((act,sep_token), dim=1)
                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
-                    act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file][args.use_layers_list]).to(device)
+                    # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file][args.use_layers_list]).to(device)
+                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file][args.use_layers_list]
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
         my_test_acts = torch.stack(my_test_acts)
@@ -738,7 +772,7 @@ def main():
                             all_test_accs, all_test_f1s = {}, {}
                             all_val_preds, all_test_preds = {}, {}
                             all_y_true_val, all_y_true_test = {}, {}
-                            all_val_logits, all_test_logits = {}, {}
+                            all_val_logits, all_test_logits, all_test_wpdist = {}, {}, {}
                             all_val_sim, all_test_sim = {}, {}
 
                             for i in range(args.num_folds):
@@ -801,7 +835,7 @@ def main():
                                 all_test_accs[i], all_test_f1s[i] = [], []
                                 all_val_preds[i], all_test_preds[i] = [], []
                                 all_y_true_val[i], all_y_true_test[i] = [], []
-                                all_val_logits[i], all_test_logits[i] = [], []
+                                all_val_logits[i], all_test_logits[i], all_test_wpdist[i] = [], [], []
                                 all_val_sim[i], all_test_sim[i] = [], []
                                 model_wise_mc_sample_idxs, probes_saved = [], []
                                 
@@ -822,7 +856,7 @@ def main():
                                 ds_val = DataLoader(ds_val, batch_size=args.bs)
                                 if args.test_file_name is not None: 
                                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
-                                    ds_test = DataLoader(ds_test, batch_size=args.bs)
+                                    ds_test = DataLoader(ds_test, batch_size=args.bs if args.test_bs is None else args.test_bs)
 
                                 act_dims =  2048 if '2B' in args.model_name else 4096
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
@@ -1120,7 +1154,7 @@ def main():
                                     elif 'sampled' in args.test_file_name:
                                         prior_probes_file_name = probes_file_name.replace(args.test_file_name+'_','')
                                     else: # multi
-                                        prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa')
+                                        prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa' if args.multi_probe_dataset_name is None else args.multi_probe_dataset_name)
                                     try:
                                         if plot_name_concat not in prior_probes_file_name: prior_probes_file_name += plot_name_concat
                                         if args.which_checkpoint not in prior_probes_file_name: prior_probes_file_name += '_' + args.which_checkpoint
@@ -1232,7 +1266,7 @@ def main():
                                 pred_correct = 0
                                 y_test_pred, y_test_true = [], []
                                 test_preds = []
-                                test_logits = []
+                                test_logits, test_wpdist = [], []
                                 test_sim = []
                                 samples_used_idxs = []
                                 if args.test_file_name is not None: 
@@ -1282,6 +1316,9 @@ def main():
                                             else:
                                                 predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                                                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
+                                            if args.wp_dist:
+                                                outputs = nlinear_model.forward_upto_classifier(inputs)
+                                                test_wpdist.append(compute_wp_dist(outputs,batch['labels'].tolist(),args.wpdist_metric))
                                             y_test_pred += predicted
                                             y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
                                             test_preds.append(test_preds_batch)
@@ -1304,6 +1341,7 @@ def main():
                                     log_test_recall = recall_score(y_test_true, y_test_pred_opt)
                                     log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_test_true, test_preds)
                                     all_test_logits[i].append(torch.cat(test_logits))
+                                    if args.wp_dist: all_test_wpdist[i].append(torch.cat(test_wpdist))
 
                                     # # Get preds on all tokens
                                     # alltokens_preds = []
@@ -1368,6 +1406,9 @@ def main():
                                 np.save(f'{args.save_path}/probes/{probes_file_name}_test_true.npy', all_y_true_test)
                                 all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
                                 np.save(f'{args.save_path}/probes/{probes_file_name}_test_logits.npy', all_test_logits)
+                                if args.wp_dist:
+                                    all_test_wpdist = np.stack([torch.stack(all_test_wpdist[i]).detach().cpu().numpy() for i in range(args.num_folds)])
+                                    np.save(f'{args.save_path}/probes/{probes_file_name}_test_wpdist_{args.wpdist_metric}.npy', all_test_wpdist)
 
                             if args.plot_name is not None:
                                 # probes_file_name = f'T{save_seed}_{args.model_name}_{args.train_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
