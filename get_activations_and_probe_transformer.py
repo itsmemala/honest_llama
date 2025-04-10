@@ -294,7 +294,7 @@ def compute_knn_dist(outputs,train_outputs,device,train_labels=None,metric='eucl
         raise ValueError('Metric not implemented.')
     return dist
 
-def compute_wp_dist(outputs,labels,metric='euclidean'):
+def compute_wp_dist(outputs,labels,device,metric='euclidean'):
     dist_same, dist_opp = [], []
     if metric=='euclidean':
         for i,o_i in enumerate(outputs):
@@ -305,13 +305,25 @@ def compute_wp_dist(outputs,labels,metric='euclidean'):
                     o_dist_same.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
                 elif i!=j and labels[i]!=labels[j]: 
                     o_dist_opp.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
-            dist_same.append(torch.cat(o_dist_same).mean())
-            dist_opp.append(torch.cat(o_dist_opp).mean())
+            dist_same.append(torch.cat(o_dist_same).mean() if len(o_dist_same)>0 else torch.tensor(-10000).to(device))
+            dist_opp.append(torch.cat(o_dist_opp).mean() if len(o_dist_opp)>0 else torch.tensor(10000).to(device))
+    elif metric=='cosine':
+        outputs = F.normalize(outputs, p=2, dim=-1)
+        for i,o_i in enumerate(outputs):
+            o_dist_same, o_dist_opp = [], []
+            for j,o_j in enumerate(outputs):
+                # print(o_i.shape, o_j.shape, 1-F.cosine_similarity(o_i, o_j, dim=-1))
+                if i!=j and labels[i]==labels[j]: 
+                    o_dist_same.append(1-F.cosine_similarity(o_i, o_j, dim=-1)) # cosine distance between two samples
+                elif i!=j and labels[i]!=labels[j]: 
+                    o_dist_opp.append(1-F.cosine_similarity(o_i, o_j, dim=-1)) # cosine distance between two samples
+            dist_same.append(torch.stack(o_dist_same).mean() if len(o_dist_same)>0 else torch.tensor(-10000).to(device)) # stack instead of cat since these are 0d tensors
+            dist_opp.append(torch.stack(o_dist_opp).mean() if len(o_dist_opp)>0 else torch.tensor(10000).to(device))
     dist_same = torch.stack(dist_same)
     dist_opp = torch.stack(dist_opp)
     dist = torch.stack([dist_same, dist_opp], dim=1)
-    print(dist,dist.shape)
-    sys.exit()
+    # print(dist,dist.shape)
+    # sys.exit()
     return dist
 
 def main(): 
@@ -494,28 +506,34 @@ def main():
         elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen' or args.dataset_name in ['city_country','movie_cast','player_date_birth']:
             num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
             file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
-            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
-            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
+            # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
+            # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
             if 'se_labels' in args.train_labels_file_name:
                 file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
                 labels = np.load(file_path)
             else:
                 labels = []
                 file_path = f'{args.save_path}/responses/{args.train_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json'
-                with open(file_path, 'rb') as read_file:
-                    for line in read_file:
-                        data = json.loads(line)
+                # with open(file_path, 'rb') as read_file:
+                #     for line in read_file:
+                #         data = json.loads(line)
                         # for j in range(1,num_samples+1,1):
                         #     if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
                         #     if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                         #     labels.append(label)
                 # print('\n\End time of loading:',datetime.datetime.now(),'\n\n')
                 # sys.exit()
-                        if 'greedy' in args.train_labels_file_name:
+                if 'greedy' in args.train_labels_file_name:
+                    with open(file_path, 'rb') as read_file:
+                        for line in read_file:
+                            data = json.loads(line)
                             if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
                             if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                             labels.append(label)
-                        else:
+                else:
+                    with open(file_path, 'rb') as read_file:
+                        for line in read_file:
+                            data = json.loads(line)
                             for j in range(1,num_samples+1,1):
                                 if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
                                 if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
@@ -544,7 +562,7 @@ def main():
                     test_labels.append(label)
     else:
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
-        test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,args.test_num_samples)
+        # test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,args.test_num_samples)
         if 'se_labels' in args.test_labels_file_name:
             file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.test_labels_file_name}.npy'
             test_labels = np.load(file_path)
@@ -552,14 +570,17 @@ def main():
             test_labels = []
             print(args.test_labels_file_name)
             file_path = f'{args.save_path}/responses/{args.test_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_labels_file_name}.json'
-            with open(file_path, 'r') as read_file:
-                for line in read_file:
-                    data = json.loads(line)
-                    if 'greedy' in args.test_labels_file_name:
+            if 'greedy' in args.test_labels_file_name:
+                with open(file_path, 'r') as read_file:
+                    for line in read_file:
+                        data = json.loads(line)
                         if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
                         if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
                         test_labels.append(label)
-                    else:
+            else:
+                with open(file_path, 'r') as read_file:
+                    for line in read_file:
+                        data = json.loads(line)
                         for j in range(1,args.test_num_samples+1,1):
                             if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
                             if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
@@ -1317,7 +1338,7 @@ def main():
                                                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                                             if args.wp_dist:
                                                 outputs = nlinear_model.forward_upto_classifier(inputs)
-                                                test_wpdist.append(compute_wp_dist(outputs,batch['labels'].tolist(),args.wpdist_metric))
+                                                test_wpdist.append(compute_wp_dist(outputs,batch['labels'].tolist(),device,args.wpdist_metric))
                                             y_test_pred += predicted
                                             y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
                                             test_preds.append(test_preds_batch)
