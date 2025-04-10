@@ -54,6 +54,7 @@ def main():
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
     parser.add_argument('--filt_testprompts_catg',type=int, default=None)
     parser.add_argument('--test_num_samples',type=int, default=None)
+    parser.add_argument('--wpdist_metric',type=str, default='')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
@@ -337,6 +338,8 @@ def main():
             else:
                 test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
                 labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
+                args.wpdist_metric!='': wp_dist = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_wpdist_{args.wpdist_metric}.npy')[0][0]
+                args.wpdist_metric!='': print(wp_dist.shape)
             
             if args.filt_testprompts_catg is not None:
                 num_prompts = int(len(test_preds[0])/args.test_num_samples)
@@ -458,6 +461,7 @@ def main():
         seed_results_list.append(np.mean(test_recall_cls1)) # print(np.mean(test_recall_cls1)) # H
         seed_results_list.append(np.mean(aupr_by_layer)) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
         seed_results_list.append(np.mean(auroc_by_layer)) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
+        seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
         # print(auroc_by_layer)
         all_preds = np.stack(all_preds, axis=0)
 
