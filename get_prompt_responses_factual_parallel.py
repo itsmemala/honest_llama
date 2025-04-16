@@ -17,6 +17,8 @@ import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
 # from peft.tuners.lora import LoraLayer
+from transformers import AutoTokenizer
+from base_transformers.models import llama3,gemma
 import evaluate
 
 from accelerate import Accelerator, InitProcessGroupKwargs
@@ -353,7 +355,10 @@ HF_NAMES = {
     'llama2_chat_7B': 'meta-llama/Llama-2-7b-chat-hf', 
     'llama2_chat_13B': 'meta-llama/Llama-2-13b-chat-hf', 
     'llama2_chat_70B': 'meta-llama/Llama-2-70b-chat-hf', 
-    'flan_33B': 'timdettmers/qlora-flan-33b'
+    'flan_33B': 'timdettmers/qlora-flan-33b',
+    'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
+    'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
+    'gemma_2B': 'google/gemma-2b'
 }
 
 def main(): 
@@ -395,9 +400,16 @@ def main():
     accelerator = Accelerator(kwargs_handlers=[kwargs])
 
     print('Loading model..')
-    tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-    # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
-    model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map={"": accelerator.process_index})
+    if "llama3" in args.model_name:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    elif "gemma" in args.model_name:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        model = gemma.GemmaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    else:
+        tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+        # if args.num_ret_seq>1 and args.model_name=='alpaca_7B': os.environ["PYTORCH_USE_CUDA_DSA"] = "1" #tokenizer.pad_token = tokenizer.eos_token
+        model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map={"": accelerator.process_index})
     if args.num_ret_seq>1 and args.model_name=='llama_2_7B': model = model.bfloat16() # Numerical instability; Solution from: https://github.com/meta-llama/llama/issues/380
     # device = "cuda"
     device = accelerator.device
@@ -500,7 +512,8 @@ def main():
         eos_tokens = ["Q:", "\n\n##"]
         checkgens = ["Q:", "\n\n##"]
     if args.dataset_name=='gsm8k':
-        period_token_id = tokenizer(".")['input_ids']
+        # period_token_id = tokenizer(".")['input_ids']
+        period_token_id = None
         eos_tokens = ["Q:", "\end{code}"]
         checkgens = ["Q:", "\end{code}"]
     elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
