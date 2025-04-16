@@ -25,6 +25,7 @@ from copy import deepcopy
 import llama
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
+from transformers import AutoTokenizer
 from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from sklearn.model_selection import train_test_split
@@ -448,6 +449,10 @@ def main():
                 cache_dir=args.save_path+"/"+args.model_cache_dir
             )
             model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
+    elif "llama3" in args.model_name:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        if args.load_act==True:
+            model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     else:
         tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
         # if args.load_act==True: # Only load model if we need activations on the fly
