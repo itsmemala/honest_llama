@@ -611,7 +611,7 @@ def main():
             for idx in test_idxs:
                 act = file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file]
                 my_test_acts.append(act)
-        my_test_acts = torch.stack(my_test_acts)
+        my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
 
     if args.multi_gpu:
         device_id += 1
@@ -745,7 +745,7 @@ def main():
                         all_val_logits[i], all_test_logits[i] = [], []
                         all_val_sim[i], all_test_sim[i] = [], []
                         model_wise_mc_sample_idxs, probes_saved = [], []
-                        num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+                        num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                         loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
                         # loop_layers = [32]
                         for layer in tqdm(loop_layers):

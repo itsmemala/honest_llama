@@ -1,4 +1,4 @@
-name: iti_py311
+name: iti_py311_cuda
 channels:
   - conda-forge
 dependencies:
@@ -175,7 +175,7 @@ dependencies:
       - threadpoolctl==3.6.0
       - tokenizers==0.21.0
       - toml==0.10.2
-      - torch==2.6.0
+      # - torch==2.6.0
       - torchvision==0.21.0
       - tqdm==4.67.1
       - transformers==4.51.2

@@ -338,8 +338,8 @@ def main():
             else:
                 test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
                 labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
-                args.wpdist_metric!='': wp_dist = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_wpdist_{args.wpdist_metric}.npy')[0][0]
-                args.wpdist_metric!='': print(wp_dist.shape)
+                if args.wpdist_metric!='': wp_dist = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_wpdist_{args.wpdist_metric}.npy')[0][0]
+                if args.wpdist_metric!='': print(wp_dist.shape, wp_dist[:10,1], np.min(wp_dist[:,1]),np.max( wp_dist[:,1]))
             
             if args.filt_testprompts_catg is not None:
                 num_prompts = int(len(test_preds[0])/args.test_num_samples)
@@ -367,8 +367,10 @@ def main():
                         num_prompts_in_catg += 1
                 select_instances = np.array(select_instances)
                 test_preds, labels = test_preds[:,select_instances], labels[select_instances]
+                if args.wpdist_metric!='': wp_dist = wp_dist[select_instances]
                 print('test_preds shape:',test_preds.shape,' labels shape:',labels.shape)
                 print('num_prompts_in_catg:',num_prompts_in_catg,'\n\n')
+                print('wp_dist:',np.min(wp_dist[:,1]),np.max( wp_dist[:,1]))
             
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -466,8 +468,9 @@ def main():
         all_preds = np.stack(all_preds, axis=0)
 
         all_results_list.append(np.array(seed_results_list))
-    print(', '.join(map(str,np.mean(np.stack(all_results_list)*100,axis=0).tolist())))
-    print(', '.join(map(str,np.std(np.stack(all_results_list)*100,axis=0).tolist())))
+    all_results_list = all_results_list[:-1]*100 + [all_results_list[-1]]
+    print(', '.join(map(str,np.mean(np.stack(all_results_list),axis=0).tolist())))
+    print(', '.join(map(str,np.std(np.stack(all_results_list),axis=0).tolist())))
 
 if __name__ == '__main__':
     main()
