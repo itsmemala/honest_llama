@@ -301,6 +301,7 @@ def main():
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_samples',type=int, default=None)
     parser.add_argument('--test_num_samples',type=int, default=None)
+    parser.add_argument('--use_val_aug',type=bool, default=False)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--supcon_bs',type=int, default=128)
     parser.add_argument('--bs',type=int, default=4)
@@ -634,6 +635,7 @@ def main():
 
                     method_concat = args.method + '_dropout' if args.use_dropout else args.method
                     method_concat = method_concat + '_no_bias' if args.no_bias else method_concat
+                    method_concat = method_concat + '_valaug' if args.use_val_aug else method_concat
                     method_concat = method_concat + '_' + str(args.supcon_bs) + '_' + str(args.supcon_epochs) + '_' + str(args.supcon_lr) + '_' + str(args.supcon_temp) if 'supcon' in args.method else method_concat
                     method_concat = method_concat + '_' + str(args.spl_wgt) + '_' + str(args.spl_knn) if 'specialised' in args.method else method_concat
                     method_concat = method_concat + '_' + str(args.spl_wgt) if 'orthogonal' in args.method else method_concat
@@ -717,7 +719,7 @@ def main():
                                 train_set_idxs = np.concatenate([np.arange(ds_prompt_start_idx+(k*num_samples),ds_prompt_start_idx+(k*num_samples)+num_samples,1) for k in train_prompt_idxs], axis=0)
                                 # val_set_idxs = np.concatenate([np.arange(k*num_samples,(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0)
                                 # val_set_idxs = np.array([k*num_samples for k in val_prompt_idxs])
-                                val_set_idxs = np.array([ds_prompt_start_idx+(k*num_samples) for k in val_prompt_idxs])
+                                val_set_idxs = np.concatenate([np.arange(ds_prompt_start_idx+(k*num_samples),ds_prompt_start_idx+(k*num_samples)+num_samples,1) for k in val_prompt_idxs], axis=0) if args.use_val_aug else np.array([ds_prompt_start_idx+(k*num_samples) for k in val_prompt_idxs])
                                 # assert len(train_set_idxs) + len(val_set_idxs) == args.len_dataset
                                 print(min(train_prompt_idxs),max(train_prompt_idxs))
                                 print(min(val_prompt_idxs),max(val_prompt_idxs))
@@ -1188,6 +1190,8 @@ def main():
                                         prior_probes_file_name += plot_name_concat
                                     elif 'sampled' in args.test_file_name:
                                         prior_probes_file_name = probes_file_name.replace(args.test_file_name+'_','')
+                                    elif args.use_val_aug: # add aug data to val split
+                                        prior_probes_file_name = probes_file_name.replace('_valaug','')
                                     else: # multi
                                         prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa' if args.multi_probe_dataset_name is None else args.multi_probe_dataset_name)
                                         if plot_name_concat not in prior_probes_file_name: prior_probes_file_name += plot_name_concat

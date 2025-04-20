@@ -254,27 +254,27 @@ def main():
             
             if args.plot_loss:
                 # Create dirs if does not exist:
-                if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
-                    os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
-                loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
-                loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()
-                loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()
-                # print(loss_to_plot[0])
-                fig, axs = plt.subplots(1,1)
-                axs.plot(loss_to_plot[0][0],label='total') # index fold, model
-                axs.plot(loss_to_plot1[0][0],label='pos')
-                axs.plot(loss_to_plot2[0][0],label='wp')
-                axs.legend()
-                fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_supcon_train_loss.png')
-                # loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_train_loss.npy', allow_pickle=True).item()
-                # loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_loss.npy', allow_pickle=True).item()
-                # loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_auc.npy', allow_pickle=True).item()
+                # if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
+                #     os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
+                # loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
+                # loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()
+                # loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()
+                # # print(loss_to_plot[0])
                 # fig, axs = plt.subplots(1,1)
-                # axs.plot(loss_to_plot[0][0],label='train_ce_loss') # index fold, model
-                # axs.plot(loss_to_plot1[0][0],label='val_ce_loss')
-                # axs.plot(loss_to_plot2[0][0],label='val_auc')
+                # axs.plot(loss_to_plot[0][0],label='total') # index fold, model
+                # axs.plot(loss_to_plot1[0][0],label='pos')
+                # axs.plot(loss_to_plot2[0][0],label='wp')
                 # axs.legend()
-                # fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
+                # fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_supcon_train_loss.png')
+                loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_train_loss.npy', allow_pickle=True).item()
+                loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_loss.npy', allow_pickle=True).item()
+                loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_auc.npy', allow_pickle=True).item()
+                fig, axs = plt.subplots(1,1)
+                axs.plot(loss_to_plot[0][0],label='train_ce_loss') # index fold, model
+                axs.plot(loss_to_plot1[0][0],label='val_ce_loss')
+                axs.plot(loss_to_plot2[0][0],label='val_auc')
+                axs.legend()
+                fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
 
             if args.best_hyp_on_test:
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')
@@ -435,7 +435,7 @@ def main():
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
-        seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+        seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
         # seed_results_list.append(np.mean(best_r))
         # seed_results_list.append(np.mean(test_fpr_best_r))
         if args.fpr_at_recall==-1:
@@ -452,23 +452,23 @@ def main():
             axs.set_ylabel('FPR')
             axs.title.set_text('FPR at recall')
             fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
-            seed_results_list.append(aucfpr)
+            seed_results_list.append(aucfpr*100)
             np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
             np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
         else:
-            seed_results_list.append(np.mean(test_fpr))
-        seed_results_list.append(np.mean(test_fpr_best_f1))
-        seed_results_list.append(np.mean(test_f1_cls1))
-        seed_results_list.append(np.mean(test_precision_cls1)) # print(np.mean(test_precision_cls1)) # H
-        seed_results_list.append(np.mean(test_recall_cls1)) # print(np.mean(test_recall_cls1)) # H
-        seed_results_list.append(np.mean(aupr_by_layer)) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
-        seed_results_list.append(np.mean(auroc_by_layer)) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-        seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
+            seed_results_list.append(np.mean(test_fpr)*100)
+        seed_results_list.append(np.mean(test_fpr_best_f1)*100)
+        seed_results_list.append(np.mean(test_f1_cls1)*100)
+        seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
+        seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
+        seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
+        seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
+        if args.wpdist_metric!='': seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
         # print(auroc_by_layer)
         all_preds = np.stack(all_preds, axis=0)
 
         all_results_list.append(np.array(seed_results_list))
-    all_results_list = all_results_list[:-1]*100 + [all_results_list[-1]]
+    print(all_results_list)
     print(', '.join(map(str,np.mean(np.stack(all_results_list),axis=0).tolist())))
     print(', '.join(map(str,np.std(np.stack(all_results_list),axis=0).tolist())))
 

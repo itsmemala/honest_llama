@@ -62,6 +62,7 @@ def main():
     parser.add_argument("--min_max_scale_dist", type=bool, default=False, help='')
     parser.add_argument("--best_hyp_on_test", type=bool, default=False, help='')
     parser.add_argument("--show_val_res", type=bool, default=False, help='')
+    parser.add_argument("--plot_loss", type=bool, default=False, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
     if args.model_name not in args.probes_file_name: raise ValueError("model name mismatch")
@@ -238,6 +239,20 @@ def main():
             else:
                 best_probes_file_name = args.probes_file_name
             
+            if args.plot_loss:
+                # Create dirs if does not exist:
+                if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
+                    os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
+                loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_train_loss.npy', allow_pickle=True).item()
+                loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_loss.npy', allow_pickle=True).item()
+                loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_auc.npy', allow_pickle=True).item()
+                fig, axs = plt.subplots(1,1)
+                axs.plot(loss_to_plot[0][0],label='train_ce_loss') # index fold, model
+                axs.plot(loss_to_plot1[0][0],label='val_ce_loss')
+                axs.plot(loss_to_plot2[0][0],label='val_auc')
+                axs.legend()
+                fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
+
             if args.best_hyp_on_test:
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')
             else:
