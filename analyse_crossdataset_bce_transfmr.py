@@ -222,8 +222,9 @@ def main():
                             else:
                                 temp = str(temp) + '_'
                             # temp = str(temp) + '_'
-                            fn_left_text = args.probes_file_name.split('hallu_pos_',1)[0] + 'hallu_pos_'
-                            fn_right_text = args.probes_file_name.split('hallu_pos_',1)[1].split('_',1)[1]
+                            search_str = 'hallu_pos_valaug_' if 'valaug' in args.probes_file_name else 'hallu_pos_'
+                            fn_left_text = args.probes_file_name.split(search_str,1)[0] + search_str
+                            fn_right_text = args.probes_file_name.split(search_str,1)[1].split('_',1)[1]
                             probes_file_name = fn_left_text + temp + fn_right_text
                             # print(probes_file_name)
                         probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
@@ -254,8 +255,8 @@ def main():
             
             if args.plot_loss:
                 # Create dirs if does not exist:
-                # if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
-                #     os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
+                if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
+                    os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
                 # loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
                 # loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()
                 # loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()
@@ -370,7 +371,7 @@ def main():
                 if args.wpdist_metric!='': wp_dist = wp_dist[select_instances]
                 print('test_preds shape:',test_preds.shape,' labels shape:',labels.shape)
                 print('num_prompts_in_catg:',num_prompts_in_catg,'\n\n')
-                print('wp_dist:',np.min(wp_dist[:,1]),np.max( wp_dist[:,1]))
+                # print('wp_dist:',np.min(wp_dist[:,1]),np.max( wp_dist[:,1]))
             
             val_pred_model = deepcopy(all_val_pred[fold][model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -463,7 +464,13 @@ def main():
         seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
         seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
         seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-        if args.wpdist_metric!='': seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
+        if args.wpdist_metric!='': 
+            seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
+
+            use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
+            wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
+            r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
+            seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
         # print(auroc_by_layer)
         all_preds = np.stack(all_preds, axis=0)
 

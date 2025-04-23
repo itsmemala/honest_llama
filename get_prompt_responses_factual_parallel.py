@@ -18,7 +18,7 @@ import argparse
 # from peft import PeftModel
 # from peft.tuners.lora import LoraLayer
 from transformers import AutoTokenizer
-from base_transformers.models import llama3,gemma
+# from base_transformers.models import llama3,gemma
 import evaluate
 
 from accelerate import Accelerator, InitProcessGroupKwargs
@@ -453,6 +453,28 @@ def main():
             all_input_texts.append(input_text)
             tokenized_prompt = tokenizer(input_text, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
+    elif args.dataset_name in ['city_country','movie_cast','player_date_birth']:
+        prompts = []
+        tokenized_prompts = []
+        all_gt_answers = []
+        with open(f'{args.dataset_name}.json') as f:
+            file_data = json.load(f)
+        print(len(file_data))
+        # print(file_data[1])
+        train_len = int(0.8*len(file_data))
+        print(train_len)
+        if args.use_split=='train':
+            args.len_dataset = train_len
+            start_row, end_row = 0, train_len
+        else:
+            args.len_dataset = len(file_data) - train_len
+            start_row, end_row = train_len, len(file_data)
+        for i in range(start_row,end_row,1):
+            cur_prompt = file_data[i]['prompt']
+            prompts.append(cur_prompt)
+            tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
+            tokenized_prompts.append(tokenized_prompt)
+            all_gt_answers.append(file_data[i]['correct_answer'])
     else:
         if args.dataset_name=='nq_open':
             hf_dataset_name = 'nq_open'
@@ -516,7 +538,7 @@ def main():
         period_token_id = None
         eos_tokens = ["Q:", "\end{code}"]
         checkgens = ["Q:", "\end{code}"]
-    elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa':
+    elif args.dataset_name=='nq_open' or args.dataset_name=='trivia_qa' or args.dataset_name in ['city_country','movie_cast','player_date_birth']:
         # period_token_id = tokenizer('. ')['input_ids'][1]
         period_token_id = tokenizer('.')['input_ids']
         eos_tokens = ['Question:', ' Question:', '\n', 'Answer:', ' Answer:', 'Q:', ' Q:', 'A:', ' A:',
@@ -663,67 +685,86 @@ def main():
         if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
             pass
         else:
-            rouge = evaluate.load('rouge')
-            exact_match_metric = evaluate.load("exact_match")
-            squad_metrics = evaluate.load('squad')
-            for i,batch in tqdm(enumerate(list(dataset.take(args.len_dataset))[start_at:])): # one row at a time
-                if args.num_ret_seq==1:
-                    labels_dict = {'exact_match': 0.0,
-                                    'rouge1_to_target':0.0,
-                                    'rouge2_to_target':0.0,
-                                    'rougeL_to_target':0.0,
-                                    'squad_f1':0.0}
-                else:
-                    labels_dict = {}
+            if args.dataset_name in ['city_country','movie_cast','player_date_birth']:
+                for i in range(len(responses)):
+                    if args.num_ret_seq==1:
+                        labels_dict = {'rouge1_to_target':0.0} # Using "rouge" only for consistency with rest of code for trivia/nq
+                    else:
+                        labels_dict = {}
+                        for j in range(args.num_ret_seq):
+                            labels_dict['rouge1_to_target_response'+str(j+1)]=0.0
                     for j in range(args.num_ret_seq):
-                        labels_dict['exact_match_response'+str(j+1)]=0.0
-                        labels_dict['rouge1_to_target_response'+str(j+1)]=0.0
-                        labels_dict['rouge2_to_target_response'+str(j+1)]=0.0
-                        labels_dict['rougeL_to_target_response'+str(j+1)]=0.0
-                        labels_dict['squad_f1_response'+str(j+1)]=0.0
-                if args.dataset_name=='nq_open':
-                    reference_answers = batch['answer'] 
-                elif args.dataset_name=='trivia_qa':
-                    reference_answers_unformatted = batch['answer']
-                    reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases'] # [reference_answers_unformatted['normalized_value']]
-                elif args.dataset_name=='cnn_dailymail':
-                    reference_answers = [batch['highlights']]
-                for answer in reference_answers:
-                    for j in range(args.num_ret_seq):
+                        cur_response = responses[i]['response'+str(j+1)]
                         resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
-                        # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
-                        # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
-                        predictions = [responses[i]['response'+str(j+1)].lstrip()]
-                        references = [answer]
-                        results = exact_match_metric.compute(predictions=predictions,
-                                                                references=references,
-                                                                ignore_case=True,
-                                                                ignore_punctuation=True)
-                        labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
-                        rouge_results = rouge.compute(predictions=predictions, references=references)
-                        for rouge_type in ['rouge1','rouge2','rougeL']:
-                            labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
-                                                                            labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
-                        squad_f1 = my_squad_f1_score(predictions[0],references[0])
-                        labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
-                # predictions = [responses[i]['response'+str(j+1)].lstrip() for j in range(args.num_ret_seq) for answer in reference_answers]
-                # references = [answer for j in range(args.num_ret_seq) for answer in reference_answers]
-                # results = exact_match_metric.compute(predictions=predictions,
-                #                                         references=references,
-                #                                         ignore_case=True,
-                #                                         ignore_punctuation=True)
-                # rouge_results = rouge.compute(predictions=predictions, references=references)
-                # print(results['exact_match'])
-                # for j in range(args.num_ret_seq):
-                #     resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
-                #     labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
-                #     for rouge_type in ['rouge1','rouge2','rougeL']:
-                #         labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
-                #                                                         labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
-                        # squad_f1 = my_squad_f1_score(predictions[0],references[0])
-                        # labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
+                        if 'city_country' in args.dataset_name:
+                            labels_dict['rouge1_to_target' + resp_wise_label_name] = int(check_name_correctness(cur_response,all_gt_answers[i]))
+                        elif 'player_date_birth' in args.dataset_name:
+                            labels_dict['rouge1_to_target' + resp_wise_label_name] = int(string_match(cur_response,all_gt_answers[i]))
+                        elif 'movie_cast' in args.dataset_name:
+                            labels_dict['rouge1_to_target' + resp_wise_label_name] = int(string_match_in_list(cur_response,all_gt_answers[i]))
+                    labels.append(labels_dict)
+            else:
+                rouge = evaluate.load('rouge')
+                exact_match_metric = evaluate.load("exact_match")
+                squad_metrics = evaluate.load('squad')
+                for i,batch in tqdm(enumerate(list(dataset.take(args.len_dataset))[start_at:])): # one row at a time
+                    if args.num_ret_seq==1:
+                        labels_dict = {'exact_match': 0.0,
+                                        'rouge1_to_target':0.0,
+                                        'rouge2_to_target':0.0,
+                                        'rougeL_to_target':0.0,
+                                        'squad_f1':0.0}
+                    else:
+                        labels_dict = {}
+                        for j in range(args.num_ret_seq):
+                            labels_dict['exact_match_response'+str(j+1)]=0.0
+                            labels_dict['rouge1_to_target_response'+str(j+1)]=0.0
+                            labels_dict['rouge2_to_target_response'+str(j+1)]=0.0
+                            labels_dict['rougeL_to_target_response'+str(j+1)]=0.0
+                            labels_dict['squad_f1_response'+str(j+1)]=0.0
+                    if args.dataset_name=='nq_open':
+                        reference_answers = batch['answer'] 
+                    elif args.dataset_name=='trivia_qa':
+                        reference_answers_unformatted = batch['answer']
+                        reference_answers = reference_answers_unformatted['aliases'] + reference_answers_unformatted['normalized_aliases'] # [reference_answers_unformatted['normalized_value']]
+                    elif args.dataset_name=='cnn_dailymail':
+                        reference_answers = [batch['highlights']]
+                    for answer in reference_answers:
+                        for j in range(args.num_ret_seq):
+                            resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
+                            # predictions, predictions_dict = [responses[j]['response1'].lstrip()], [{'prediction_text':responses[j]['response1'].lstrip()}]
+                            # references, references_dict = [answer], [{'answers':{'text':[answer]}}]
+                            predictions = [responses[i]['response'+str(j+1)].lstrip()]
+                            references = [answer]
+                            results = exact_match_metric.compute(predictions=predictions,
+                                                                    references=references,
+                                                                    ignore_case=True,
+                                                                    ignore_punctuation=True)
+                            labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
+                            rouge_results = rouge.compute(predictions=predictions, references=references)
+                            for rouge_type in ['rouge1','rouge2','rougeL']:
+                                labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
+                                                                                labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
+                            squad_f1 = my_squad_f1_score(predictions[0],references[0])
+                            labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
+                    # predictions = [responses[i]['response'+str(j+1)].lstrip() for j in range(args.num_ret_seq) for answer in reference_answers]
+                    # references = [answer for j in range(args.num_ret_seq) for answer in reference_answers]
+                    # results = exact_match_metric.compute(predictions=predictions,
+                    #                                         references=references,
+                    #                                         ignore_case=True,
+                    #                                         ignore_punctuation=True)
+                    # rouge_results = rouge.compute(predictions=predictions, references=references)
+                    # print(results['exact_match'])
+                    # for j in range(args.num_ret_seq):
+                    #     resp_wise_label_name = '_response'+str(j+1) if args.num_ret_seq>1 else ''
+                    #     labels_dict['exact_match' + resp_wise_label_name] = max(results['exact_match'], labels_dict['exact_match' + resp_wise_label_name])
+                    #     for rouge_type in ['rouge1','rouge2','rougeL']:
+                    #         labels_dict[rouge_type + '_to_target' + resp_wise_label_name] = max(rouge_results[rouge_type],
+                    #                                                         labels_dict[rouge_type + '_to_target' + resp_wise_label_name])
+                            # squad_f1 = my_squad_f1_score(predictions[0],references[0])
+                            # labels_dict['squad_f1' + resp_wise_label_name] = max(squad_f1, labels_dict['squad_f1' + resp_wise_label_name])
 
-                labels.append(labels_dict)
+                    labels.append(labels_dict)
 
 
             print('Saving labels..')
