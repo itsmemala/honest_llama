@@ -735,7 +735,7 @@ def main():
                 
                 if args.skip_hypsearch:
                     lr_search_list = [args.lr_list[seed_itr]] # One-to-one mapping of seed and lr
-                    supcon_temp_search_list = [args.supcon_temp_list[seed_itr]] # One-to-one mapping of seed and supcon_temp
+                    supcon_temp_search_list = [args.supcon_temp] if args.supcon_temp_list is None else [args.supcon_temp_list[seed_itr]] # One-to-one mapping of seed and supcon_temp
                 else:
                     lr_search_list= args.lr_list
                     supcon_temp_search_list = [args.supcon_temp] if args.supcon_temp_list is None else args.supcon_temp_list
@@ -922,6 +922,9 @@ def main():
                                 if (use_supcon_pos) and (sc_num_samples is not None):
                                     criterion_supcon1 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=None) # operates on greedy samples only
                                     criterion_supcon2 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=sc_num_samples,bs=args.bs) # operates within prompt only
+                                elif 'supconv2_reg_wp' in args.method:
+                                    criterion_supcon1 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=None) # operates on all
+                                    criterion_supcon2 = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=False,num_samples=sc_num_samples,bs=args.bs) # operates within prompt only
                                 else:
                                     criterion_supcon = SupConLoss(temperature=args.supcon_temp,use_supcon_pos=use_supcon_pos,num_samples=sc_num_samples,bs=args.bs) if 'supconv2' in args.method else NTXentLoss()
                                 
@@ -1013,6 +1016,10 @@ def main():
                                                                 supcon1_loss = criterion_supcon1(emb_projection[greedy_features_index,None,:],torch.squeeze(targets[greedy_features_index]).to(device)) # operates on greedy samples only
                                                             supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
                                                             supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
+                                                        elif 'supconv2_reg_wp' in args.method:
+                                                            supcon1_loss = criterion_supcon1(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates on all
+                                                            supcon2_loss = criterion_supcon2(emb_projection[:,None,:],torch.squeeze(targets).to(device)) # operates within prompt only
+                                                            supcon_loss = args.sc1_wgt*supcon1_loss + args.sc2_wgt*supcon2_loss
                                                         else:
                                                             supcon_loss = criterion_supcon(emb_projection[:,None,:],torch.squeeze(targets).to(device))
                                                     else:
@@ -1020,7 +1027,7 @@ def main():
                                                         supcon_loss = criterion_supcon(logits, torch.squeeze(targets).to(device))
                                                     # print(supcon_loss.item())
                                                     epoch_supcon_loss += supcon_loss.item()
-                                                    if (use_supcon_pos) and (sc_num_samples is not None):
+                                                    if ((use_supcon_pos) and (sc_num_samples is not None)) or 'supconv2_reg_wp' in args.method:
                                                         epoch_supcon1_loss += supcon1_loss.item()
                                                         epoch_supcon2_loss += supcon2_loss.item()
                                                     supcon_loss.backward()
@@ -1351,6 +1358,7 @@ def main():
                                                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                                             if args.wp_dist:
                                                 outputs = nlinear_model.forward_upto_classifier(inputs)
+                                                wpdist_metric = args.wpdist_metric
                                                 if 'sc_proj' in args.wpdist_metric:
                                                     wpdist_metric = args.wpdist_metric.replace('_sc_proj','')
                                                     norm_emb = F.normalize(outputs, p=2, dim=-1)

@@ -481,9 +481,11 @@ def main():
         # print(file_data[1])
         train_len = int(0.8*len(file_data))
         print(train_len)
-        if args.use_split=='train':
+        if args.use_split=='train' and args.len_dataset==0:
             args.len_dataset = train_len
             start_row, end_row = 0, train_len
+        elif args.use_split=='train':
+            start_row, end_row = 0, args.len_dataset
         else:
             args.len_dataset = len(file_data) - train_len
             start_row, end_row = train_len, len(file_data)

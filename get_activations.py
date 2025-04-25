@@ -215,7 +215,7 @@ def main():
     elif args.dataset_name == 'gsm8k':
         load_ranges = [(a*20,(a*20)+20) for a in range(int(len(prompts)/20)+1)] # all responses
     elif args.dataset_name in ['city_country','movie_cast','player_date_birth']:
-        load_ranges = [(a*100,(a*100)+100) for a in range(int(len(prompts)/20)+1)]
+        load_ranges = [(a*100,(a*100)+100) for a in range(int(len(prompts)/100)+1)]
 
     # load_ranges = [(0,len(prompts))]
     # load_ranges = [(4900,5000)]

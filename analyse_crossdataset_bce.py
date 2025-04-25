@@ -105,6 +105,8 @@ def main():
         print('\n\nSETTING NUM_LAYERS=1\n\n')
         num_layers, num_models = 1, 1 # We only ran these for the last layer
     # num_layers, num_models = 1, 1
+    num_layers, num_models, loop_layers = (1,1,[-1]) if args.layer_strat=='last' else (num_layers, num_models, range(num_models))
+    print(num_layers, num_models)
 
     if args.dataset_name=='strqa':
         acts_per_file = 50
@@ -303,9 +305,9 @@ def main():
         excl_layers, incl_layers = [], []
         aupr_by_layer, auroc_by_layer = [], []
         # num_models = 1 # 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
-        print(num_models)
+        # print(num_models)
         all_preds = []
-        for model in tqdm(range(num_models)):
+        for model in tqdm(loop_layers):
             best_probes_file_name, all_val_pred, all_val_true, best_t, val_dist_min, val_dist_max = results_at_best_lr(model)
             best_probes_per_model.append(best_probes_file_name)
             layer_pred_thresholds.append(best_t)
@@ -421,11 +423,11 @@ def main():
             # Last layer probe
             confident_sample_pred = []
             for i in range(all_preds.shape[1]):
-                sample_pred = np.squeeze(all_preds[num_layers-1,i])
+                sample_pred = np.squeeze(all_preds[-1,i])
                 if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
-                    confident_sample_pred.append(1 if sample_pred<=layer_pred_thresholds[num_layers-1] else 0)
+                    confident_sample_pred.append(1 if sample_pred<=layer_pred_thresholds[-1] else 0)
                 else:
-                    confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[num_layers-1] else 0)
+                    confident_sample_pred.append(1 if sample_pred>layer_pred_thresholds[-1] else 0)
             # print('Using final layer probe:',f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0))
             # print('Using final layer probe:\n',classification_report(labels,confident_sample_pred))
 
@@ -442,7 +444,7 @@ def main():
 
             #######################
             if args.layer_strat=='last':
-                # print(layer_pred_thresholds[num_layers-1], fpr_list, r_list)
+                # print(layer_pred_thresholds[-1], fpr_list, r_list)
                 seed_results_list.append(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)])) # print(np.mean([f1_score(labels,confident_sample_pred),f1_score(labels,confident_sample_pred,pos_label=0)]))
                 # seed_results_list.append(best_r)
                 # seed_results_list.append(test_fpr_best_r)
@@ -450,7 +452,7 @@ def main():
                     # Create dirs if does not exist:
                     if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
                         os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
-                    test_preds, model = all_preds, num_layers-1
+                    test_preds, model = all_preds, -1
                     recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
                     fig, axs = plt.subplots(1,1)
                     axs.plot(recall_vals,fpr_at_recall_vals)
@@ -469,10 +471,10 @@ def main():
                 seed_results_list.append(f1_score(labels,confident_sample_pred))
                 seed_results_list.append(precision_score(labels,confident_sample_pred))
                 seed_results_list.append(recall_score(labels,confident_sample_pred)) # print(recall_score(labels,confident_sample_pred))
-                precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[num_layers-1]))
+                precision, recall, thresholds = precision_recall_curve(labels, np.squeeze(all_preds[-1]))
                 seed_results_list.append(auc(recall,precision)) # print(auc(recall,precision))
                 if args.filt_testprompts_catg not in [0,1]: 
-                    auc_result_temp = roc_auc_score(labels, [-v for v in np.squeeze(all_preds[num_layers-1])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[num_layers-1])) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:]))
+                    auc_result_temp = roc_auc_score(labels, [-v for v in np.squeeze(all_preds[-1])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels,np.squeeze(all_preds[-1])) # print(roc_auc_score(labels,np.squeeze(all_preds[num_layers-1,:,:]))
                 else:
                     auc_result_temp = 0
                 seed_results_list.append(auc_result_temp)

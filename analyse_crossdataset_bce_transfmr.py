@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--seed_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--sc_temp_list',default=[0],type=list_of_floats,required=False,help='(default=%(default)s)')
+    parser.add_argument("--skip_hypsearch", type=bool, default=False, help='')
     parser.add_argument('--layers_range_list',default=None,type=list_of_strs,required=False,help='(default=%(default)s)')
     parser.add_argument("--best_hyp_using_aufpr", type=bool, default=False, help='local directory with dataset')
     parser.add_argument("--best_hyp_using_trloss", type=bool, default=False, help='local directory with dataset')
@@ -209,11 +210,16 @@ def main():
                 aufpr = auc(check_recall_intervals[aufpr_idxes],fpr_at_recall_vals[aufpr_idxes])
             return check_recall_intervals, fpr_at_recall_vals, aufpr
 
-        def results_at_best_lr(model):
-            if args.lr_list is not None:
+        def results_at_best_lr(model,seed_i):
+            if args.skip_hypsearch:
+                lr_search_list = [args.lr_list[seed_i]] # One-to-one mapping of seed and lr
+                supcon_temp_search_list = [args.sc_temp_list[seed_i]] if len(args.sc_temp_list)==len(args.lr_list) else args.sc_temp_list # One-to-one mapping of seed and supcon_temp
+            else:
+                lr_search_list,supcon_temp_search_list = args.lr_list,args.sc_temp_list
+            if lr_search_list is not None:
                 probes_file_name_list, perf_by_lr = [], []
                 for lr in args.lr_list:
-                    for temp in args.sc_temp_list:
+                    for temp in supcon_temp_search_list:
                         if temp==0:
                             probes_file_name = args.probes_file_name
                         else:
@@ -330,7 +336,7 @@ def main():
         print(num_models)
         all_preds = []
         for model in tqdm(range(num_models)):
-            best_probes_file_name, all_val_pred, all_val_true, best_t, val_dist_min, val_dist_max  = results_at_best_lr(model)
+            best_probes_file_name, all_val_pred, all_val_true, best_t, val_dist_min, val_dist_max  = results_at_best_lr(model,seed_i)
             best_probes_per_model.append(best_probes_file_name)
             layer_pred_thresholds.append(best_t)
             if args.show_val_res:
@@ -436,6 +442,7 @@ def main():
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage F1:',np.mean(test_f1_cls1),np.mean(test_f1_cls0),'\n') # NH, H
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
+        
         seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
         # seed_results_list.append(np.mean(best_r))
         # seed_results_list.append(np.mean(test_fpr_best_r))
@@ -472,6 +479,7 @@ def main():
             r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
             seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
         # print(auroc_by_layer)
+        
         all_preds = np.stack(all_preds, axis=0)
 
         all_results_list.append(np.array(seed_results_list))

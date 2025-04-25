@@ -336,6 +336,7 @@ def main():
     parser.add_argument('--top_k_list',default=None,type=list_of_ints,required=False,help='(default=%(default)s)')
     parser.add_argument('--pca_dims_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--skip_train', type=bool, default=False)
+    parser.add_argument('--last_only', type=bool, default=False)
     parser.add_argument('--which_checkpoint', type=str, default='')
     parser.add_argument('--plot_name',type=str, default=None) # Wandb args
     parser.add_argument('--tag',type=str, default=None) # Wandb args
@@ -749,7 +750,7 @@ def main():
                         model_wise_mc_sample_idxs, probes_saved = [], []
                         num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                         loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
-                        # loop_layers = [32]
+                        loop_layers = [num_layers-1] if args.last_only else loop_layers
                         for layer in tqdm(loop_layers):
                             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
                             for head in loop_heads:
