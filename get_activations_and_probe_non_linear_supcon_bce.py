@@ -382,8 +382,9 @@ def main():
         if args.load_act==True: # Only load model if we need activations on the fly
             model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
-        num_heads = 32
     device = "cuda"
+
+    num_heads = 8 if 'gemma_2B' in args.model_name else 32 if 'llama3' in args.model_name else 32
 
     print("Loading prompts and model responses..")
     all_labels = []
@@ -619,6 +620,8 @@ def main():
         device_id += 1
         device = 'cuda:'+str(device_id) # move to next empty gpu for model processing
 
+    print('\nact_dims:',my_train_acts.shape,'\n')
+
     args.pca_dims_list = [None] if args.pca_dims_list is None else args.pca_dims_list
     for dims in args.pca_dims_list:
         args.pca_dims = dims
@@ -748,7 +751,7 @@ def main():
                         all_val_logits[i], all_test_logits[i] = [], []
                         all_val_sim[i], all_test_sim[i] = [], []
                         model_wise_mc_sample_idxs, probes_saved = [], []
-                        num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+                        num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                         loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
                         loop_layers = [num_layers-1] if args.last_only else loop_layers
                         for layer in tqdm(loop_layers):
@@ -776,7 +779,7 @@ def main():
                                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                                act_dims = {'layer':2048,'mlp':None,'mlp_l1':None,'ah':None} if '2B' in args.model_name else {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
+                                act_dims = {'layer':2048,'mlp':None,'mlp_l1':None,'ah':256} if '2B' in args.model_name else {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 supcon = True if 'supcon' in args.method else False
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
@@ -910,7 +913,7 @@ def main():
                                                         act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                                                 else:
                                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                                if args.using_act=='ah': act = act[head*128:(head*128)+128]
+                                                if args.using_act=='ah': act = act[head*act_dims[args.using_act]:(head*act_dims[args.using_act])+act_dims[args.using_act]]
                                                 activations.append(act)
                                             inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
                                             if args.token in single_token_types:
@@ -1054,7 +1057,7 @@ def main():
                                                         act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                                                 else:
                                                     act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                                if args.using_act=='ah': act = act[head*128:(head*128)+128]
+                                                if args.using_act=='ah': act = act[head*act_dims[args.using_act]:(head*act_dims[args.using_act])+act_dims[args.using_act]]
                                                 activations.append(act)
                                             inputs = torch.stack(activations,axis=0) if args.token in single_token_types else torch.cat(activations,dim=0)
                                             if args.token in single_token_types:
@@ -1240,7 +1243,7 @@ def main():
                                                     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                                             else:
                                                 act = get_llama_activations_bau_custom(model, tokenized_prompts[idx], device, args.using_act, layer, args.token, answer_token_idxes[idx], tagged_token_idxs[idx])
-                                            if args.using_act=='ah': act = act[head*128:(head*128)+128]
+                                            if args.using_act=='ah': act = act[head*act_dims[args.using_act]:(head*act_dims[args.using_act])+act_dims[args.using_act]]
                                             activations.append(act)
                                         inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                                         # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise
@@ -1329,7 +1332,7 @@ def main():
                                                         act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file][layer]).to(device)
                                                 else:
                                                     act = get_llama_activations_bau_custom(model, use_prompts[idx], device, args.using_act, layer, args.token, use_answer_token_idxes[idx], use_tagged_token_idxs[idx])
-                                                if args.using_act=='ah': act = act[head*128:(head*128)+128]
+                                                if args.using_act=='ah': act = act[head*act_dims[args.using_act]:(head*act_dims[args.using_act])+act_dims[args.using_act]]
                                                 activations.append(act)
                                             inputs = torch.stack(activations,axis=0) if args.token in single_token_types else activations
                                             # if 'individual_linear_orthogonal' in args.method or 'individual_linear_specialised' in args.method or ('individual_linear' in args.method and args.no_bias) or args.norm_input: inputs = inputs / inputs.pow(2).sum(dim=1).sqrt().unsqueeze(-1) # unit normalise

@@ -8,8 +8,10 @@ import pickle
 import json
 import jsonlines
 import random
-import llama
+# import llama
 import argparse
+from transformers import AutoTokenizer
+from base_transformers.models import llama3,gemma
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
 # from peft.tuners.lora import LoraLayer
@@ -25,7 +27,10 @@ HF_NAMES = {
     'llama2_chat_7B': 'meta-llama/Llama-2-7b-chat-hf', 
     'llama2_chat_13B': 'meta-llama/Llama-2-13b-chat-hf', 
     'llama2_chat_70B': 'meta-llama/Llama-2-70b-chat-hf', 
-    'flan_33B': 'timdettmers/qlora-flan-33b'
+    'flan_33B': 'timdettmers/qlora-flan-33b',
+    'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
+    'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
+    'gemma_2B': 'google/gemma-2b'
 }
 
 def main(): 
@@ -53,9 +58,19 @@ def main():
     np.random.seed(42)
     torch.cuda.manual_seed_all(42)
 
+    device='cuda'
+
     print('Loading model..')
-    tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-    model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    if "llama3" in args.model_name:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto").to(device)
+        # model.forward = torch.compile(model.forward) #, mode="reduce-overhead") #, fullgraph=True)
+    elif "gemma" in args.model_name:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL)
+        model = gemma.GemmaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto").to(device)
+    else:
+        tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+        model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
     device = "cuda"
 
     print('Loading model responses..')
