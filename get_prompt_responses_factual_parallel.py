@@ -591,32 +591,32 @@ def main():
                 continue
             if args.num_ret_seq==1:
                 raise ValueError("num_ret_seq is set to 1.")
-                # if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
-                #     cur_response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
-                #     for check_gen in checkgens: # Fix generation stopping errors
-                #         cur_response = cur_response.split(check_gen)[0]
-                #     model_completion = cur_response
-                #     cur_model_answer = clean_answer(cur_response) if args.dataset_name=='strqa' else clean_answer_gsm8k(cur_response)
-                #     model_answer = cur_model_answer
-                #     is_cor = is_correct(cur_model_answer, all_gt_answers[i]) if args.dataset_name=='strqa' else is_correct_gsm8k(cur_model_answer, all_gt_answers[i])
-                #     input_text = all_input_texts[i]
-                #     correct_rate += is_cor
-                #     print('\n# Correct answers:',correct_rate,'\n')
-                #     result_dict['is_correct'].append(is_cor)
-                #     result_dict['model_answer'].append(model_answer)
-                #     result_dict['model_completion'].append(model_completion)
-                #     result_dict['full_input_text'].append(input_text)
-                #     results=[result_dict]
-                # else:
-                #     response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
-                #     for check_gen in checkgens: # Fix generation stopping errors
-                #         # before_trunc = response
-                #         response = response.split(check_gen)[0]
-                #         # if before_trunc=="":
-                #         #     print(i)
-                #     responses.append({'prompt':prompts[i],
-                #                         'response1':response})
-                #     results=responses
+                if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
+                    cur_response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                    for check_gen in checkgens: # Fix generation stopping errors
+                        cur_response = cur_response.split(check_gen)[0]
+                    model_completion = cur_response
+                    cur_model_answer = clean_answer(cur_response) if args.dataset_name=='strqa' else clean_answer_gsm8k(cur_response)
+                    model_answer = cur_model_answer
+                    is_cor = is_correct(cur_model_answer, all_gt_answers[i]) if args.dataset_name=='strqa' else is_correct_gsm8k(cur_model_answer, all_gt_answers[i])
+                    input_text = all_input_texts[i]
+                    correct_rate += is_cor
+                    print('\n# Correct answers:',correct_rate,'\n')
+                    result_dict['is_correct'].append(is_cor)
+                    result_dict['model_answer'].append(model_answer)
+                    result_dict['model_completion'].append(model_completion)
+                    result_dict['full_input_text'].append(input_text)
+                    results=[result_dict]
+                else:
+                    response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
+                    for check_gen in checkgens: # Fix generation stopping errors
+                        # before_trunc = response
+                        response = response.split(check_gen)[0]
+                        # if before_trunc=="":
+                        #     print(i)
+                    responses.append({'prompt':prompts[i],
+                                        'response1':response})
+                    results=responses
             else:
                 if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
                     is_cor, model_answer, model_completion, input_text = [], [], [], []

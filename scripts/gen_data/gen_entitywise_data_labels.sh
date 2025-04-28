@@ -1,6 +1,6 @@
 # python get_prompt_responses_factual_onlylabels.py hl_llama_7B city_country --len_dataset 0 --start_at 0 --use_split train --device 0 --save_path /home/local/data/ms/honest_llama_data
 # python get_prompt_responses_factual_onlylabels.py hl_llama_7B city_country --len_dataset 0 --start_at 0 --use_split test --device 0 --save_path /home/local/data/ms/honest_llama_data
-# accelerate launch --num_processes 2 --multi_gpu  get_prompt_responses_factual_parallel_fast.py hl_llama_7B city_country --trivia_prompt_format True --len_dataset 0 --start_at 0 --use_split test --device 0 --save_path /home/local/data/ms/honest_llama_data
+# accelerate launch --num_processes 2 --multi_gpu  get_prompt_responses_factual_parallel.py hl_llama_7B city_country --trivia_prompt_format True --len_dataset 0 --start_at 0 --use_split test --device 0 --save_path /home/local/data/ms/honest_llama_data
 # accelerate launch --num_processes 2 --multi_gpu  get_prompt_responses_factual_parallel_fast.py hl_llama_7B city_country --len_dataset 1000 --start_at 0 --use_split train --device 0 --save_path /home/local/data/ms/honest_llama_data --do_sample True --num_ret_seq 10
 # python get_prompt_responses_factual_onlylabels.py hl_llama_7B city_country --len_dataset 0 --start_at 0 --use_split test --device 0 --save_path /home/local/data/ms/honest_llama_data --do_sample True --num_ret_seq 10
 
