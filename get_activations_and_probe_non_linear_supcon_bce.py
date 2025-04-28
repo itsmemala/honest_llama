@@ -1192,6 +1192,7 @@ def main():
                                         prior_probes_file_name = probes_file_name.replace('knn_','').replace('kmeans_','').replace(args.dist_metric+str(args.top_k)+'_','').replace(args.dist_metric+str(args.top_k)+'pca'+str(args.pca_dims)+'_','')
                                     elif args.ood_test:
                                         prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                        if args.use_val_aug: prior_probes_file_name = prior_probes_file_name.replace('_valaug','')
                                         prior_probes_file_name += plot_name_concat
                                     elif 'sampled' in args.test_file_name and len(args.dataset_list)>1 and 'multi2' in multi_name: # city,player -> trivia sampled
                                         prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa' if args.multi_probe_dataset_name is None else args.multi_probe_dataset_name)
