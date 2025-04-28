@@ -1192,10 +1192,10 @@ def main():
                                     elif args.ood_test:
                                         prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                         prior_probes_file_name += plot_name_concat
+                                    elif 'sampled' in args.test_file_name and len(args.dataset_list)>1 and 'multi2' in multi_name: # city,player -> trivia sampled
+                                        prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa' if args.multi_probe_dataset_name is None else args.multi_probe_dataset_name)
                                     elif args.use_val_aug: # add aug data to val split
                                         prior_probes_file_name = probes_file_name.replace('_valaug','')
-                                    elif 'sampled' in args.test_file_name and len(args.dataset_list)>1 and multi_name=='multi2': # city,player -> trivia sampled
-                                        prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa' if args.multi_probe_dataset_name is None else args.multi_probe_dataset_name)
                                     elif 'sampled' in args.test_file_name:
                                         prior_probes_file_name = probes_file_name.replace(args.test_file_name+'_','')
                                     else: # multi
