@@ -783,6 +783,7 @@ def main():
                             elif args.ood_test:
                                 train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
                                 probes_file_name = f'T{save_seed}_/{args.model_name}_/ood_{train_dataset_name}/_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                if 'sampled' in args.test_file_name: probes_file_name = f'T{save_seed}_/{args.model_name}_/ood_{train_dataset_name}/_{args.test_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             plot_name_concat = 'b' if args.use_best_val_t else ''
                             plot_name_concat += 'a' if args.best_using_auc else ''
                             plot_name_concat += 'l' if args.best_as_last else ''
