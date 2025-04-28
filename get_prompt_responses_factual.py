@@ -402,6 +402,7 @@ def main():
     parser.add_argument('--start_at', type=int, default=0)
     parser.add_argument('--use_split', type=str, default='validation')
     parser.add_argument('--hallu_check_prompt', type=int, default=None)
+    parser.add_argument('--trivia_prompt_format', type=bool, default=False)
     parser.add_argument("--temperature", type=float, default=1)
     parser.add_argument("--top_p", type=float, default=0.95)
     parser.add_argument('--do_sample', type=bool, default=False)
@@ -494,7 +495,8 @@ def main():
             args.len_dataset = len(file_data) - train_len
             start_row, end_row = train_len, len(file_data)
         for i in range(start_row,end_row,1):
-            cur_prompt = file_data[i]['prompt']
+            prompt_question = file_data[i]['prompt']
+            cur_prompt = f"This is a bot that correctly answers questions. \n {prompt_question}" if args.trivia_prompt_format else prompt_question
             prompts.append(cur_prompt)
             tokenized_prompt = tokenizer(cur_prompt, return_tensors = 'pt').input_ids
             tokenized_prompts.append(tokenized_prompt)
