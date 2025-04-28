@@ -685,6 +685,7 @@ def main():
     print('Saving model responses..')
     if args.hallu_check_prompt is None:
         gen_type = 'sampled' if args.do_sample else 'greedy'
+        if args.trivia_prompt_format: gen_type += 'trfmt'
         save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{gen_type}_responses_{args.use_split}{args.len_dataset}.json'
     else:
         save_fname = f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_hallucheck{args.hallu_check_prompt}_responses_{args.use_split}{args.len_dataset}.json'
