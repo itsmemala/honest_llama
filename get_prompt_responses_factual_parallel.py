@@ -590,7 +590,6 @@ def main():
                 oom_err_idxs.append(i)
                 continue
             if args.num_ret_seq==1:
-                raise ValueError("num_ret_seq is set to 1.")
                 if args.dataset_name=='strqa' or args.dataset_name=='gsm8k':
                     cur_response = tokenizer.decode(response[0][0], skip_special_tokens=True) # Note: [0] only needed because of temp fix to loop through num_ret_seq
                     for check_gen in checkgens: # Fix generation stopping errors
