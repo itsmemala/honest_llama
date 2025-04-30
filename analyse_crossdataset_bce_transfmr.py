@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--token',type=str, default='answer_last')
     parser.add_argument("--responses_file_name", type=str, default='', help='local directory with dataset')
     parser.add_argument("--mitigated_responses_file_name", type=str, default='', help='local directory with dataset')
+    parser.add_argument('--m_probes_file_name',default=None,type=list_of_strs,required=False,help='(default=%(default)s)')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
     parser.add_argument('--filt_testprompts_catg',type=int, default=None)
@@ -92,18 +93,36 @@ def main():
         resp_start_idxs = np.load(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_response_start_token_idx.npy')
     if args.mitigated_responses_file_name!='':
         m_responses, m_labels = [], []
-        samples_neg_affected, samples_pos_affected = [], []
-        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
-            data = json.load(read_file)
-            for i in range(len(data['full_input_text'])):
-                m_responses.append(data['model_answer'][i])
-                if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
-                if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
-                m_labels.append(label)
-                if labels[i]!=hallu_cls and label==hallu_cls: samples_neg_affected.append(i)
-                if labels[i]==hallu_cls and label!=hallu_cls: samples_pos_affected.append(i)
-        print('Num of samples negatively affected:',len(samples_neg_affected))
-        print('Num of samples positively affected:',len(samples_pos_affected))
+        if 'dola' in args.mitigated_responses_file_name:
+            samples_neg_affected, samples_pos_affected = [], []
+            with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
+                data = json.load(read_file)
+                for i in range(len(data['full_input_text'])):
+                    m_responses.append(data['model_answer'][i])
+                    if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
+                    if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
+                    m_labels.append(label)
+            #         if labels[i]!=hallu_cls and label==hallu_cls: samples_neg_affected.append(i)
+            #         if labels[i]==hallu_cls and label!=hallu_cls: samples_pos_affected.append(i)
+            # print('Num of samples negatively affected:',len(samples_neg_affected))
+            # print('Num of samples positively affected:',len(samples_pos_affected))
+        elif 'sampled' in args.mitigated_responses_file_name:
+            if 'strqa' in args.dataset_name:
+                with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
+                    data = json.load(read_file)
+                for i in range(len(data['full_input_text'])):
+                    for j in [1]: # we only want the first random sample
+                        if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i][j]==True else 0
+                        if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i][j]==True else 1
+                        m_labels.append(label)
+            elif 'trivia' in args.dataset_name:
+                with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
+                    for line in read_file:
+                        data = json.loads(line)
+                        for j in [1]: # we only want the first random sample
+                            if 'hallu_pos' not in args.probes_file_name: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                            if 'hallu_pos' in args.probes_file_name: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                            m_labels.append(label)
     
     # args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
     num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
@@ -165,6 +184,7 @@ def main():
         if args.layers_range_list is not None:
             args.probes_file_name = re.sub("hallu_pos_[0-9]+_[0-9]+_[0-9]+","hallu_pos_"+args.layers_range_list[seed_i],args.probes_file_name)
         seed_results_list = []
+        if args.m_probes_file_name is not None: seed_m_probes_file_name = args.m_probes_file_name[seed_i]
 
         # val_pred_model,all_val_true[fold][0]
         def my_aufpr(preds,labels,getfull=False):
@@ -347,6 +367,12 @@ def main():
                 labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
                 if args.wpdist_metric!='': wp_dist = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_wpdist_{args.wpdist_metric}.npy')[0][0]
                 if args.wpdist_metric!='': print(wp_dist.shape, wp_dist[:10,1], np.min(wp_dist[:,1]),np.max( wp_dist[:,1]))
+                if args.m_probes_file_name is not None: 
+                    m_test_pred_model = np.load(f'{args.save_path}/probes/{seed_m_probes_file_name}_test_pred_model.npy')
+                    if 'sampled' in args.mitigated_responses_file_name:
+                        first_random_idx = np.arange(0,len(m_test_pred_model),args.test_num_samples)
+                        m_test_pred_model = m_test_pred_model[first_random_idx]
+                        assert len(m_test_pred_model)==len(labels)
             
             if args.filt_testprompts_catg is not None:
                 num_prompts = int(len(test_preds[0])/args.test_num_samples)
@@ -406,6 +432,7 @@ def main():
             else:
                 test_pred_model[test_preds[model]>best_t] = 1
                 test_pred_model[test_preds[model]<=best_t] = 0
+                np.save(f'{args.save_path}/probes/{best_probes_file_name}_test_pred_model.npy',test_pred_model)
             # print(recall_score(labels,test_pred_model),recall_score(labels,np.squeeze(test_pred_model)))
             cls1_f1, cls1_re, cls1_pr = f1_score(labels,test_pred_model), recall_score(labels,test_pred_model), precision_score(labels,test_pred_model)
             cls0_f1, cls0_re = f1_score(labels,test_pred_model,pos_label=0), recall_score(labels,test_pred_model,pos_label=0)
@@ -479,6 +506,54 @@ def main():
             r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
             seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
         # print(auroc_by_layer)
+        if args.mitigated_responses_file_name!='':
+            print('\n\nOriginal perf:',sum(labels)/len(labels) if hallu_cls==0 else 1-(sum(labels)/len(labels)))
+            print('\n\nDoLa perf:',sum(m_labels)/len(m_labels) if hallu_cls==0 else 1-(sum(m_labels)/len(m_labels)))
+            samples_neg_affected, samples_pos_affected = 0, 0
+            for i,row in enumerate(labels):
+                if labels[i]!=hallu_cls and m_labels[i]==hallu_cls: samples_neg_affected += 1
+                if labels[i]==hallu_cls and m_labels[i]!=hallu_cls: samples_pos_affected += 1
+            print('Num of samples positively affected:',samples_pos_affected*100/len(labels))
+            print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
+
+            # Self-correct using CLAP pred
+            final_labels1, labels2, final_labels2 = [], [], []
+            for i,row in enumerate(labels):
+                # Get prediction on orig response
+                orig_response_pred = test_pred_model[i] # Get predictions of all samples (we have only one model when using CLAP)
+                if orig_response_pred!=hallu_cls:
+                    final_labels1.append(labels[i])
+                else:
+                    final_labels1.append(m_labels[i])
+                if args.m_probes_file_name is not None:
+                    m_response_pred = m_test_pred_model[i]
+                    if orig_response_pred!=hallu_cls:
+                        final_labels2.append(labels[i])
+                        labels2.append(labels[i])
+                    elif m_response_pred!=hallu_cls:
+                        final_labels2.append(m_labels[i])
+                        labels2.append(labels[i])
+                    else:
+                        pass # In this case, either prediction is hallucination
+            new_perf1 = sum(final_labels1)/len(final_labels1) if hallu_cls==0 else 1-(sum(final_labels1)/len(final_labels1))
+            # print('\nDola after using last layer:',new_perf)
+            seed_results_list.append(new_perf1*100)
+            samples_neg_affected, samples_pos_affected = 0, 0
+            for i,row in enumerate(labels):
+                if labels[i]!=hallu_cls and final_labels1[i]==hallu_cls: samples_neg_affected += 1
+                if labels[i]==hallu_cls and final_labels1[i]!=hallu_cls: samples_pos_affected += 1
+            print('Num of samples positively affected:',samples_pos_affected*100/len(labels))
+            print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
+            if args.m_probes_file_name is not None:
+                new_perf2 = sum(final_labels2)/len(final_labels2) if hallu_cls==0 else 1-(sum(final_labels2)/len(final_labels2))
+                seed_results_list.append(new_perf2*100)
+                samples_neg_affected, samples_pos_affected = 0, 0
+                for i,row in enumerate(labels2):
+                    if labels2[i]!=hallu_cls and final_labels2[i]==hallu_cls: samples_neg_affected += 1
+                    if labels2[i]==hallu_cls and final_labels2[i]!=hallu_cls: samples_pos_affected += 1
+                print('Num of samples positively affected:',samples_pos_affected*100/len(labels))
+                print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
+                print('Num of samples abstained:',(len(labels)-len(final_labels2))*100/len(labels))
         
         all_preds = np.stack(all_preds, axis=0)
 

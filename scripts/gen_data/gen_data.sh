@@ -9,3 +9,5 @@ python get_activations.py llama3.1_8B_Instruct trivia_qa --token answer_last --f
 python get_activations.py llama3.1_8B_Instruct trivia_qa --token answer_last --file_name trivia_qa_greedy_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data
 python get_activations.py llama3.1_8B_Instruct trivia_qa --token answer_last --file_name trivia_qa_sampledplus_responses_train5000  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 11
 python get_activations.py llama3.1_8B_Instruct trivia_qa --token answer_last --file_name trivia_qa_sampled_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 10
+
+# python get_activations.py hl_llama_7B trivia_qa --token answer_last --file_name trivia_qa_dola16to32_responses_test  --device 0 --save_path /home/local/data/ms/honest_llama_data

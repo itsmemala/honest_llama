@@ -13,7 +13,7 @@ from sklearn.decomposition import PCA, KernelPCA
 from matplotlib import pyplot as plt
 import seaborn as sns
 import argparse
-from utils import LogisticRegression_Torch, tokenized_from_file
+# from utils import LogisticRegression_Torch, tokenized_from_file
 
 # Define a custom argument type for a list of integers
 def list_of_ints(arg):
@@ -93,10 +93,10 @@ def main():
                 if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
                 if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
                 m_labels.append(label)
-                if labels[i]!=hallu_cls and label==hallu_cls: samples_neg_affected.append(i)
-                if labels[i]==hallu_cls and label!=hallu_cls: samples_pos_affected.append(i)
-        print('Num of samples negatively affected:',len(samples_neg_affected))
-        print('Num of samples positively affected:',len(samples_pos_affected))
+        #         if labels[i]!=hallu_cls and label==hallu_cls: samples_neg_affected.append(i)
+        #         if labels[i]==hallu_cls and label!=hallu_cls: samples_pos_affected.append(i)
+        # print('Num of samples negatively affected:',len(samples_neg_affected))
+        # print('Num of samples positively affected:',len(samples_pos_affected))
     
     # args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
     num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
@@ -478,6 +478,96 @@ def main():
                 else:
                     auc_result_temp = 0
                 seed_results_list.append(auc_result_temp)
+                if args.mitigated_responses_file_name!='':
+                    print('\n\nOriginal perf:',sum(labels)/len(labels) if hallu_cls==0 else 1-(sum(labels)/len(labels)))
+                    print('\n\nDoLa perf:',sum(m_labels)/len(m_labels) if hallu_cls==0 else 1-(sum(m_labels)/len(m_labels)))
+                    samples_neg_affected, samples_pos_affected = 0, 0
+                    for i,row in enumerate(labels):
+                        if labels[i]!=hallu_cls and m_labels[i]==hallu_cls: samples_neg_affected += 1
+                        if labels[i]==hallu_cls and m_labels[i]!=hallu_cls: samples_pos_affected += 1
+                    print('Num of samples positively affected:',samples_pos_affected)
+                    print('Num of samples negatively affected:',samples_neg_affected)
+
+                    # Self-correct using last layer pred
+                    final_labels = []
+                    for i,row in enumerate(labels):
+                        # Get prediction on orig response
+                        sample_pred = np.squeeze(all_preds[-1,i,:]) # Get predictions of each sample at last layer
+                        orig_response_pred = 1 if sample_pred>layer_pred_thresholds[-1] else 0
+                        if orig_response_pred!=hallu_cls:
+                            final_labels.append(labels[i])
+                        else:
+                            final_labels.append(m_labels[i])
+                    new_perf1 = sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels))
+                    # print('\nDola after using last layer:')
+                    seed_results_list.append(new_perf1)
+                    
+                    # # Self-correct using most confident pred
+                    # final_labels = []
+                    # for i,row in enumerate(labels):
+                    #     # Get prediction on orig response
+                    #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+                    #     sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
+                    #     probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
+                    #     orig_response_pred = np.argmax(sample_pred[np.argmin(probe_wise_entropy)])
+                    #     if orig_response_pred!=hallu_cls:
+                    #         final_labels.append(labels[i])
+                    #     else:
+                    #         final_labels.append(m_labels[i])
+                    # print('\nDola after using most confident:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
+                    
+                    # # Self-correct using majority voting pred
+                    # final_labels = []
+                    # for i,row in enumerate(labels):
+                    #     # Get prediction on orig response
+                    #     sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
+                    #     sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
+                    #     class_1_vote_cnt = sum(sample_pred_val)
+                    #     maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
+                    #     orig_response_pred = maj_vote
+                    #     if orig_response_pred!=hallu_cls:
+                    #         final_labels.append(labels[i])
+                    #     else:
+                    #         final_labels.append(m_labels[i])
+                    # print('\nDola after using majority voting:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
+
+                    # # Self-correct using token-wise aggregation and most confident
+                    # final_labels = []
+                    # for i,row in enumerate(labels):
+                    #     # Get prediction on orig response
+                    #     sample_preds = alltokens_preds[i]
+                    #     agg_layer_preds = []
+                    #     for layer_preds in sample_preds:
+                    #         agg_layer_preds.append(np.mean(layer_preds)) # Avg predictions across all tokens at a given layer
+                    #     agg_layer_preds = np.array(agg_layer_preds)
+                    #     agg_layer_preds = np.concatenate((1-agg_layer_preds[:, None], agg_layer_preds[:, None]),axis=1)
+                    #     probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
+                    #     layer = np.argmin(probe_wise_entropy)
+                    #     orig_response_pred = 1 if agg_layer_preds[layer][1]>0 else 0 # Note this is already the distance from threshold, therefore we check for >0
+                    #     if orig_response_pred!=hallu_cls:
+                    #         final_labels.append(labels[i])
+                    #     else:
+                    #         final_labels.append(m_labels[i])
+                    # print('\nDola after averaging across tokens and using most confident probe:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
+
+                    # # Self-correct using token-wise aggregation and most confident
+                    # final_labels = []
+                    # for i,row in enumerate(labels):
+                    #     # Get prediction on orig response
+                    #     sample_preds = alltokens_preds[i]
+                    #     agg_layer_preds = []
+                    #     for layer_preds in sample_preds:
+                    #         agg_layer_preds.append(np.max(layer_preds)) # Maxpool predictions across all tokens at a given layer
+                    #     agg_layer_preds = np.array(agg_layer_preds)
+                    #     agg_layer_preds = np.concatenate((1-agg_layer_preds[:, None], agg_layer_preds[:, None]),axis=1)
+                    #     probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
+                    #     layer = np.argmin(probe_wise_entropy)
+                    #     orig_response_pred = 1 if agg_layer_preds[layer][1]>0 else 0 # Note this is already the distance from threshold, therefore we check for >0
+                    #     if orig_response_pred!=hallu_cls:
+                    #         final_labels.append(labels[i])
+                    #     else:
+                    #         final_labels.append(m_labels[i])
+                    # print('\nDola after maxpooling across tokens and using most confident probe:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
             ########################
             if args.layer_strat=='ma':
                 # Best probe from validation data
@@ -912,87 +1002,6 @@ def main():
     # np.save(f'{args.save_path}/responses/best_layers/{args.model_name}_{args.dataset_name}_{args.responses_file_name}_mc_layers.npy', mc_layers)
 
 
-    if args.mitigated_responses_file_name!='':
-        print('\n\nOriginal perf:',sum(labels)/len(labels) if hallu_cls==0 else 1-(sum(labels)/len(labels)))
-
-        # Self-correct using last layer pred
-        final_labels = []
-        for i,row in enumerate(labels):
-            # Get prediction on orig response
-            sample_pred = np.squeeze(all_preds[-1,i,:]) # Get predictions of each sample at last layer
-            orig_response_pred = 1 if sample_pred>layer_pred_thresholds[-1] else 0
-            if orig_response_pred!=hallu_cls:
-                final_labels.append(labels[i])
-            else:
-                final_labels.append(m_labels[i])
-        print('\nDola after using last layer:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
-        
-        # Self-correct using most confident pred
-        final_labels = []
-        for i,row in enumerate(labels):
-            # Get prediction on orig response
-            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred = np.concatenate((1-sample_pred[:, None], sample_pred[:, None]),axis=1)
-            probe_wise_entropy = (-sample_pred*np.nan_to_num(np.log2(sample_pred),neginf=0)).sum(axis=1)
-            orig_response_pred = np.argmax(sample_pred[np.argmin(probe_wise_entropy)])
-            if orig_response_pred!=hallu_cls:
-                final_labels.append(labels[i])
-            else:
-                final_labels.append(m_labels[i])
-        print('\nDola after using most confident:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
-        
-        # Self-correct using majority voting pred
-        final_labels = []
-        for i,row in enumerate(labels):
-            # Get prediction on orig response
-            sample_pred = np.squeeze(all_preds[:,i,:]) # Get predictions of each sample across all layers of model
-            sample_pred_val = [1 for layer,pred in enumerate(sample_pred) if pred>layer_pred_thresholds[layer]]
-            class_1_vote_cnt = sum(sample_pred_val)
-            maj_vote = 1 if class_1_vote_cnt>=(sample_pred.shape[0]/2) else 0
-            orig_response_pred = maj_vote
-            if orig_response_pred!=hallu_cls:
-                final_labels.append(labels[i])
-            else:
-                final_labels.append(m_labels[i])
-        print('\nDola after using majority voting:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
-
-        # Self-correct using token-wise aggregation and most confident
-        final_labels = []
-        for i,row in enumerate(labels):
-            # Get prediction on orig response
-            sample_preds = alltokens_preds[i]
-            agg_layer_preds = []
-            for layer_preds in sample_preds:
-                agg_layer_preds.append(np.mean(layer_preds)) # Avg predictions across all tokens at a given layer
-            agg_layer_preds = np.array(agg_layer_preds)
-            agg_layer_preds = np.concatenate((1-agg_layer_preds[:, None], agg_layer_preds[:, None]),axis=1)
-            probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
-            layer = np.argmin(probe_wise_entropy)
-            orig_response_pred = 1 if agg_layer_preds[layer][1]>0 else 0 # Note this is already the distance from threshold, therefore we check for >0
-            if orig_response_pred!=hallu_cls:
-                final_labels.append(labels[i])
-            else:
-                final_labels.append(m_labels[i])
-        print('\nDola after averaging across tokens and using most confident probe:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
-
-        # Self-correct using token-wise aggregation and most confident
-        final_labels = []
-        for i,row in enumerate(labels):
-            # Get prediction on orig response
-            sample_preds = alltokens_preds[i]
-            agg_layer_preds = []
-            for layer_preds in sample_preds:
-                agg_layer_preds.append(np.max(layer_preds)) # Maxpool predictions across all tokens at a given layer
-            agg_layer_preds = np.array(agg_layer_preds)
-            agg_layer_preds = np.concatenate((1-agg_layer_preds[:, None], agg_layer_preds[:, None]),axis=1)
-            probe_wise_entropy = (-agg_layer_preds*np.nan_to_num(np.log2(agg_layer_preds),neginf=0)).sum(axis=1)
-            layer = np.argmin(probe_wise_entropy)
-            orig_response_pred = 1 if agg_layer_preds[layer][1]>0 else 0 # Note this is already the distance from threshold, therefore we check for >0
-            if orig_response_pred!=hallu_cls:
-                final_labels.append(labels[i])
-            else:
-                final_labels.append(m_labels[i])
-        print('\nDola after maxpooling across tokens and using most confident probe:',sum(final_labels)/len(final_labels) if hallu_cls==0 else 1-(sum(final_labels)/len(final_labels)))
 
 if __name__ == '__main__':
     main()
