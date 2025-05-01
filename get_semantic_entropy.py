@@ -143,6 +143,10 @@ def main():
     print('Saving semantic sets...')
     with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl', 'wb') as outfile:
         pickle.dump(result_dict, outfile)
+
+    # result_dict = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl',allow_pickle=True)    
+    # for id_,row in enumerate(result_dict):
+    #     all_semantic_set_ids.append(result_dict[id_]['semantic_set_ids'])
     
     print('Loading sequence predictive entropies...')
     uncertainties = torch.from_numpy(np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy'))

@@ -41,6 +41,8 @@ def my_func(args):
     id_, question, generated_texts, tokenizer, model, device = args
     unique_generated_texts = list(set(generated_texts))
 
+    if id_%50==0: print(id_)
+
     # answer_list_1 = []
     # answer_list_2 = []
     has_semantically_different_answers = False
@@ -128,7 +130,7 @@ def main():
                 for i in range(1,args.num_samples+1,1):
                     samples.append(data['response'+str(i)])
                 responses.append(samples)
-    prompts,responses = prompts[:10],responses[:10]
+    # prompts,responses = prompts[:10],responses[:10]
     
     print('Loading deberta..')
     tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-large-mnli")
