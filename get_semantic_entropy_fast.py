@@ -83,17 +83,16 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained("microsoft/deberta-large-mnli").cuda()
     
     result_dict = {}
-    deberta_predictions = []
+    # deberta_predictions = []
     all_semantic_set_ids = []
 
-    print('Calculating semantic similarities...')
-    for id_,(question,generated_texts) in enumerate(tqdm(zip(prompts,responses))):
+    def my_func(generated_texts):
         unique_generated_texts = list(set(generated_texts))
 
-        answer_list_1 = []
-        answer_list_2 = []
+        # answer_list_1 = []
+        # answer_list_2 = []
         has_semantically_different_answers = False
-        inputs = []
+        # inputs = []
 
         semantic_set_ids = {}
         for index, answer in enumerate(unique_generated_texts):
@@ -105,14 +104,14 @@ def main():
             for i, reference_answer in enumerate(unique_generated_texts):
                 for j in range(i + 1, len(unique_generated_texts)):
 
-                    answer_list_1.append(unique_generated_texts[i])
-                    answer_list_2.append(unique_generated_texts[j])
+                    # answer_list_1.append(unique_generated_texts[i])
+                    # answer_list_2.append(unique_generated_texts[j])
 
                     qa_1 = question + ' ' + unique_generated_texts[i]
                     qa_2 = question + ' ' + unique_generated_texts[j]
 
                     input = qa_1 + ' [SEP] ' + qa_2
-                    inputs.append(input)
+                    # inputs.append(input)
                     encoded_input = tokenizer.encode(input, padding=True)
                     prediction = model(torch.tensor(torch.tensor([encoded_input]), device='cuda'))['logits']
                     predicted_label = torch.argmax(prediction, dim=1)
@@ -131,12 +130,17 @@ def main():
                     else:
                         semantic_set_ids[unique_generated_texts[j]] = semantic_set_ids[unique_generated_texts[i]]
 
-                    deberta_predictions.append([unique_generated_texts[i], unique_generated_texts[j], deberta_prediction])    
+                    # deberta_predictions.append([unique_generated_texts[i], unique_generated_texts[j], deberta_prediction])    
 
+        list_of_semantic_set_ids = [semantic_set_ids[x] for x in generated_texts]
+        return has_semantically_different_answers,list_of_semantic_set_ids
+
+    print('Calculating semantic similarities...')
+    for id_,(question,generated_texts) in enumerate(tqdm(zip(prompts,responses))):
+        has_semantically_different_answers,list_of_semantic_set_ids = my_func(generated_texts)
         result_dict[id_] = {
             'has_semantically_different_answers': has_semantically_different_answers
         }
-        list_of_semantic_set_ids = [semantic_set_ids[x] for x in generated_texts]
         result_dict[id_]['semantic_set_ids'] = list_of_semantic_set_ids
         all_semantic_set_ids.append(list_of_semantic_set_ids)
 

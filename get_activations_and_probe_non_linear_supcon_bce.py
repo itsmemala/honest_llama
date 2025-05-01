@@ -406,19 +406,23 @@ def main():
             file_path = f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
             prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file_v2(file_path, tokenizer, num_samples)
             prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
-            labels = []
-            with open(file_path, 'r') as read_file:
-                data = json.load(read_file)
-            for i in range(len(data['full_input_text'])):
-                if num_samples==1:
-                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
-                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
-                    labels.append(label)
-                else:
-                    for j in range(num_samples):
-                        if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
-                        if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+            if args.train_labels_file_name is not None: # if 'se_labels' in args.train_labels_file_name:
+                file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
+                labels = np.load(file_path)
+            else:
+                labels = []
+                with open(file_path, 'r') as read_file:
+                    data = json.load(read_file)
+                for i in range(len(data['full_input_text'])):
+                    if num_samples==1:
+                        if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+                        if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
                         labels.append(label)
+                    else:
+                        for j in range(num_samples):
+                            if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
+                            if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                            labels.append(label)
             labels = labels[ds_start_at:ds_start_at+args.len_dataset]
             assert len(labels)==args.len_dataset
             all_labels += labels
@@ -656,8 +660,9 @@ def main():
                     # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
                     if len(args.dataset_list)==1 and args.ood_test==False:
-                        probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                        if 'sampled' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_{args.test_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        traindata = args.train_file_name+'_se_labels' if 'se_labels' in args.train_labels_file_name else args.train_file_name
+                        probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{traindata}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        if 'sampled' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{traindata}_{args.test_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                     elif len(args.dataset_list)>1:
                         multi_name = 'multi2' if len(args.dataset_list)==2 else 'multi'
                         if 'sampledplus' in args.train_name_list[0]: multi_name += 'sampledplus'
