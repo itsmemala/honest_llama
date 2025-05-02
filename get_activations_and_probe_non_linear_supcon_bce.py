@@ -660,7 +660,10 @@ def main():
                     # save_seed = save_seed if save_seed!=42 else '' # for backward compat
 
                     if len(args.dataset_list)==1 and args.ood_test==False:
-                        traindata = args.train_file_name+'_se_labels' if 'se_labels' in args.train_labels_file_name else args.train_file_name
+                        traindata = args.train_file_name
+                        if args.train_labels_file_name is not None:
+                            if 'se_labels' in args.train_labels_file_name:
+                                traindata = args.train_file_name+'_se_labels'
                         probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{traindata}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                         if 'sampled' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{traindata}_{args.test_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                     elif len(args.dataset_list)>1:
