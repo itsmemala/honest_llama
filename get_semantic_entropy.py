@@ -46,6 +46,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
+    parser.add_argument('--len_dataset', type=int, default=None)
     parser.add_argument('--num_samples', type=int, default=10)
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
@@ -77,21 +78,23 @@ def main():
                 for i in range(1,args.num_samples+1,1):
                     samples.append(data['response'+str(i)])
                 responses.append(samples)
+    if args.len_dataset is not None: prompts, responses = prompts[:args.len_dataset], responses[:args.len_dataset]
     
     print('Loading deberta..')
     tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-large-mnli")
     model = AutoModelForSequenceClassification.from_pretrained("microsoft/deberta-large-mnli").cuda()
     
     result_dict = {}
-    deberta_predictions = []
+    # deberta_predictions = []
     all_semantic_set_ids = []
+    oom_list = []
 
     print('Calculating semantic similarities...')
     for id_,(question,generated_texts) in enumerate(tqdm(zip(prompts,responses))):
         unique_generated_texts = list(set(generated_texts))
 
-        answer_list_1 = []
-        answer_list_2 = []
+        # answer_list_1 = []
+        # answer_list_2 = []
         has_semantically_different_answers = False
         inputs = []
 
@@ -105,8 +108,8 @@ def main():
             for i, reference_answer in enumerate(unique_generated_texts):
                 for j in range(i + 1, len(unique_generated_texts)):
 
-                    answer_list_1.append(unique_generated_texts[i])
-                    answer_list_2.append(unique_generated_texts[j])
+                    # answer_list_1.append(unique_generated_texts[i])
+                    # answer_list_2.append(unique_generated_texts[j])
 
                     qa_1 = question + ' ' + unique_generated_texts[i]
                     qa_2 = question + ' ' + unique_generated_texts[j]
@@ -114,24 +117,28 @@ def main():
                     input = qa_1 + ' [SEP] ' + qa_2
                     inputs.append(input)
                     encoded_input = tokenizer.encode(input, padding=True)
-                    prediction = model(torch.tensor(torch.tensor([encoded_input]), device='cuda'))['logits']
-                    predicted_label = torch.argmax(prediction, dim=1)
+                    try:
+                        prediction = model(torch.tensor(torch.tensor([encoded_input]), device='cuda'))['logits']
+                        predicted_label = torch.argmax(prediction, dim=1)
 
-                    reverse_input = qa_2 + ' [SEP] ' + qa_1
-                    encoded_reverse_input = tokenizer.encode(reverse_input, padding=True)
-                    reverse_prediction = model(torch.tensor(torch.tensor([encoded_reverse_input]), device='cuda'))['logits']
-                    reverse_predicted_label = torch.argmax(reverse_prediction, dim=1)
+                        reverse_input = qa_2 + ' [SEP] ' + qa_1
+                        encoded_reverse_input = tokenizer.encode(reverse_input, padding=True)
+                        reverse_prediction = model(torch.tensor(torch.tensor([encoded_reverse_input]), device='cuda'))['logits']
+                        reverse_predicted_label = torch.argmax(reverse_prediction, dim=1)
 
-                    deberta_prediction = 1
-                    # print(qa_1, qa_2, predicted_label, reverse_predicted_label)
-                    if 0 in predicted_label or 0 in reverse_predicted_label:
-                        has_semantically_different_answers = True
-                        deberta_prediction = 0
+                        deberta_prediction = 1
+                        # print(qa_1, qa_2, predicted_label, reverse_predicted_label)
+                        if 0 in predicted_label or 0 in reverse_predicted_label:
+                            has_semantically_different_answers = True
+                            deberta_prediction = 0
 
-                    else:
+                        else:
+                            semantic_set_ids[unique_generated_texts[j]] = semantic_set_ids[unique_generated_texts[i]]
+                    except torch.cuda.OutOfMemoryError:
+                        oom_list.append(np.array([id_,i,j]))
                         semantic_set_ids[unique_generated_texts[j]] = semantic_set_ids[unique_generated_texts[i]]
 
-                    deberta_predictions.append([unique_generated_texts[i], unique_generated_texts[j], deberta_prediction])    
+                    # deberta_predictions.append([unique_generated_texts[i], unique_generated_texts[j], deberta_prediction])    
 
         result_dict[id_] = {
             'has_semantically_different_answers': has_semantically_different_answers
@@ -143,10 +150,12 @@ def main():
     print('Saving semantic sets...')
     with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl', 'wb') as outfile:
         pickle.dump(result_dict, outfile)
+    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_oom_list.npy',np.stack(oom_list))
 
     # result_dict = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl',allow_pickle=True)    
     # for id_,row in enumerate(result_dict):
     #     all_semantic_set_ids.append(result_dict[id_]['semantic_set_ids'])
+    # print(len(all_semantic_set_ids))
     
     print('Loading sequence predictive entropies...')
     uncertainties = torch.from_numpy(np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy'))
@@ -154,7 +163,7 @@ def main():
 
     print('Calculating semantic entropies...')
     entropies, discrete_entropies = [], []
-    for row_index in range(avg_nll.shape[0]):
+    for row_index in range(args.len_dataset): #range(avg_nll.shape[0])
         aggregated_likelihoods = []
         row = avg_nll[row_index]
         semantic_set_ids_row = torch.Tensor(all_semantic_set_ids[row_index])
@@ -200,6 +209,9 @@ def main():
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy', se_labels)
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_thresholds.npy', try_thresholds)
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_obj_func_vals.npy', objective_func_vals)
+
+
+
 
     # se_labels1 = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy')
 

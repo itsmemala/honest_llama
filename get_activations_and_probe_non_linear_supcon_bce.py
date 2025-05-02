@@ -433,7 +433,7 @@ def main():
             prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
             if 'se_labels' in args.train_labels_file_name:
                 file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
-                labels = np.load(file_path)
+                labels = np.load(file_path).tolist()
             else:
                 labels, rouge_scores, squad_scores = [], [], []
                 file_path = f'{args.save_path}/responses/{args.train_labels_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_labels_file_name}.json'
@@ -672,9 +672,13 @@ def main():
                         probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{multi_name}_/{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                     elif args.ood_test:
                         train_dataset_name = args.train_file_name.split('_',1)[0].replace('nq','nq_open').replace('trivia','trivia_qa')
-                        probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/ood_{train_dataset_name}/_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                        if 'sampled' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/ood_{train_dataset_name}/_{args.test_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
-                        if 'dola' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/ood_{train_dataset_name}/_{args.test_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        traindata = train_dataset_name
+                        if args.train_labels_file_name is not None:
+                            if 'se_labels' in args.train_labels_file_name:
+                                traindata = train_dataset_name+'_se_labels'
+                        probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/ood_{traindata}/_{test_dataset_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        if 'sampled' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/ood_{traindata}/_{args.test_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                        if 'dola' in args.test_file_name: probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/ood_{traindata}/_{args.test_file_name}_{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                     plot_name_concat = 'b' if args.use_best_val_t else ''
                     plot_name_concat += 'a' if args.best_using_auc else ''
                     plot_name_concat += 'l' if args.best_as_last else ''
@@ -1200,7 +1204,11 @@ def main():
                                     if 'knn' in args.method or 'kmeans' in args.method:
                                         prior_probes_file_name = probes_file_name.replace('knn_','').replace('kmeans_','').replace(args.dist_metric+str(args.top_k)+'_','').replace(args.dist_metric+str(args.top_k)+'pca'+str(args.pca_dims)+'_','')
                                     elif args.ood_test:
-                                        prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
+                                        traindata = args.train_file_name
+                                        if args.train_labels_file_name is not None:
+                                            if 'se_labels' in args.train_labels_file_name:
+                                                traindata = args.train_file_name+'_se_labels'
+                                        prior_probes_file_name = f'NLSC{save_seed}_/{args.model_name}_/{traindata}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                         if args.use_val_aug: prior_probes_file_name = prior_probes_file_name.replace('_valaug','')
                                         prior_probes_file_name += plot_name_concat
                                     elif 'sampled' in args.test_file_name and len(args.dataset_list)>1 and 'multi2' in multi_name: # city,player -> trivia sampled

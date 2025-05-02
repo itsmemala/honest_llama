@@ -53,7 +53,7 @@ def main():
     parser.add_argument('--m_probes_file_name',default=None,type=list_of_strs,required=False,help='(default=%(default)s)')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
-    parser.add_argument('--filt_testprompts_catg',type=int, default=None)
+    parser.add_argument('--filt_testprompts_catg',type=list_of_ints, default=None)
     parser.add_argument('--test_num_samples',type=int, default=None)
     parser.add_argument('--wpdist_metric',type=str, default='')
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
@@ -383,19 +383,19 @@ def main():
                     sample_dist = sum(labels[cur_prompt_idx:cur_prompt_idx+args.test_num_samples])
                     # print(labels[cur_prompt_idx:cur_prompt_idx+args.test_num_samples])
                     # if k==2: sys.exit()
-                    if sample_dist==args.test_num_samples and args.filt_testprompts_catg==0: #0
+                    if sample_dist==args.test_num_samples and 0 in args.filt_testprompts_catg: #0
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist==0  and args.filt_testprompts_catg==1: #1
+                    elif sample_dist==0  and 1 in args.filt_testprompts_catg: #1
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist>0 and sample_dist <= int(args.test_num_samples/3) and args.filt_testprompts_catg==2: #2
+                    elif sample_dist>0 and sample_dist <= int(args.test_num_samples/3) and 2 in args.filt_testprompts_catg: #2
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist > int(2*args.test_num_samples/3) and sample_dist<args.test_num_samples and args.filt_testprompts_catg==3: #3
+                    elif sample_dist > int(2*args.test_num_samples/3) and sample_dist<args.test_num_samples and 3 in args.filt_testprompts_catg: #3
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
-                    elif sample_dist > int(args.test_num_samples/3) and sample_dist <= int(2*args.test_num_samples/3) and args.filt_testprompts_catg==4: #4
+                    elif sample_dist > int(args.test_num_samples/3) and sample_dist <= int(2*args.test_num_samples/3) and 4 in args.filt_testprompts_catg: #4
                         select_instances += list(np.arange(cur_prompt_idx,cur_prompt_idx+args.test_num_samples,1))
                         num_prompts_in_catg += 1
                 select_instances = np.array(select_instances)
@@ -443,7 +443,7 @@ def main():
             test_precision_cls1.append(cls1_pr)
             precision, recall, _ = precision_recall_curve(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else precision_recall_curve(labels, np.squeeze(test_preds[model]))
             aupr_by_layer.append(auc(recall,precision))
-            if args.filt_testprompts_catg not in [0,1]: 
+            if args.filt_testprompts_catg!=[0] and args.filt_testprompts_catg!=[1]: 
                 auc_val = roc_auc_score(labels, [-v for v in np.squeeze(test_preds[model])]) if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name) else roc_auc_score(labels, np.squeeze(test_preds[model]))
             else:
                 auc_val = 0
