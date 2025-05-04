@@ -452,6 +452,7 @@ def main():
                             labels.append(label)
                             # rouge_scores.append(data['rouge1_to_target'])
                             # squad_scores.append(data['squad_f1'])
+                            if(len(labels))==args.len_dataset: break
                         else:
                             sum_over_samples = 0
                             for j in range(1,num_samples+1,1):

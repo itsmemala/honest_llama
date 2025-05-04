@@ -128,16 +128,27 @@ def main():
     else:
         # data = []
         with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.file_name}.json', 'r') as read_file:
+            file_i = 0
             for line in read_file:
                 # data.append(json.loads(line))
+                # try:
+                    # print(line)
+                    # line = line.replace("\'","\\\'")
+                    # print(line)
+                    # data = json.loads(r"{line}")
                 data = json.loads(line)
                 prompts.append(data['prompt'])
                 samples = []
                 for i in range(1,args.num_samples+1,1):
                     samples.append(data['response'+str(i)])
                 responses.append(samples)
+                # except json.decoder.JSONDecodeError:
+                #     print(file_i)
+                # file_i += 1
     # prompts,responses = prompts[:10],responses[:10]
     if args.len_dataset is not None: prompts, responses = prompts[:args.len_dataset], responses[:args.len_dataset]
+    print(len(prompts),len(responses))
+    # sys.exit()
     
     print('Loading deberta..')
     tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-large-mnli")
@@ -157,7 +168,6 @@ def main():
     #     }
     #     result_dict[id_]['semantic_set_ids'] = list_of_semantic_set_ids
     #     all_semantic_set_ids.append(list_of_semantic_set_ids)
-    torch.multiprocessing.set_start_method('spawn')
     pool = Pool(processes=2)  # You can adjust the number of processes
     tasks = [(id_, question, generated_texts, tokenizer, model, device) for id_,(question, generated_texts) in enumerate(zip(prompts, responses))]
     results = tqdm(pool.imap_unordered(my_func, tasks), total=len(tasks), desc="Processing Prompts")
@@ -174,16 +184,22 @@ def main():
     print('Saving semantic sets...')
     with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl', 'wb') as outfile:
         pickle.dump(result_dict, outfile)
-    np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_oom_list.npy',np.stack(global_oom_list))
-    print(np.stack(global_oom_list).shape)
+    if len(global_oom_list)>1:
+        np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_oom_list.npy',np.stack(global_oom_list))
+        print(np.stack(global_oom_list).shape)
     
+    # result_dict = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl',allow_pickle=True)    
+    # for id_,row in enumerate(result_dict):
+    #     all_semantic_set_ids.append(result_dict[id_]['semantic_set_ids'])
+    # print(len(all_semantic_set_ids))
+
     print('Loading sequence predictive entropies...')
     uncertainties = torch.from_numpy(np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_uncertainty_scores.npy'))
     avg_nll = torch.squeeze(uncertainties[:,:,1]) # uncertainties: (prompts, samples, 2)
 
     print('Calculating semantic entropies...')
     entropies, discrete_entropies = [], []
-    for row_index in range(avg_nll.shape[0]):
+    for row_index in range(len(all_semantic_set_ids)): #range(avg_nll.shape[0])
         aggregated_likelihoods = []
         row = avg_nll[row_index]
         semantic_set_ids_row = torch.Tensor(all_semantic_set_ids[row_index])
@@ -196,8 +212,9 @@ def main():
         if len(sem_set_wise_prob)==1:
             dis_entropy = 0
         else:
+            dis_entropy = (-sem_set_wise_prob*np.log(sem_set_wise_prob)).sum(axis=0)
             # dis_entropy = (-sem_set_wise_prob*np.emath.logn(len(sem_set_wise_prob),sem_set_wise_prob)).sum(axis=0)
-            dis_entropy = (-sem_set_wise_prob*np.log2(sem_set_wise_prob)).sum(axis=0)
+            # dis_entropy = (-sem_set_wise_prob*np.log2(sem_set_wise_prob)).sum(axis=0)
         discrete_entropies.append(dis_entropy)
     entropies, discrete_entropies = np.array(entropies), np.array(discrete_entropies)
     
@@ -207,7 +224,8 @@ def main():
 
     print('Estimating SE labels...')
     # First estimate optimal threshold for binarizing
-    try_thresholds = np.histogram_bin_edges(discrete_entropies, bins='auto')
+    # try_thresholds = np.histogram_bin_edges(discrete_entropies, bins='auto')
+    try_thresholds = np.linspace(1e-10, discrete_entropies.max(), 100)
     objective_func_vals = []
     for threshold in try_thresholds:
         entropies_below_t, entropies_above_t = [], []
@@ -224,6 +242,8 @@ def main():
     print('Obj func vals:',objective_func_vals,'\n')
     # Labels
     se_labels = [1 if ent>optimal_threshold else 0 for ent in discrete_entropies]
+
+    print(len(se_labels),sum(se_labels))
 
     print('Saving semantic entropy labels...')
     np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_se_labels.npy', se_labels)
@@ -254,4 +274,5 @@ def main():
     # print(sum(se_labels1==se_labels2))
 
 if __name__ == '__main__':
+    torch.multiprocessing.set_start_method('spawn')
     main()

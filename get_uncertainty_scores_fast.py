@@ -126,7 +126,11 @@ def main():
     # for i,sample in tqdm(enumerate(data)):
         # prompt = sample['prompt']
         # response = sample['response1']
-    # torch.multiprocessing.set_start_method('spawn') # don't need if another script has already set this
+    try:
+        torch.multiprocessing.set_start_method('spawn') # don't need if another script has already set this
+    except RuntimeError:
+        print(RuntimeError)
+        pass
     for prompt,response in tqdm(zip(prompts,responses)):
         if 'greedy' in args.file_name or 'baseline' in args.file_name:
             tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
