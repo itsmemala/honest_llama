@@ -1,0 +1,3 @@
+python get_uncertainty_scores.py vicuna_7B trivia_qa --file_name sampled_responses_validation1800 --save_path /home/local/data/ms/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py vicuna_7B nq_open --file_name sampled_responses_validation1800 --save_path /home/local/data/ms/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py vicuna_7B strqa --file_name sampled_responses_test --save_path /home/local/data/ms/honest_llama_data --num_samples 8;

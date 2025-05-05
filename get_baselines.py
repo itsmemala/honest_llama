@@ -21,6 +21,7 @@ def main():
     parser.add_argument('model_name', type=str, default='llama_7B')
     parser.add_argument('dataset_name', type=str, default='tqa_mc2')
     parser.add_argument('--num_samples', type=int, default=10)
+    parser.add_argument('--test_num_samples', type=int, default=1)
     parser.add_argument('--len_dataset',type=int, default=5000)
     parser.add_argument('--num_folds',type=int, default=1)
     parser.add_argument('--method',type=str, default="hallu_pos")
@@ -173,9 +174,15 @@ def main():
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
         for i in range(len(data['full_input_text'])):
-            if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
-            if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
-            test_labels.append(label)
+            if args.test_num_samples==1:
+                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
+                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+                test_labels.append(label)
+            else:
+                for j in range(args.test_num_samples):
+                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
+                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    test_labels.append(label)
     else:
         # file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
         # test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer)
@@ -188,9 +195,15 @@ def main():
             with open(file_path, 'r') as read_file:
                 for line in read_file:
                     data = json.loads(line)
-                    if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
-                    test_labels.append(label)
+                    if 'greedy' in args.test_labels_file_name:
+                        if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target']>0.3 else 0 # pos class is non-hallu
+                        if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target']>0.3 else 1 # pos class is hallu
+                        test_labels.append(label)
+                    else:
+                        for j in range(1,args.test_num_samples+1,1):
+                            if 'hallu_pos' not in args.method: label = 1 if data['rouge1_to_target_response'+str(j)]>0.3 else 0 # pos class is non-hallu
+                            if 'hallu_pos' in args.method: label = 0 if data['rouge1_to_target_response'+str(j)]>0.3 else 1 # pos class is hallu
+                            test_labels.append(label)
 
     # print(num_samples_with_no_var)
     # print(len(all_hallu_prompts),len(all_nh_prompts))
@@ -229,9 +242,13 @@ def main():
 
         # class_1_perc = sum([test_labels[i] for i in test_idxs])/tot
         # print('majority class:',1 if class_1_perc>0.5 else 0,'(',class_1_perc,')')
-        tot = len(train_idxs)
-        print('train accuracy:',sum([train_labels[i] for i in train_idxs])/tot)
+        # train_labels = train_labels[:4973]
+        tot = len(train_labels) # len(train_idxs)
+        print(tot)
+        # print('train accuracy:',sum([train_labels[i] for i in train_idxs])/tot)
+        print('train accuracy:',sum(train_labels)/tot)
         tot = len(test_idxs)
+        print(tot)
         print('test accuracy:',sum([test_labels[i] for i in test_idxs])/tot)
         # print('baseline f1:',f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs]),f1_score([test_labels[i] for i in test_idxs],[1 for i in test_idxs],pos_label=0))
 
@@ -244,6 +261,7 @@ def main():
             train_probs = np.array(train_probs_unravel)
             assert len(train_probs)==args.len_dataset
         test_probs = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.test_uncertainty_values_file_name}_uncertainty_scores.npy')
+        if len(test_probs.shape)==3: test_probs = test_probs.reshape((test_probs.shape[0]*test_probs.shape[1],test_probs.shape[2]))
         compute_entropy_with = [('test',test_idxs),('train',train_idxs)]
         for sample_set,use_samples in compute_entropy_with:
             for use_entropy_idx in [0,1]:

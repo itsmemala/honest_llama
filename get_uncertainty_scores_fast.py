@@ -19,7 +19,7 @@ import evaluate
 from multiprocessing import Pool
 
 def my_func(args):
-    id_,tokenizer,model,prompt,sample = args
+    id_,tokenizer,model,prompt,sample,device = args
     tokenized_input = tokenizer([prompt+sample], return_tensors = 'pt').input_ids.to(device)
     tokenized_prompt = tokenizer([prompt], return_tensors = 'pt').input_ids
     target_ids = tokenized_input.clone().to(device)
@@ -57,6 +57,7 @@ def main():
     parser.add_argument('dataset_name', type=str, default='nq_open', help='dataset for querying the model')
     parser.add_argument('--num_samples', type=int, default=1)
     parser.add_argument('--device', type=int, default=0)
+    parser.add_argument('--num_processes', type=int, default=2)
     parser.add_argument("--model_dir", type=str, default=None, help='local directory with model data')
     parser.add_argument("--model_cache_dir", type=str, default=None, help='local directory with model cache')
     parser.add_argument("--file_name", type=str, default=None, help='local directory with dataset')
@@ -126,12 +127,15 @@ def main():
     # for i,sample in tqdm(enumerate(data)):
         # prompt = sample['prompt']
         # response = sample['response1']
-    try:
-        torch.multiprocessing.set_start_method('spawn') # don't need if another script has already set this
-    except RuntimeError:
-        print(RuntimeError)
-        pass
+    # try:
+    #     torch.multiprocessing.set_start_method('spawn') # don't need if another script has already set this
+    # except RuntimeError:
+    #     print(RuntimeError)
+    #     pass
+    my_iter = -1
     for prompt,response in tqdm(zip(prompts,responses)):
+        my_iter += 1
+        if my_iter%50==0: print(my_iter)
         if 'greedy' in args.file_name or 'baseline' in args.file_name:
             tokenized_input = tokenizer([prompt+response], return_tensors = 'pt').input_ids.to(device)
             # tokenized_input = tokenized_input[tokenized_input != tokenizer.pad_token_id]
@@ -148,18 +152,18 @@ def main():
         else:
             # sample_wise_score = []
             # for sample in response:
-            #     val = my_func((tokenizer,model,prompt,sample))
+            #     val = my_func((tokenizer,model,prompt,sample,device))
             #     sample_wise_score.append(val)
             # scores.append(np.stack(sample_wise_score))
-            sample_wise_score = np.empty((len(response)))
-            pool = Pool(processes=2)  # You can adjust the number of processes
-            tasks = [(id_,tokenizer,model,prompt,sample) for id_,sample in enumerate(response)]
+            sample_wise_score = [] #np.empty((len(response),len(response[0])))
+            pool = Pool(processes=args.num_processes)  # You can adjust the number of processes
+            tasks = [(id_,tokenizer,model,prompt,sample,device) for id_,sample in enumerate(response)]
             results = pool.imap_unordered(my_func, tasks)
             pool.close()
             pool.join()
             for id_, val in results:
-                sample_wise_score[id_] = val
-            scores.append(sample_wise_score)
+                sample_wise_score.append(val) #sample_wise_score[id_] = val
+            scores.append(np.stack(sample_wise_score)) # scores.append(sample_wise_score)
             
 
     print('Saving token probability scores..')
@@ -167,4 +171,5 @@ def main():
     
 
 if __name__ == '__main__':
+    torch.multiprocessing.set_start_method('spawn')
     main()

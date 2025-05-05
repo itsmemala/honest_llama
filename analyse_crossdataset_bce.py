@@ -64,6 +64,7 @@ def main():
     parser.add_argument("--best_hyp_on_test", type=bool, default=False, help='')
     parser.add_argument("--show_val_res", type=bool, default=False, help='')
     parser.add_argument("--plot_loss", type=bool, default=False, help='')
+    parser.add_argument("--skip_to_model", type=int, default=None, help='')
     parser.add_argument('--save_path',type=str, default='')
     args = parser.parse_args()
     if args.model_name not in args.probes_file_name: raise ValueError("model name mismatch")
@@ -99,8 +100,10 @@ def main():
         # print('Num of samples positively affected:',len(samples_pos_affected))
     
     # args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
-    num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
-    num_models = 18 if '2B' in args.model_name else 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+    # num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
+    num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
+    num_heads = 8 if 'gemma_2B' in args.model_name else 32 if 'llama3' in args.model_name else 32
+    num_models = num_layers if args.using_act in ['layer','mlp'] else num_layers*num_heads #18 if '2B' in args.model_name else 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name): 
         print('\n\nSETTING NUM_LAYERS=1\n\n')
         num_layers, num_models = 1, 1 # We only ran these for the last layer
@@ -162,6 +165,7 @@ def main():
     all_results_list = []
 
     for seed in args.seed_list:
+        print('\nSEED',seed,'\n')
         args.probes_file_name = 'NLSC'+str(seed)+'_'+args.probes_file_name.split('_',1)[1]
         seed_results_list = []
 
@@ -307,7 +311,13 @@ def main():
         # num_models = 1 # 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
         # print(num_models)
         all_preds = []
-        for model in tqdm(loop_layers):
+        if args.skip_to_model is not None: # we fix MA on val set of seed=42
+            loop_layers_seed = [0] # [args.skip_to_model] if seed==42 else [0]
+        else:
+            loop_layers_seed = loop_layers
+        for model in tqdm(loop_layers_seed):
+            # if model<num_models/2 or (model>=num_models/2 and model%2==0): # Only check every other ah in top half layers
+            #     continue
             best_probes_file_name, all_val_pred, all_val_true, best_t, val_dist_min, val_dist_max = results_at_best_lr(model)
             best_probes_per_model.append(best_probes_file_name)
             layer_pred_thresholds.append(best_t)
@@ -366,6 +376,7 @@ def main():
                 incl_layers.append(model)
             
             if args.min_max_scale_dist: test_preds[model] = (test_preds[model] - val_dist_min) / (val_dist_max - val_dist_min)# min-max-scale distances using val distances
+            print(test_preds.shape)
             all_preds.append(test_preds[model])
             test_pred_model = deepcopy(test_preds[model]) # Deep copy so as to not touch orig values
             if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name):
@@ -572,6 +583,7 @@ def main():
             if args.layer_strat=='ma':
                 # Best probe from validation data
                 ma_layer = np.argmax(val_f1_avg)
+                print('\n\nMA PROBE IDX:',ma_layer,len(val_f1_avg))
                 confident_sample_pred = []
                 for i in range(all_preds.shape[1]):
                     sample_pred = np.squeeze(all_preds[ma_layer,i])

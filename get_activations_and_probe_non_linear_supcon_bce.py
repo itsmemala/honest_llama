@@ -337,6 +337,8 @@ def main():
     parser.add_argument('--pca_dims_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--skip_train', type=bool, default=False)
     parser.add_argument('--last_only', type=bool, default=False)
+    # parser.add_argument('--skip_to_layer', type=int, default=None)
+    parser.add_argument('--skip_to_head', type=int, default=None)
     parser.add_argument('--which_checkpoint', type=str, default='')
     parser.add_argument('--plot_name',type=str, default=None) # Wandb args
     parser.add_argument('--tag',type=str, default=None) # Wandb args
@@ -769,9 +771,14 @@ def main():
                         num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                         loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
                         loop_layers = [num_layers-1] if args.last_only else loop_layers
+                        model_idx = -1
                         for layer in tqdm(loop_layers):
                             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
                             for head in loop_heads:
+                                model_idx += 1
+                                if args.skip_to_head is not None:
+                                    if model_idx!=args.skip_to_head:
+                                        continue
                                 if args.excl_ce:
                                     cur_probe_train_idxs = np.array([idx for idx in cur_probe_train_idxs if not any(idx in mc_idxs for mc_idxs in model_wise_mc_sample_idxs)]) # Exclude top-k samples of previous probe from current train pool
                                     cur_probe_train_set_idxs = np.random.choice(cur_probe_train_idxs, size=int(len(cur_probe_train_idxs)*(1-0.2)), replace=False) # Split current train pool to train-set and val-set

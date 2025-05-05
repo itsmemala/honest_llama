@@ -1,0 +1,3 @@
+python get_uncertainty_scores.py llama3.1_8B_Instruct trivia_qa --file_name sampled_responses_validation1800 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py llama3.1_8B_Instruct nq_open --file_name sampled_responses_validation1800 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py llama3.1_8B_Instruct strqa --file_name sampled_responses_test --save_path ~/Desktop/honest_llama_data --num_samples 8;
