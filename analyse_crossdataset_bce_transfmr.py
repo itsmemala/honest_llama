@@ -560,7 +560,7 @@ def main():
                 print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
                 num_abs = len(labels)-len(final_labels2)
                 print('Num of samples abstained:',num_abs*100/len(labels))
-                print('%NH among abstained:',nh_among_abs*100/num_abs)
+                print('%NH among abstained:',nh_among_abs*100/len(labels))
         
         all_preds = np.stack(all_preds, axis=0)
 
