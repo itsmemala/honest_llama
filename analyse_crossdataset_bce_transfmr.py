@@ -372,7 +372,11 @@ def main():
                     if 'sampled' in args.mitigated_responses_file_name:
                         first_random_idx = np.arange(0,len(m_test_pred_model),args.test_num_samples)
                         m_test_pred_model = m_test_pred_model[first_random_idx]
-                        assert len(m_test_pred_model)==len(labels)
+                        try:
+                            assert len(m_test_pred_model)==len(labels)
+                        except AssertionError:
+                            print(len(m_test_pred_model),len(labels))
+                            sys.exit()
             
             if args.filt_testprompts_catg is not None:
                 num_prompts = int(len(test_preds[0])/args.test_num_samples)
