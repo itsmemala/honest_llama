@@ -557,15 +557,22 @@ def main():
         test_labels = []
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
-        for i in range(len(data['full_input_text'])):
+        with open(f'{args.save_path}/responses/hl_llama_7B_{args.test_file_name}.json', 'r') as read_file:
+            ordered_data = json.load(read_file)
+        for i in range(len(ordered_data['full_input_text'])):
+            new_i = None
+            for j in range(len(data['full_input_text'])):
+                if data['full_input_text'][j]==ordered_data['full_input_text'][i]:
+                    new_i = j
+                    break
             if args.test_num_samples==1:
-                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i]==True else 0
-                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i]==True else 1
+                if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][new_i]==True else 0
+                if 'hallu_pos' in args.method: label = 0 if data['is_correct'][new_i]==True else 1
                 test_labels.append(label)
             else:
                 for j in range(args.test_num_samples):
-                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][i][j]==True else 0
-                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][i][j]==True else 1
+                    if 'hallu_pos' not in args.method: label = 1 if data['is_correct'][new_i][j]==True else 0
+                    if 'hallu_pos' in args.method: label = 0 if data['is_correct'][new_i][j]==True else 1
                     test_labels.append(label)
     else:
         file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
