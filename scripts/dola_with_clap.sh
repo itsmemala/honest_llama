@@ -2,6 +2,8 @@
 accelerate launch --num_processes 2 --multi-gpu strqa_eval.py --model-name circulus/alpaca-7b --early-exit-layers 0,2,4,6,8,10,12,14,32 --data-path /home/local/data/ms/honest_llama_data --test_data_file /home/local/data/ms/honest_llama_data/responses/alpaca_7B_strqa_baseline_responses_test.json --output-path /home/local/data/ms/honest_llama_data/responses/alpaca_7B_strqa_dola_0to16_responses_test.json --num-gpus 2
 accelerate launch --num_processes 2 --multi-gpu trivia_qa_eval.py --model-name circulus/alpaca-7b --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path /home/local/data/ms/honest_llama_data --output-path /home/local/data/ms/honest_llama_data/responses/alpaca_7B_trivia_qa_dola16to32_responses_test.json --num-gpus 2
 
+python get_activations.py alpaca_7B trivia_qa --token answer_last --file_name trivia_qa_dola16to32_responses_test  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py alpaca_7B strqa --token answer_last --file_name strqa_dola_0to16_responses_test  --device 0 --save_path /home/local/data/ms/honest_llama_data
 
 #### Pred on dola using probes
 Trivia:

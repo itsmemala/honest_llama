@@ -528,12 +528,13 @@ def main():
             print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
 
             # Self-correct using CLAP pred
-            final_labels1, labels2, final_labels2, nh_among_abs = [], [], [], 0
+            final_labels1, labels1b, final_labels1b, labels2, final_labels2, nh_among_abs = [], [], [], 0
             for i,row in enumerate(labels):
                 # Get prediction on orig response
                 orig_response_pred = test_pred_model[i] # Get predictions of all samples (we have only one model when using CLAP)
                 if orig_response_pred!=hallu_cls:
                     final_labels1.append(labels[i])
+                    final_labels1b.append(labels[i])
                 else:
                     final_labels1.append(m_labels[i])
                 if args.m_probes_file_name is not None:
@@ -547,6 +548,11 @@ def main():
                     else:
                         if labels[i]!=hallu_cls: nh_among_abs += 1
                         pass # In this case, we abstain (either prediction is hallucination)
+            new_perf1b = sum(final_labels1b)/len(final_labels1b) if hallu_cls==0 else 1-(sum(final_labels1b)/len(final_labels1b))
+            # print('\nDola after using last layer:',new_perf)
+            seed_results_list.append(new_perf1b*100)
+            num_abs = len(labels)-len(final_labels1b)
+            print('Num of samples abstained:',num_abs*100/len(labels))
             new_perf1 = sum(final_labels1)/len(final_labels1) if hallu_cls==0 else 1-(sum(final_labels1)/len(final_labels1))
             # print('\nDola after using last layer:',new_perf)
             seed_results_list.append(new_perf1*100)
