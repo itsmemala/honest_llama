@@ -97,10 +97,17 @@ def main():
             samples_neg_affected, samples_pos_affected = [], []
             with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
                 data = json.load(read_file)
-                for i in range(len(data['full_input_text'])):
-                    m_responses.append(data['model_answer'][i])
-                    if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][i]==True else 0 # pos class is non-hallu
-                    if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][i]==True else 1 # pos class is hallu
+            with open(f'{args.save_path}/responses/hl_llama_7B_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
+                ordered_data = json.load(read_file)
+                for i in range(len(ordered_data['full_input_text'])):
+                    # m_responses.append(data['model_answer'][i])
+                    new_i = None
+                    for j in range(len(data['full_input_text'])):
+                        if data['full_input_text'][j]==ordered_data['full_input_text'][i]:
+                            new_i = j
+                            break
+                    if 'hallu_pos' not in args.probes_file_name: label = 1 if data['is_correct'][new_i]==True else 0 # pos class is non-hallu
+                    if 'hallu_pos' in args.probes_file_name: label = 0 if data['is_correct'][new_i]==True else 1 # pos class is hallu
                     m_labels.append(label)
             #         if labels[i]!=hallu_cls and label==hallu_cls: samples_neg_affected.append(i)
             #         if labels[i]==hallu_cls and label!=hallu_cls: samples_pos_affected.append(i)
