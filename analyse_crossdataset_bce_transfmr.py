@@ -481,41 +481,41 @@ def main():
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
         
-        seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
-        # seed_results_list.append(np.mean(best_r))
-        # seed_results_list.append(np.mean(test_fpr_best_r))
-        if args.fpr_at_recall==-1:
-            # Create dirs if does not exist:
-            if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
-                os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
-            # print('model:',model)
-            recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
-            fig, axs = plt.subplots(1,1)
-            axs.plot(recall_vals,fpr_at_recall_vals)
-            for xy in zip(recall_vals,fpr_at_recall_vals):
-                axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
-            axs.set_xlabel('Recall')
-            axs.set_ylabel('FPR')
-            axs.title.set_text('FPR at recall')
-            fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
-            seed_results_list.append(aucfpr*100)
-            np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
-            np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
-        else:
-            seed_results_list.append(np.mean(test_fpr)*100)
-        seed_results_list.append(np.mean(test_fpr_best_f1)*100)
-        seed_results_list.append(np.mean(test_f1_cls1)*100)
-        seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
-        seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
-        seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
-        seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-        if args.wpdist_metric!='': 
-            seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
+        # seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+        # # seed_results_list.append(np.mean(best_r))
+        # # seed_results_list.append(np.mean(test_fpr_best_r))
+        # if args.fpr_at_recall==-1:
+        #     # Create dirs if does not exist:
+        #     if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
+        #         os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
+        #     # print('model:',model)
+        #     recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
+        #     fig, axs = plt.subplots(1,1)
+        #     axs.plot(recall_vals,fpr_at_recall_vals)
+        #     for xy in zip(recall_vals,fpr_at_recall_vals):
+        #         axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
+        #     axs.set_xlabel('Recall')
+        #     axs.set_ylabel('FPR')
+        #     axs.title.set_text('FPR at recall')
+        #     fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
+        #     seed_results_list.append(aucfpr*100)
+        #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
+        #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
+        # else:
+        #     seed_results_list.append(np.mean(test_fpr)*100)
+        # seed_results_list.append(np.mean(test_fpr_best_f1)*100)
+        # seed_results_list.append(np.mean(test_f1_cls1)*100)
+        # seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
+        # seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
+        # seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
+        # seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
+        # if args.wpdist_metric!='': 
+            # seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
 
-            use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
-            wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
-            r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
-            seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
+            # use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
+            # wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
+            # r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
+            # seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
         # print(auroc_by_layer)
         if args.mitigated_responses_file_name!='':
             print('\n\nOriginal perf:',sum(labels)/len(labels) if hallu_cls==0 else 1-(sum(labels)/len(labels)))
@@ -528,7 +528,7 @@ def main():
             print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
 
             # Self-correct using CLAP pred
-            final_labels1, labels1b, final_labels1b, labels2, final_labels2, nh_among_abs = [], [], [], 0
+            final_labels1, final_labels1b, nh_among_abs1b, labels2, final_labels2, nh_among_abs = [], [], 0, [], [], 0
             for i,row in enumerate(labels):
                 # Get prediction on orig response
                 orig_response_pred = test_pred_model[i] # Get predictions of all samples (we have only one model when using CLAP)
@@ -536,6 +536,7 @@ def main():
                     final_labels1.append(labels[i])
                     final_labels1b.append(labels[i])
                 else:
+                    if labels[i]!=hallu_cls: nh_among_abs1b += 1
                     final_labels1.append(m_labels[i])
                 if args.m_probes_file_name is not None:
                     m_response_pred = m_test_pred_model[i]
@@ -552,7 +553,9 @@ def main():
             # print('\nDola after using last layer:',new_perf)
             seed_results_list.append(new_perf1b*100)
             num_abs = len(labels)-len(final_labels1b)
-            print('Num of samples abstained:',num_abs*100/len(labels))
+            seed_results_list.append(num_abs*100/len(labels))
+            seed_results_list.append(nh_among_abs1b*100/len(labels))
+            # print('Num of samples abstained:',num_abs*100/len(labels))
             new_perf1 = sum(final_labels1)/len(final_labels1) if hallu_cls==0 else 1-(sum(final_labels1)/len(final_labels1))
             # print('\nDola after using last layer:',new_perf)
             seed_results_list.append(new_perf1*100)
@@ -560,8 +563,10 @@ def main():
             for i,row in enumerate(labels):
                 if labels[i]!=hallu_cls and final_labels1[i]==hallu_cls: samples_neg_affected += 1
                 if labels[i]==hallu_cls and final_labels1[i]!=hallu_cls: samples_pos_affected += 1
-            print('Num of samples positively affected:',samples_pos_affected*100/len(labels))
-            print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
+            seed_results_list.append(samples_pos_affected*100/len(labels))
+            seed_results_list.append(samples_neg_affected*100/len(labels))
+            # print('Num of samples positively affected:',samples_pos_affected*100/len(labels))
+            # print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
             if args.m_probes_file_name is not None:
                 new_perf2 = sum(final_labels2)/len(final_labels2) if hallu_cls==0 else 1-(sum(final_labels2)/len(final_labels2))
                 seed_results_list.append(new_perf2*100)
@@ -569,11 +574,15 @@ def main():
                 for i,row in enumerate(labels2):
                     if labels2[i]!=hallu_cls and final_labels2[i]==hallu_cls: samples_neg_affected += 1
                     if labels2[i]==hallu_cls and final_labels2[i]!=hallu_cls: samples_pos_affected += 1
-                print('Num of samples positively affected:',samples_pos_affected*100/len(labels))
-                print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
+                seed_results_list.append(samples_pos_affected*100/len(labels))
+                seed_results_list.append(samples_neg_affected*100/len(labels))
+                # print('Num of samples positively affected:',samples_pos_affected*100/len(labels))
+                # print('Num of samples negatively affected:',samples_neg_affected*100/len(labels))
                 num_abs = len(labels)-len(final_labels2)
-                print('Num of samples abstained:',num_abs*100/len(labels))
-                print('%NH among abstained:',nh_among_abs*100/len(labels))
+                seed_results_list.append(num_abs*100/len(labels))
+                seed_results_list.append(nh_among_abs*100/len(labels))
+                # print('Num of samples abstained:',num_abs*100/len(labels))
+                # print('%NH among abstained:',nh_among_abs*100/len(labels))
         
         all_preds = np.stack(all_preds, axis=0)
 
