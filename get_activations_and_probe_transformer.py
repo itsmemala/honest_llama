@@ -902,6 +902,15 @@ def main():
                                 supcon = True if 'supcon' in args.method else False
                                 num_layers_to_use = num_layers if args.use_layers_list is None else len(args.use_layers_list)
                                 nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers_to_use, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj).to(device)
+                                wgts = 0
+                                print('\n\nModel Size')
+                                for p in nlinear_model.parameters():
+                                    sp = torch.squeeze(p)
+                                    print(sp.shape)
+                                    for i in range(len(sp.shape)):
+                                        wgts += sp.shape[i]
+                                print('\n\n#:',wgts)
+                                sys.exit()
                                 if args.retrain_full_model_path is not None:
                                     retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_full_model_path).state_dict()

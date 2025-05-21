@@ -508,7 +508,7 @@ def main():
         # seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
         # seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
         # seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
-        # seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
+        seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
         # if args.wpdist_metric!='': 
             # seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
 
