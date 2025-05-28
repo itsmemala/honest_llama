@@ -910,7 +910,7 @@ def main():
                                     for i in range(len(sp.shape)):
                                         wgts += sp.shape[i]
                                 print('\n\n#:',wgts)
-                                sys.exit()
+                                # sys.exit()
                                 if args.retrain_full_model_path is not None:
                                     retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_full_model_path).state_dict()
