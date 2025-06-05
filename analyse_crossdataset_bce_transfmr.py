@@ -53,6 +53,8 @@ def main():
     parser.add_argument('--m_probes_file_name',default=None,type=list_of_strs,required=False,help='(default=%(default)s)')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
+    parser.add_argument("--test_data", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--val_test_data", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--filt_testprompts_catg',type=list_of_ints, default=None)
     parser.add_argument('--test_num_samples',type=int, default=None)
     parser.add_argument('--wpdist_metric',type=str, default='')
@@ -97,7 +99,7 @@ def main():
             samples_neg_affected, samples_pos_affected = [], []
             with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
                 data = json.load(read_file)
-            with open(f'{args.save_path}/responses/hl_llama_7B_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
+            with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_baseline_responses_test.json', 'r') as read_file: # hl_llama_7B_{args.dataset_name}
                 ordered_data = json.load(read_file)
                 for i in range(len(ordered_data['full_input_text'])):
                     # m_responses.append(data['model_answer'][i])
@@ -261,17 +263,19 @@ def main():
                             probes_file_name = fn_left_text + temp + fn_right_text
                             # print(probes_file_name)
                         probes_file_name = probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
+                        val_probes_file_name = probes_file_name if args.val_test_data is None else probes_file_name.replace(args.test_data,args.val_test_data)
                         try:
                             if args.best_hyp_on_test:
                                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
                             else:
-                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
+                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_true.npy')
                         except FileNotFoundError:
                             probes_file_name = probes_file_name.replace("/","")
+                            val_probes_file_name = val_probes_file_name.replace("/","")
                             if args.best_hyp_on_test:
                                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
                             else:
-                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy')
+                                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_true.npy')
                         probes_file_name_list.append(probes_file_name)
                         # print(all_val_pred.shape)
                         if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
@@ -313,7 +317,8 @@ def main():
             if args.best_hyp_on_test:
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')
             else:
-                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy')
+                best_val_probes_file_name = best_probes_file_name if args.val_test_data is None else best_probes_file_name.replace(args.test_data,args.val_test_data)
+                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_val_probes_file_name}_val_pred.npy'), np.load(f'{args.save_path}/probes/{best_val_probes_file_name}_val_true.npy')
             if args.best_threshold:
                 best_val_perf, best_t = 0, 0.5
                 # best_val_fpr, best_t = 1, 0
@@ -481,33 +486,33 @@ def main():
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
         
-        # seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
-        # # seed_results_list.append(np.mean(best_r))
-        # # seed_results_list.append(np.mean(test_fpr_best_r))
-        # if args.fpr_at_recall==-1:
-        #     # Create dirs if does not exist:
-        #     if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
-        #         os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
-        #     # print('model:',model)
-        #     recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
-        #     fig, axs = plt.subplots(1,1)
-        #     axs.plot(recall_vals,fpr_at_recall_vals)
-        #     for xy in zip(recall_vals,fpr_at_recall_vals):
-        #         axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
-        #     axs.set_xlabel('Recall')
-        #     axs.set_ylabel('FPR')
-        #     axs.title.set_text('FPR at recall')
-        #     fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
-        #     seed_results_list.append(aucfpr*100)
-        #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
-        #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
-        # else:
-        #     seed_results_list.append(np.mean(test_fpr)*100)
-        # seed_results_list.append(np.mean(test_fpr_best_f1)*100)
-        # seed_results_list.append(np.mean(test_f1_cls1)*100)
-        # seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
-        # seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
-        # seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
+        seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+        # seed_results_list.append(np.mean(best_r))
+        # seed_results_list.append(np.mean(test_fpr_best_r))
+        if args.fpr_at_recall==-1:
+            # Create dirs if does not exist:
+            if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
+                os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
+            # print('model:',model)
+            recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
+            fig, axs = plt.subplots(1,1)
+            axs.plot(recall_vals,fpr_at_recall_vals)
+            for xy in zip(recall_vals,fpr_at_recall_vals):
+                axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
+            axs.set_xlabel('Recall')
+            axs.set_ylabel('FPR')
+            axs.title.set_text('FPR at recall')
+            fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
+            seed_results_list.append(aucfpr*100)
+            np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
+            np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
+        else:
+            seed_results_list.append(np.mean(test_fpr)*100)
+        seed_results_list.append(np.mean(test_fpr_best_f1)*100)
+        seed_results_list.append(np.mean(test_f1_cls1)*100)
+        seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
+        seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
+        seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
         seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
         # if args.wpdist_metric!='': 
             # seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class

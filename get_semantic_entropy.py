@@ -150,7 +150,7 @@ def main():
     # print('Saving semantic sets...')
     # with open(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl', 'wb') as outfile:
     #     pickle.dump(result_dict, outfile)
-    # np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_oom_list.npy',np.stack(oom_list))
+    # if len(oom_list)>0: np.save(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_oom_list.npy',np.stack(oom_list))
 
     result_dict = np.load(f'{args.save_path}/uncertainty/{args.model_name}_{args.dataset_name}_{args.file_name}_semantic_similarities.pkl',allow_pickle=True)    
     for id_,row in enumerate(result_dict):
@@ -163,6 +163,7 @@ def main():
 
     print('Calculating semantic entropies...')
     entropies, discrete_entropies = [], []
+    print(len(all_semantic_set_ids))
     for row_index in range(len(all_semantic_set_ids)): #range(avg_nll.shape[0])
         aggregated_likelihoods = []
         row = avg_nll[row_index]

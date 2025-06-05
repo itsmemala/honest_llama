@@ -12,13 +12,13 @@ import re
 import json
 import jsonlines
 import random
-# import llama
+import llama
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
 # from peft.tuners.lora import LoraLayer
 from transformers import AutoTokenizer
-from base_transformers.models import llama3,gemma
+# from base_transformers.models import llama3,gemma
 import evaluate
 
 from accelerate import Accelerator, InitProcessGroupKwargs

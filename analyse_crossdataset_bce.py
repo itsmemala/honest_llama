@@ -49,6 +49,8 @@ def main():
     parser.add_argument("--mitigated_responses_file_name", type=str, default='', help='local directory with dataset')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
+    parser.add_argument("--test_data", type=str, default=None, help='local directory with dataset')
+    parser.add_argument("--val_test_data", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--filt_testprompts_catg',type=list_of_ints, default=None)
     parser.add_argument('--test_num_samples',type=int, default=None)
     parser.add_argument('--lr_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
@@ -221,17 +223,19 @@ def main():
                 probes_file_name_list, perf_by_lr = [], []
                 for lr in args.lr_list:
                     probes_file_name = args.probes_file_name + str(lr) + '_False' + args.probes_file_name_concat
+                    val_probes_file_name = probes_file_name if args.val_test_data is None else probes_file_name.replace(args.test_data,args.val_test_data)
                     try:
                         if args.best_hyp_on_test:
                             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
                         else:
-                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
+                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_true.npy', allow_pickle=True).item()
                     except FileNotFoundError:
                         probes_file_name = probes_file_name.replace("/","")
+                        val_probes_file_name = val_probes_file_name.replace("/","")
                         if args.best_hyp_on_test:
                             all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{probes_file_name}_test_true.npy')
                         else:
-                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', allow_pickle=True).item()
+                            all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{val_probes_file_name}_val_true.npy', allow_pickle=True).item()
                     probes_file_name_list.append(probes_file_name)
                     if args.min_max_scale_dist: all_val_pred[0][model] = (all_val_pred[0][model] - all_val_pred[0][model].min()) / (all_val_pred[0][model].max() - all_val_pred[0][model].min()) # min-max-scale distances
                     try:
@@ -260,10 +264,11 @@ def main():
                 axs.legend()
                 fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
 
+            best_val_probes_file_name = best_probes_file_name if args.val_test_data is None else best_probes_file_name.replace(args.test_data,args.val_test_data)
             if args.best_hyp_on_test:
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')
             else:
-                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_probes_file_name}_val_true.npy', allow_pickle=True).item()
+                all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_val_probes_file_name}_val_pred.npy', allow_pickle=True).item(), np.load(f'{args.save_path}/probes/{best_val_probes_file_name}_val_true.npy', allow_pickle=True).item()
             if args.best_threshold:
                 if args.best_thr_using_recall:
                     best_val_fpr, best_t = 1, 0

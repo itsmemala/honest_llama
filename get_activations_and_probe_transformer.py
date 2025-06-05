@@ -342,6 +342,7 @@ def main():
     parser.add_argument('--train_labels_name_list', type=list_of_strs, default=None)
     parser.add_argument('--len_dataset_list', type=list_of_ints, default=None)
     parser.add_argument('--ds_start_at_list', type=list_of_ints, default=None)
+    parser.add_argument('--my_multi_name', type=str, default=None)
     parser.add_argument('--multi_probe_dataset_name',type=str, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
@@ -557,7 +558,7 @@ def main():
         test_labels = []
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
-        with open(f'{args.save_path}/responses/hl_llama_7B_{args.test_file_name}.json', 'r') as read_file:
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_baseline_responses_test.json', 'r') as read_file: # hl_llama_7B_{args.test_file_name}
             ordered_data = json.load(read_file)
         for i in range(len(ordered_data['full_input_text'])):
             new_i = None
@@ -784,7 +785,7 @@ def main():
                                 probes_file_name = f'T{save_seed}_/{args.model_name}_/{args.train_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                                 if 'sampled' in args.test_file_name: probes_file_name = f'T{save_seed}_/{args.model_name}_/{args.train_file_name}_{args.test_file_name}_/{args.len_dataset}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             elif len(args.dataset_list)>1:
-                                multi_name = 'multi2' if len(args.dataset_list)==2 else 'multi'
+                                multi_name = args.my_multi_name if args.my_multi_name is not None else 'multi2' if len(args.dataset_list)==2 else 'multi'
                                 if 'sampledplus' in args.train_name_list[0]: multi_name += 'sampledplus'
                                 probes_file_name = f'T{save_seed}_/{args.model_name}_/{multi_name}_/{test_dataset_name}_{args.num_folds}_{args.using_act}{args.norm_input}_{args.token}_{method_concat}_bs{args.bs}_epochs{args.epochs}_{args.lr}_{args.use_class_wgt}'
                             elif args.ood_test:
