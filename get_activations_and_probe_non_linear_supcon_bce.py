@@ -466,7 +466,11 @@ def main():
                                 sum_over_samples += label
                             if sum_over_samples==0 or sum_over_samples==num_samples: num_samples_with_no_var += 1
             labels = labels[ds_start_at:ds_start_at+args.len_dataset]
-            assert len(labels)==args.len_dataset
+            try:
+                assert len(labels)==args.len_dataset
+            except AssertionError:
+                print('AssertionError with:',dataset_name,len(labels),args.len_dataset)
+                sys.exit()
             all_labels += labels
     labels = all_labels
     if args.test_file_name is None:

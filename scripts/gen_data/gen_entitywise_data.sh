@@ -1,5 +1,6 @@
 # python get_activations.py hl_llama_7B city_country --token answer_last --file_name city_country_greedy_responses_train6323  --device 0 --save_path /home/local/data/ms/honest_llama_data
 # python get_activations.py hl_llama_7B city_country --token answer_last --file_name city_country_greedy_responses_test1581  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py hl_llama_7B city_country --token answer_last --file_name city_country_greedytrfmt_responses_test1581  --device 0 --save_path /home/local/data/ms/honest_llama_data
 # python get_activations.py hl_llama_7B city_country --token answer_last --file_name city_country_sampledplus_responses_train1000  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 11
 # python get_activations.py hl_llama_7B city_country --token answer_last --file_name city_country_sampled_responses_test1581  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 10
 
