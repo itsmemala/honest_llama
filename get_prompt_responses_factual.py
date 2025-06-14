@@ -12,11 +12,11 @@ import re
 import json
 import jsonlines
 import random
-import llama
+# import llama
 # from transformers_4_45_2 import AutoTokenizer
 # from transformers_4_45_2.models import llama3
 from transformers import AutoTokenizer
-# from base_transformers.models import llama3,gemma
+from base_transformers.models import llama3,gemma
 import argparse
 # from transformers import BitsAndBytesConfig, GenerationConfig
 # from peft import PeftModel
@@ -385,7 +385,8 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b',
     'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
     'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
-    'gemma_2B': 'google/gemma-2b'
+    'gemma_2B': 'google/gemma-2b',
+    'gemma_7B': 'google/gemma-7b'
 }
 
 def main(): 

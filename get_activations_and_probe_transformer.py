@@ -558,7 +558,7 @@ def main():
         test_labels = []
         with open(file_path, 'r') as read_file:
             data = json.load(read_file)
-        with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_baseline_responses_test.json', 'r') as read_file: # hl_llama_7B_{args.test_file_name}
+        with open(f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json', 'r') as read_file: # hl_llama_7B_{args.test_file_name} # {args.model_name}_{args.dataset_name}_baseline_responses_test
             ordered_data = json.load(read_file)
         for i in range(len(ordered_data['full_input_text'])):
             new_i = None
