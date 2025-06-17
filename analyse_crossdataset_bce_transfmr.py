@@ -514,13 +514,13 @@ def main():
         seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
         seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
         seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-        # if args.wpdist_metric!='': 
-            # seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
+        if args.wpdist_metric!='': 
+            seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
 
-            # use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
-            # wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
-            # r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
-            # seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
+            use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
+            wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
+            r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
+            seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
         # print(auroc_by_layer)
         if args.mitigated_responses_file_name!='':
             print('\n\nOriginal perf:',sum(labels)/len(labels) if hallu_cls==0 else 1-(sum(labels)/len(labels)))

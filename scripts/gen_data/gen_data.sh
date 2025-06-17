@@ -12,7 +12,7 @@
 # mkdir /home/local/data/ms/honest_llama_data/features/gemma_7B_trivia_qa_answer_last/
 
 # python get_activations.py gemma_7B trivia_qa --token answer_last --file_name trivia_qa_greedy_responses_train5000  --device 0 --save_path /home/local/data/ms/honest_llama_data # Finished
-# python get_activations.py gemma_7B trivia_qa --token answer_last --file_name trivia_qa_greedy_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data # TBR
+# python get_activations.py gemma_7B trivia_qa --token answer_last --file_name trivia_qa_greedy_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data # Finished
 # python get_activations.py gemma_7B trivia_qa --token answer_last --file_name trivia_qa_sampledplus_responses_train5000  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 11 # Finished
 # python get_activations.py gemma_7B trivia_qa --token answer_last --file_name trivia_qa_sampled_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data --num_samples 10 # Finished
 
