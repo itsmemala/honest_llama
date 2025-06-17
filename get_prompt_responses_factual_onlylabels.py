@@ -385,7 +385,8 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b',
     'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
     'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
-    'gemma_2B': 'google/gemma-2b'
+    'gemma_2B': 'google/gemma-2b',
+    'gemma_7B': 'google/gemma-7b'
 }
 
 def main(): 

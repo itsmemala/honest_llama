@@ -54,7 +54,8 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b',
     'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
     'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
-    'gemma_2B': 'google/gemma-2b'
+    'gemma_2B': 'google/gemma-2b',
+    'gemma_7B': 'google/gemma-7b'
 }
 
 act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
@@ -462,7 +463,7 @@ def main():
         #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
         num_heads = 32
-    num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+    num_layers = 18 if 'gemma_2B' in args.model_name else 28 if 'gemma_7B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
     args.use_layers_list = np.array(args.use_layers_list) if args.use_layers_list is not None else np.array([k for k in range(num_layers)])
     device = "cuda" if args.device is None else args.device
 
@@ -897,7 +898,7 @@ def main():
                                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                                     ds_test = DataLoader(ds_test, batch_size=args.bs if args.test_bs is None else args.test_bs)
 
-                                act_dims =  2048 if '2B' in args.model_name else 4096
+                                act_dims =  2048 if '2B' in args.model_name else 3072 if 'gemma_7B' in args.model_name else 4096
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 n_blocks = 2 if 'transformer2' in args.method else 1
                                 supcon = True if 'supcon' in args.method else False

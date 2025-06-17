@@ -52,7 +52,8 @@ HF_NAMES = {
     'flan_33B': 'timdettmers/qlora-flan-33b',
     'llama3.1_8B': 'meta-llama/Llama-3.1-8B',
     'llama3.1_8B_Instruct': 'meta-llama/Llama-3.1-8B-Instruct',
-    'gemma_2B': 'google/gemma-2b'
+    'gemma_2B': 'google/gemma-2b',
+    'gemma_7B': 'google/gemma-7b'
 }
 
 def list_of_ints(arg):
@@ -388,7 +389,7 @@ def main():
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
     device = "cuda"
 
-    num_heads = 8 if 'gemma_2B' in args.model_name else 32 if 'llama3' in args.model_name else 32
+    num_heads = 8 if 'gemma_2B' in args.model_name else 16 if 'gemma_7B' in args.model_name else 32 if 'llama3' in args.model_name else 32
 
     print("Loading prompts and model responses..")
     all_labels = []
@@ -775,7 +776,7 @@ def main():
                         all_val_logits[i], all_test_logits[i] = [], []
                         all_val_sim[i], all_test_sim[i] = [], []
                         model_wise_mc_sample_idxs, probes_saved = [], []
-                        num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+                        num_layers = 18 if 'gemma_2B' in args.model_name else 28 if 'gemma_7B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                         loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
                         loop_layers = [num_layers-1] if args.last_only else loop_layers
                         model_idx = -1
@@ -808,7 +809,7 @@ def main():
                                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                                act_dims = {'layer':2048,'mlp':None,'mlp_l1':None,'ah':256} if '2B' in args.model_name else {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
+                                act_dims = {'layer':2048,'mlp':None,'mlp_l1':None,'ah':256} if 'gemma_2B' in args.model_name else {'layer':3072,'mlp':None,'mlp_l1':None,'ah':128} if 'gemma_7B' in args.model_name else {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 supcon = True if 'supcon' in args.method else False
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
