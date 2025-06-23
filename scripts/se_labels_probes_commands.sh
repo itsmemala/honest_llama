@@ -8,6 +8,16 @@
 # python get_uncertainty_scores.py gemma_2B city_country --file_name sampled_responses_train1000 --save_path /home/local/data/ms/honest_llama_data --num_samples 10;
 # python get_uncertainty_scores.py gemma_2B player_date_birth --file_name sampled_responses_train1000 --save_path /home/local/data/ms/honest_llama_data --num_samples 10;
 # python get_uncertainty_scores.py gemma_2B movie_cast --file_name sampled_responses_train1000 --save_path /home/local/data/ms/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py alpaca_7B trivia_qa --file_name sampledplus_responses_train5000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py alpaca_7B nq_open --file_name sampledplus_responses_train5000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py alpaca_7B city_country --file_name sampled_responses_train1000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py alpaca_7B player_date_birth --file_name sampled_responses_train1000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py alpaca_7B movie_cast --file_name sampled_responses_train1000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py vicuna_7B trivia_qa --file_name sampledplus_responses_train5000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py vicuna_7B nq_open --file_name sampledplus_responses_train5000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py vicuna_7B city_country --file_name sampled_responses_train1000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py vicuna_7B player_date_birth --file_name sampled_responses_train1000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
+python get_uncertainty_scores.py vicuna_7B movie_cast --file_name sampled_responses_train1000 --save_path ~/Desktop/honest_llama_data --num_samples 10;
 
 
 # python get_semantic_entropy.py hl_llama_7B trivia_qa --file_name sampledplus_responses_train5000 --len_dataset 1000 --save_path /home/local/data/ms/honest_llama_data --num_samples 10 # We only need sampled responses (no greedy responses) for SE

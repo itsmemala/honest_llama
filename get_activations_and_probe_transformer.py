@@ -309,6 +309,9 @@ def compute_wp_dist(outputs,labels,device,metric='euclidean'):
                     o_dist_opp.append(torch.cdist(o_i[None,:], o_j[None,:], p=2.0)[0]) # L2 distance between two samples
             dist_same.append(torch.cat(o_dist_same).mean() if len(o_dist_same)>0 else torch.tensor(-10000).to(device))
             dist_opp.append(torch.cat(o_dist_opp).mean() if len(o_dist_opp)>0 else torch.tensor(10000).to(device))
+        dist_same = torch.stack(dist_same)
+        dist_opp = torch.stack(dist_opp)
+        dist = torch.stack([dist_same, dist_opp], dim=1)
     elif metric=='cosine':
         outputs = F.normalize(outputs, p=2, dim=-1)
         for i,o_i in enumerate(outputs):
@@ -321,9 +324,18 @@ def compute_wp_dist(outputs,labels,device,metric='euclidean'):
                     o_dist_opp.append(1-F.cosine_similarity(o_i, o_j, dim=-1)) # cosine distance between two samples
             dist_same.append(torch.stack(o_dist_same).mean() if len(o_dist_same)>0 else torch.tensor(-10000).to(device)) # stack instead of cat since these are 0d tensors
             dist_opp.append(torch.stack(o_dist_opp).mean() if len(o_dist_opp)>0 else torch.tensor(10000).to(device))
-    dist_same = torch.stack(dist_same)
-    dist_opp = torch.stack(dist_opp)
-    dist = torch.stack([dist_same, dist_opp], dim=1)
+        dist_same = torch.stack(dist_same)
+        dist_opp = torch.stack(dist_opp)
+        dist = torch.stack([dist_same, dist_opp], dim=1)
+    elif metric=='cosine_individual':
+        dist = []
+        outputs = F.normalize(outputs, p=2, dim=-1)
+        for i,o_i in enumerate(outputs):
+            o_dist = []
+            for j,o_j in enumerate(outputs):
+                if i!=j: o_dist.append(1-F.cosine_similarity(o_i, o_j, dim=-1)) # cosine distance between two samples
+            dist.append(torch.stack(o_dist))
+        dist = torch.stack(dist)
     # print(dist,dist.shape)
     # sys.exit()
     return dist
@@ -410,6 +422,7 @@ def main():
     parser.add_argument('--supcon_temp_list',default=None,type=list_of_floats,required=False,help='(default=%(default)s)')
     parser.add_argument('--skip_train', type=bool, default=False)
     parser.add_argument('--skip_train_acts', type=bool, default=False)
+    parser.add_argument('--prior_is_same', type=bool, default=False)
     parser.add_argument('--which_checkpoint', type=str, default='')
     parser.add_argument('--skip_hypsearch', type=bool, default=False)
     parser.add_argument('--continue_ce', type=bool, default=False)
@@ -1214,6 +1227,7 @@ def main():
                                         prior_probes_file_name = probes_file_name.replace('_valaug','')
                                     elif 'sampled' in args.test_file_name:
                                         prior_probes_file_name = probes_file_name.replace(args.test_file_name+'_','')
+                                        if args.prior_is_same: prior_probes_file_name = probes_file_name
                                     else: # multi
                                         prior_probes_file_name = probes_file_name.replace(test_dataset_name,'trivia_qa' if args.multi_probe_dataset_name is None else args.multi_probe_dataset_name)
                                     try:

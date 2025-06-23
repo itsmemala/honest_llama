@@ -53,6 +53,7 @@ def main():
     parser.add_argument('--m_probes_file_name',default=None,type=list_of_strs,required=False,help='(default=%(default)s)')
     parser.add_argument("--probes_file_name", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--probes_file_name_concat", type=str, default='', help='local directory with dataset')
+    parser.add_argument("--wp_probes_file_name", type=list_of_strs, default=None, help='local directory with dataset')
     parser.add_argument("--test_data", type=str, default=None, help='local directory with dataset')
     parser.add_argument("--val_test_data", type=str, default=None, help='local directory with dataset')
     parser.add_argument('--filt_testprompts_catg',type=list_of_ints, default=None)
@@ -194,6 +195,7 @@ def main():
             args.probes_file_name = re.sub("hallu_pos_[0-9]+_[0-9]+_[0-9]+","hallu_pos_"+args.layers_range_list[seed_i],args.probes_file_name)
         seed_results_list = []
         if args.m_probes_file_name is not None: seed_m_probes_file_name = args.m_probes_file_name[seed_i]
+        if args.wp_probes_file_name is not None: seed_wp_probes_file_name = args.wp_probes_file_name[seed_i]
 
         # val_pred_model,all_val_true[fold][0]
         def my_aufpr(preds,labels,getfull=False):
@@ -377,8 +379,10 @@ def main():
             else:
                 test_preds = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy')[0]
                 labels = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')[0][0] ## Since labels are same for all models
-                if args.wpdist_metric!='': wp_dist = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_wpdist_{args.wpdist_metric}.npy')[0][0]
-                if args.wpdist_metric!='': print(wp_dist.shape, wp_dist[:10,1], np.min(wp_dist[:,1]),np.max( wp_dist[:,1]))
+                if args.wpdist_metric!='': 
+                    wp_dist = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_wpdist_{args.wpdist_metric}.npy')[0][0]
+                    # wp_dist = wp_dist/2
+                    # print(wp_dist.shape, wp_dist[:10,:], np.min(wp_dist[:10,:],axis=1),np.max( wp_dist[:10,:],axis=1))
                 if args.m_probes_file_name is not None: 
                     m_test_pred_model = np.load(f'{args.save_path}/probes/{seed_m_probes_file_name}_test_pred_model.npy')
                     if 'sampled' in args.mitigated_responses_file_name:
@@ -514,13 +518,34 @@ def main():
         seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
         seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
         seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-        if args.wpdist_metric!='': 
-            seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
-
+        if args.wpdist_metric!='':
             use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
             wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
+            seed_results_list.append(np.mean(wp_dist[use_indices,0])) # Dist to same class
+
+            seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
+            
             r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
-            seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)     
+            seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)   
+        if args.wp_probes_file_name is not None:
+            wp_dist = np.load(f'{args.save_path}/probes/{seed_wp_probes_file_name}_test_wpdist_cosine_individual.npy')[0][0]
+            wp_dist[wp_dist<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
+            k = 10
+            lamb1 = 0.5
+            lamb2 = 1-lamb1
+            sample_idxs = []
+            first_sample_idxs = np.arange(0,len(wp_dist),args.test_num_samples)
+            wp_dist = wp_dist/2 # (cosine distance)/2 gives probability
+            wp_dist_k = []
+            for sample_idx in first_sample_idxs:
+                sample_idxs_k = []
+                for next_idx in range(k):
+                    sample_idxs_k.append(sample_idx + next_idx)
+                wp_dist_k.append(np.max(wp_dist[np.array(sample_idxs_k),:k-1])) # max dist among pairwise distances of k samples
+            seed_results_list.append(roc_auc_score(labels, wp_dist_k))
+            ensemble_prob = (lamb1*np.squeeze(test_preds[model]) + lamb2*np.array(wp_dist_k)) # weighted avg
+            seed_results_list.append(roc_auc_score(labels, ensemble_prob))
+        
         # print(auroc_by_layer)
         if args.mitigated_responses_file_name!='':
             print('\n\nOriginal perf:',sum(labels)/len(labels) if hallu_cls==0 else 1-(sum(labels)/len(labels)))
