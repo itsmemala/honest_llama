@@ -131,8 +131,10 @@ def main():
     
     # args.using_act = 'layer' if 'layer' in args.probes_file_name else 'mlp'
     # num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
-    num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
-    num_heads = 8 if 'gemma_2B' in args.model_name else 32 if 'llama3' in args.model_name else 32
+    # num_layers = 18 if '2B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0
+    # num_heads = 8 if 'gemma_2B' in args.model_name else 32 if 'llama3' in args.model_name else 32
+    num_layers = 18 if 'gemma_2B' in args.model_name else 28 if 'gemma_7B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+    num_heads = 8 if 'gemma_2B' in args.model_name else 16 if 'gemma_7B' in args.model_name else 32 if 'llama3' in args.model_name else 32
     num_models = num_layers if args.using_act in ['layer','mlp'] else num_layers*num_heads #18 if '2B' in args.model_name else 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name): 
         print('\n\nSETTING NUM_LAYERS=1\n\n')

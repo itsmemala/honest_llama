@@ -32,9 +32,17 @@
 # python get_activations.py alpaca_7B movie_cast --token answer_last --file_name movie_cast_greedy_responses_test2179  --device 0 --save_path /home/local/data/ms/honest_llama_data
 
 ### Vicuna 7B ####
-python get_activations.py vicuna_7B city_country --token answer_last --file_name city_country_greedy_responses_train6323  --device 0 --save_path /home/local/data/ms/honest_llama_data
-python get_activations.py vicuna_7B city_country --token answer_last --file_name city_country_greedy_responses_test1581  --device 0 --save_path /home/local/data/ms/honest_llama_data
-python get_activations.py vicuna_7B player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_test1498  --device 0 --save_path /home/local/data/ms/honest_llama_data
-python get_activations.py vicuna_7B player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_train5989  --device 0 --save_path /home/local/data/ms/honest_llama_data
-python get_activations.py vicuna_7B movie_cast --token answer_last --file_name movie_cast_greedy_responses_train8716 --device 0 --save_path /home/local/data/ms/honest_llama_data
-python get_activations.py vicuna_7B movie_cast --token answer_last --file_name movie_cast_greedy_responses_test2179  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py vicuna_7B city_country --token answer_last --file_name city_country_greedy_responses_train6323  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py vicuna_7B city_country --token answer_last --file_name city_country_greedy_responses_test1581  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py vicuna_7B player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_test1498  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py vicuna_7B player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_train5989  --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py vicuna_7B movie_cast --token answer_last --file_name movie_cast_greedy_responses_train8716 --device 0 --save_path /home/local/data/ms/honest_llama_data
+# python get_activations.py vicuna_7B movie_cast --token answer_last --file_name movie_cast_greedy_responses_test2179  --device 0 --save_path /home/local/data/ms/honest_llama_data
+
+### Llama3.1 8B ####
+python get_activations.py llama3.1_8B_Instruct city_country --token answer_last --file_name city_country_greedy_responses_train6323  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py llama3.1_8B_Instruct city_country --token answer_last --file_name city_country_greedy_responses_test1581  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py llama3.1_8B_Instruct player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_test1498  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py llama3.1_8B_Instruct player_date_birth --token answer_last --file_name player_date_birth_greedy_responses_train5989  --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py llama3.1_8B_Instruct movie_cast --token answer_last --file_name movie_cast_greedy_responses_train8716 --device 0 --save_path /home/local/data/ms/honest_llama_data
+python get_activations.py llama3.1_8B_Instruct movie_cast --token answer_last --file_name movie_cast_greedy_responses_test2179  --device 0 --save_path /home/local/data/ms/honest_llama_data
