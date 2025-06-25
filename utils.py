@@ -728,7 +728,7 @@ def get_llama_activations_bau(model, prompt, device, mlp_l1='No', HEADS=None, ML
             mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
             # print(mlp_wise_hidden_states.shape)
         else:
-            with TraceDict(model, HEADS+MLPS) as ret:
+            with TraceDict(model, HEADS+MLPS+ATT_RES_OUTS) as ret:
                 output = model(prompt, output_hidden_states = True, use_cache=True)
             hidden_states = output.hidden_states
             hidden_states = torch.stack(hidden_states, dim = 0).squeeze()
