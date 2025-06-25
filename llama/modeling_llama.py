@@ -693,7 +693,8 @@ class LlamaDecoderLayer(nn.Module):
         hidden_states = residual + hidden_states
 
         # Fully Connected
-        residual = self.att_res_out(hidden_states)
+        residual = hidden_states
+        residual = self.att_res_out(residual)
         hidden_states = self.post_attention_layernorm(hidden_states)
         hidden_states = self.mlp(hidden_states)
         hidden_states = self.layer_out(residual + hidden_states)
