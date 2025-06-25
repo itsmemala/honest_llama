@@ -645,6 +645,7 @@ class LlamaDecoderLayer(nn.Module):
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.layer_out = nn.Identity()
+        self.att_res_out = nn.Identity()
 
     def forward(
         self,
@@ -692,7 +693,7 @@ class LlamaDecoderLayer(nn.Module):
         hidden_states = residual + hidden_states
 
         # Fully Connected
-        residual = hidden_states
+        residual = self.att_res_out(hidden_states)
         hidden_states = self.post_attention_layernorm(hidden_states)
         hidden_states = self.mlp(hidden_states)
         hidden_states = self.layer_out(residual + hidden_states)

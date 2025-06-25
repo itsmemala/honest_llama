@@ -19,7 +19,7 @@ import pickle
 # import orjson as json
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
-from utils import My_Transformer_Layer
+from utils import My_Transformer_Layer, My_Projection_w_Classifier_Layer, LogisticRegression_Torch
 from losses import SupConLoss
 from copy import deepcopy
 import llama
@@ -58,7 +58,7 @@ HF_NAMES = {
     'gemma_7B': 'google/gemma-7b'
 }
 
-act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
+act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise','layer_maxpool':'layer_wise'}
 
 def list_of_ints(arg):
     return list(map(int, arg.split(',')))
@@ -708,6 +708,9 @@ def main():
                         #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     my_train_acts.append(act)
             my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)#.type(torch.float16)
+            if args.using_act=='layer_maxpool': my_train_acts = torch.max(my_train_acts,dim=1)[0] # max returns tuple of (values,indices)
+            print(my_train_acts.shape)
+            # sys.exit()
 
         # if args.token=='tagged_tokens': my_train_acts = torch.nn.utils.rnn.pad_sequence(my_train_acts, batch_first=True)
         
@@ -738,6 +741,7 @@ def main():
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
         my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
+        if args.using_act=='layer_maxpool': my_test_acts = torch.max(my_test_acts,dim=1)[0] # max returns tuple of (values,indices)
         print('\n\nEnd time of loading:',datetime.datetime.now(),'\n\n')
 
     if args.multi_gpu:
@@ -917,6 +921,9 @@ def main():
                                 supcon = True if 'supcon' in args.method else False
                                 num_layers_to_use = num_layers if args.use_layers_list is None else len(args.use_layers_list)
                                 nlinear_model = My_Transformer_Layer(n_inputs=act_dims, n_layers=num_layers_to_use, n_outputs=1, bias=bias, n_blocks=n_blocks, use_pe=args.use_pe, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj).to(device)
+                                if args.using_act=='layer_maxpool': nlinear_model = LogisticRegression_Torch(n_inputs=act_dims, n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims, output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=False, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else None
+                                if 'project_linear' in args.method: nlinear_model = My_Projection_w_Classifier_Layer(n_inputs=act_dims, n_layers=num_layers_to_use, n_outputs=1, bias=bias, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj).to(device)
+                                if 'project_non_linear_4' in args.method: nlinear_model = My_Projection_w_Classifier_Layer(n_inputs=act_dims, n_layers=num_layers_to_use, n_outputs=1, bias=bias, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj, non_linear=True).to(device)
                                 wgts = 0
                                 # print('\n\nModel Size')
                                 # for p in nlinear_model.parameters():
@@ -1319,7 +1326,7 @@ def main():
                                                 # sys.exit()
                                                 predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                             else:
-                                                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                                                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                                                 val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                                             y_val_pred += predicted
                                             y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
@@ -1391,7 +1398,7 @@ def main():
                                                 test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca)
                                                 predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                                             else:
-                                                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                                                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                                                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                                             if args.wp_dist:
                                                 outputs = nlinear_model.forward_upto_classifier(inputs)

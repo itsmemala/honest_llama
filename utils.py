@@ -49,6 +49,77 @@ ENGINE_MAP = {
 # from truthfulqa.models import find_subsequence, set_columns, MC_calcs
 # from truthfulqa.evaluate import format_frame, data_to_dict
 
+class My_Projection_w_Classifier_Layer(torch.nn.Module):    
+    # build the constructor
+    def __init__(self, n_inputs, n_layers, n_outputs, bias, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, d_model=128, no_act_proj=False, non_linear=False, device='cuda'):
+        super().__init__()
+        self.no_act_proj = no_act_proj
+        d_model = d_model #128 # 256
+        self.batch_norm = batch_norm
+        self.linear = torch.nn.Linear(n_inputs, d_model, bias)
+        self.batch_norm_layer = torch.nn.BatchNorm1d(n_layers+1)
+        self.supcon=supcon
+        self.norm_emb=norm_emb
+        self.norm_cfr=norm_cfr
+        if non_linear:
+            self.non_linear = True
+            self.linear1 = nn.Linear(n_layers*d_model, 256)
+            self.relu1 = nn.ReLU()
+            self.linear2 = nn.Linear(256, 128)
+            self.relu2 = nn.ReLU()
+            self.linear3 = nn.Linear(128, 64)
+            self.relu3 = nn.ReLU()
+            self.classifier = torch.nn.Linear(64, n_outputs, bias=not cfr_no_bias)
+        else:
+            self.non_linear = False
+            self.classifier = torch.nn.Linear(n_layers*d_model, n_outputs, bias=not cfr_no_bias)
+
+    # make predictions
+    def forward(self, x): # x: (bs, n_layers, n_inputs)
+        x = self.forward_upto_classifier(x)
+        try:
+            if self.supcon or self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        except AttributeError:
+            if self.supcon: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        try:
+            if self.norm_cfr and self.training==False:
+                norm_cfr_wgts = F.normalize(self.classifier.weight, p=2, dim=-1)
+                y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
+                y_pred = (y_pred + 1)/2 # re-scale to yield probability values
+                assert y_pred.min().item()>=0 and y_pred.max().item()<=1
+                return y_pred[:,None] # ensure same shape of output between eval() and train()
+        except AttributeError:
+            pass
+        y_pred = self.classifier(x)
+        return y_pred
+    
+    def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs)
+        layer_wise_x = []
+        for layer in range(x.shape[-2]):
+            try:
+                if self.no_act_proj:
+                    layer_wise_x.append(torch.squeeze(x[:,layer,:]))
+                else:
+                    layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+            except AttributeError:
+                layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+        x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
+        if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1  # x: (bs, n_layers, d_model)
+        x = x.reshape([x.shape[0],x.shape[1]*x.shape[2]])  # x: (bs, n_layers * d_model)
+        try:
+            if self.batch_norm: x = self.batch_norm_layer(x)
+        except AttributeError:
+            pass
+        if self.non_linear:
+            x = self.linear1(x)
+            x = self.relu1(x)
+            # norm_emb = F.normalize(emb, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+            x = self.linear2(x)
+            x = self.relu2(x)
+            x = self.linear3(x)
+            x = self.relu3(x)
+        return x
+
 class My_Transformer_Layer(torch.nn.Module):    
     # build the constructor
     def __init__(self, n_inputs, n_layers, n_outputs, bias, n_blocks=1, use_pe=False, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, d_model=128, no_act_proj=False, device='cuda'):
@@ -642,7 +713,7 @@ def get_token_tags(responses,resp_tokenized):
         tagged_token_idxs.append(cur_idxs)
     return tagged_token_idxs
 
-def get_llama_activations_bau(model, prompt, device, mlp_l1='No', HEADS=None, MLPS=None, MLPS_L1=None): 
+def get_llama_activations_bau(model, prompt, device, mlp_l1='No', HEADS=None, MLPS=None, MLPS_L1=None, ATT_RES_OUTS=None): 
 
     # HEADS = [f"model.layers.{i}.self_attn.head_out" for i in range(model.config.num_hidden_layers)]
     # MLPS = [f"model.layers.{i}.mlp" for i in range(model.config.num_hidden_layers)]
@@ -666,10 +737,14 @@ def get_llama_activations_bau(model, prompt, device, mlp_l1='No', HEADS=None, ML
             head_wise_hidden_states = torch.stack(head_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
             mlp_wise_hidden_states = [ret[mlp].output.squeeze().detach().cpu() for mlp in MLPS]
             mlp_wise_hidden_states = torch.stack(mlp_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
+            attresoutput_wise_hidden_states = [ret[att].output.squeeze().detach().cpu() for att in ATT_RES_OUTS]
+            attresoutput_wise_hidden_states = torch.stack(attresoutput_wise_hidden_states, dim = 0).squeeze().to(torch.float32).numpy()
 
         del output
     if mlp_l1=='Yes':
         return mlp_wise_hidden_states
+    elif ATT_RES_OUTS is not None:
+        return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states, attresoutput_wise_hidden_states
     else:
         return hidden_states, head_wise_hidden_states, mlp_wise_hidden_states
 

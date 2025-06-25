@@ -12,6 +12,8 @@
 # accelerate launch --num_processes 2 --multi-gpu strqa_eval.py --model-name google/gemma-2b --early-exit-layers 0,2,4,6,8,10,12,14,32 --data-path /home/local/data/ms/honest_llama_data --test_data_file /home/local/data/ms/honest_llama_data/responses/gemma_2B_strqa_baseline_responses_test.json --output-path /home/local/data/ms/honest_llama_data/responses/gemma_2B_strqa_dola_0to16_responses_test.json --num-gpus 2
 # accelerate launch --num_processes 2 --multi-gpu trivia_qa_eval.py --model-name google/gemma-2b --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path /home/local/data/ms/honest_llama_data --output-path /home/local/data/ms/honest_llama_data/responses/gemma_2B_trivia_qa_dola16to32_responses_test.json --num-gpus 2
 
+python entity_eval.py --model-name huggyllama/llama-7b --dataset_name city_country --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path ~/Desktop/honest_llama_data --output-path ~/Desktop/honest_llama_data/responses/hl_llama_7B_city_country_dola16to32_responses_test.json
+
 #### Pred on dola using probes
 # Trivia:
 # dola+LP II (LP-wp): python get_activations_and_probe_non_linear_supcon_bce.py hl_llama_7B trivia_qa --train_file_name trivia_qa_sampledplus_responses_train5000 --test_file_name trivia_qa_dola16to32_responses_test --train_labels_file_name trivia_qa_sampledplus_responses_labels_train5000 --len_dataset 55000 --num_folds 1 --using_act layer --token answer_last --method individual_linear_hallu_pos --bs 352 --no_batch_sampling True --epochs 50 --lr_list 0.00005,0.0005,0.005 --save_probes True --save_path /home/local/data/ms/honest_llama_data --fast_mode True  --use_best_val_t True --seed_list 42,101,2650 --best_using_auc True  --test_num_samples 1 --ood_test True  --skip_train True;

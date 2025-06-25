@@ -1,0 +1,4 @@
+python get_activations.py hl_llama_7B trivia_qa --token prompt_last_onwards --file_name trivia_qa_greedy_responses_train5000  --device 0 --save_path /home/local/data/ms/honest_llama_data;
+python get_activations.py hl_llama_7B trivia_qa --token prompt_last_onwards --file_name trivia_qa_greedy_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data;
+python get_activations.py hl_llama_7B trivia_qa --token prompt_last_onwards --file_name trivia_qa_sampledplus_responses_train5000  --device 0 --save_path /home/local/data/ms/honest_llama_data;
+python get_activations.py hl_llama_7B trivia_qa --token prompt_last_onwards --file_name trivia_qa_sampled_responses_validation1800  --device 0 --save_path /home/local/data/ms/honest_llama_data;

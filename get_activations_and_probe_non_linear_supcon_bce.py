@@ -809,7 +809,7 @@ def main():
                                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                                act_dims = {'layer_maxpool':2048,'layer':2048,'mlp':None,'mlp_l1':None,'ah':256} if 'gemma_2B' in args.model_name else {'layer_maxpool':3072,'layer':3072,'mlp':None,'mlp_l1':None,'ah':128} if 'gemma_7B' in args.model_name else {'layer_maxpool':4096,'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
+                                act_dims = {'layer':2048,'mlp':None,'mlp_l1':None,'ah':256} if 'gemma_2B' in args.model_name else {'layer':3072,'mlp':None,'mlp_l1':None,'ah':128} if 'gemma_7B' in args.model_name else {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 supcon = True if 'supcon' in args.method else False
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)

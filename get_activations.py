@@ -8,9 +8,9 @@ import pickle
 from utils import get_llama_activations_bau, get_llama_activations_bau_custom, get_token_tags, get_token_nll
 # from utils import tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, 
 from utils import tokenized_nq, tokenized_mi, tokenized_mi_v2, tokenized_from_file, tokenized_from_file_v2
-# import llama
+import llama
 from transformers import AutoTokenizer
-from base_transformers.models import llama3,gemma
+# from base_transformers.models import llama3,gemma
 import pickle
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig
@@ -223,13 +223,14 @@ def main():
 
     print(len(prompts))
     
-    if args.token!='answer_last':
-        sys.exit()
+    # if args.token!='answer_last':
+    #     sys.exit()
 
     for start, end in load_ranges:
         all_layer_wise_activations = []
         all_head_wise_activations = []
         all_mlp_wise_activations = []
+        all_attresoutput_wise_activations = []
         all_token_logprobs = []
 
         print("Getting activations for "+str(start)+" to "+str(end))
@@ -237,10 +238,18 @@ def main():
             HEADS = [f"model.layers.{i}.self_attn.head_out" for i in range(model.config.num_hidden_layers)]
             MLPS = [f"model.layers.{i}.mlp" for i in range(model.config.num_hidden_layers)]
             MLPS_L1 = [f"model.layers.{i}.mlp.up_proj_out" for i in range(model.config.num_hidden_layers)]
-            layer_wise_activations, head_wise_activations, mlp_wise_activations = get_llama_activations_bau(model, prompt, device, HEADS=HEADS, MLPS=MLPS, MLPS_L1=MLPS_L1)
-            all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
-            all_head_wise_activations.append(head_wise_activations[:,-1,:])
-            all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+            ATT_RES_OUTS = [f"model.layers.{i}.att_res_out" for i in range(model.config.num_hidden_layers)]
+            layer_wise_activations, head_wise_activations, mlp_wise_activations, attresoutput_wise_activations = get_llama_activations_bau(model, prompt, device, HEADS=HEADS, MLPS=MLPS, MLPS_L1=MLPS_L1, ATT_RES_OUTS=ATT_RES_OUTS)
+            if args.token=='answer_last':
+                all_layer_wise_activations.append(layer_wise_activations[:,-1,:])
+                all_head_wise_activations.append(head_wise_activations[:,-1,:])
+                all_mlp_wise_activations.append(mlp_wise_activations[:,-1,:])
+            elif args.token=='prompt_last_onwards':
+                all_layer_wise_activations.append(layer_wise_activations[:,token_idx-1:,:])
+                # all_head_wise_activations.append(head_wise_activations[:,token_idx-1:,:])
+                # all_mlp_wise_activations.append(mlp_wise_activations[:,token_idx-1:,:])
+                all_attresoutput_wise_activations.append(attresoutput_wise_activations[:,token_idx-1:,:])
+
 
         #     if args.mlp_l1=='Yes':
         #         mlp_wise_activations = get_llama_activations_bau(model, prompt, device, mlp_l1=args.mlp_l1)
@@ -375,6 +384,11 @@ def main():
             # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
             with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_mlp_wise_{end}.pkl', 'wb') as outfile:
                 pickle.dump(all_mlp_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
+
+            print("Saving att res out wise activations")
+            # np.save(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}_mlp_wise_{end}.npy', all_mlp_wise_activations)
+            with open(f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.file_name}_{args.token}_attresout_wise_{end}.pkl', 'wb') as outfile:
+                pickle.dump(all_attresoutput_wise_activations, outfile, pickle.HIGHEST_PROTOCOL)
 
         # with open(f'{args.save_path}/features/counselling_wudata_{args.model_name}_token_logprobs.pkl', 'wb') as outfile:
         #     pickle.dump(all_token_logprobs, outfile, pickle.HIGHEST_PROTOCOL)
