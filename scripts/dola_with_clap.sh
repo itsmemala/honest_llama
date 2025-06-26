@@ -12,7 +12,10 @@
 # accelerate launch --num_processes 2 --multi-gpu strqa_eval.py --model-name google/gemma-2b --early-exit-layers 0,2,4,6,8,10,12,14,32 --data-path /home/local/data/ms/honest_llama_data --test_data_file /home/local/data/ms/honest_llama_data/responses/gemma_2B_strqa_baseline_responses_test.json --output-path /home/local/data/ms/honest_llama_data/responses/gemma_2B_strqa_dola_0to16_responses_test.json --num-gpus 2
 # accelerate launch --num_processes 2 --multi-gpu trivia_qa_eval.py --model-name google/gemma-2b --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path /home/local/data/ms/honest_llama_data --output-path /home/local/data/ms/honest_llama_data/responses/gemma_2B_trivia_qa_dola16to32_responses_test.json --num-gpus 2
 
-python entity_eval.py --model-name huggyllama/llama-7b --dataset_name city_country --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path ~/Desktop/honest_llama_data --output-path ~/Desktop/honest_llama_data/responses/hl_llama_7B_city_country_dola16to32_responses_test.json
+# OOD scenarios
+# python entity_eval.py --model-name huggyllama/llama-7b --dataset_name city_country --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path ~/Desktop/honest_llama_data --output-path ~/Desktop/honest_llama_data/responses/hl_llama_7B_city_country_dola16to32_responses_test.json
+python entity_eval.py --model-name huggyllama/llama-7b --dataset_name player_date_birth --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path ~/Desktop/honest_llama_data --output-path ~/Desktop/honest_llama_data/responses/hl_llama_7B_player_date_birth_dola16to32_responses_test.json;
+python entity_eval.py --model-name huggyllama/llama-7b --dataset_name movie_cast --early-exit-layers 16,18,20,22,24,26,28,30,32 --data-path ~/Desktop/honest_llama_data --output-path ~/Desktop/honest_llama_data/responses/hl_llama_7B_movie_cast_dola16to32_responses_test.json;
 
 #### Pred on dola using probes
 # Trivia:

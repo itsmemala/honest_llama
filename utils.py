@@ -49,6 +49,29 @@ ENGINE_MAP = {
 # from truthfulqa.models import find_subsequence, set_columns, MC_calcs
 # from truthfulqa.evaluate import format_frame, data_to_dict
 
+class Att_Pool_Layer(torch.nn.Module):    
+    # build the constructor
+    def __init__(self, llm_dim, n_outputs, device='cuda'):
+        super().__init__()
+        self.query = torch.nn.Parameter(torch.randn(llm_dim)).to(device).to(torch.float64)
+        self.classifier = torch.nn.Linear(llm_dim, n_outputs, bias=False).to(device).to(torch.float64)
+
+    # make predictions
+    def forward(self, x): # x: (bs, llm_dim)
+        x = self.forward_upto_classifier(x)
+        y_pred = self.classifier(x)
+        return y_pred
+    
+    def forward_upto_classifier(self, x): # x: (bs, n_tokens, llm_dim)
+        # if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension
+        qt_h = torch.matmul(x,self.query) # qt_h: (bs, n_tokens)
+        att_wgts = nn.functional.softmax(qt_h, dim=-1)  # att_wgts: (bs, n_tokens)
+        att_out = []
+        for sample in range(x.shape[0]):
+            att_out.append(torch.matmul(att_wgts[sample],x[sample]))  # att_out: (llm_dim)
+        att_out = torch.stack(att_out) # att_out: (bs, llm_dim)
+        return att_out
+
 class My_Projection_w_Classifier_Layer(torch.nn.Module):    
     # build the constructor
     def __init__(self, n_inputs, n_layers, n_outputs, bias, batch_norm=False, supcon=False, norm_emb=False, norm_cfr=False, cfr_no_bias=False, d_model=128, no_act_proj=False, non_linear=False, device='cuda'):

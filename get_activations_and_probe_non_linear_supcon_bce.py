@@ -17,7 +17,7 @@ import statistics
 import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
-from utils import My_SupCon_NonLinear_Classifier4, LogisticRegression_Torch # , My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier_wProj
+from utils import My_SupCon_NonLinear_Classifier4, LogisticRegression_Torch, Att_Pool_Layer # , My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier_wProj
 from losses import SupConLoss
 from copy import deepcopy
 import llama
@@ -286,6 +286,7 @@ def main():
     parser.add_argument('--multi_probe_dataset_name',type=str, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
+    parser.add_argument('--max_answer_tokens',type=int, default=20)
     parser.add_argument('--method',type=str, default='individual_non_linear_2') # individual_linear (<_orthogonal>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_2 (<_supcon>, <_specialised>, <reverse>, <_hallu_pos>), individual_non_linear_3 (<_specialised>, <reverse>, <_hallu_pos>)
     parser.add_argument('--retrain_full_model_path',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
@@ -543,7 +544,7 @@ def main():
     # else:
     #     args.acts_per_file = 100
 
-    single_token_types = ['answer_last','prompt_last','maxpool_all','slt','least_likely','after_least_likely']
+    single_token_types = ['answer_last','prompt_last','maxpool_all','slt','least_likely','after_least_likely','prompt_last_onwards']
 
     if 'strqa' in args.test_file_name:
         args.test_acts_per_file = 50
@@ -566,8 +567,8 @@ def main():
     if args.fast_mode:
         device_id, device = 0, 'cuda:0' # start with first gpu
         print("Loading acts...")
-        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise'}
-        my_train_acts, my_test_acts = [], []
+        act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise','layer_att_res':'layer_wise'}
+        my_train_acts, my_train_acts2, my_test_acts = [], [], []
         # if args.skip_train==False:
         if args.skip_train_acts==False:
             for dataset_name,train_file_name,len_dataset,ds_start_at in zip(args.dataset_list,args.train_name_list,args.len_dataset_list,args.ds_start_at_list):
@@ -589,14 +590,31 @@ def main():
                     act_wise_file_paths.append(file_path)
                     if file_path not in unique_file_paths: unique_file_paths.append(file_path)
                 file_wise_data = {}
+                print("Loading files..")
                 for file_path in unique_file_paths:
                     file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
-                for idx in temp_train_idxs:
+                    if args.using_act=='layer_att_res':
+                        file_path2 = file_path.replace('layer_wise','attresout_wise')
+                        file_wise_data[file_path2] = np.load(file_path2,allow_pickle=True)
+                actual_answer_width = []
+                for idx in tqdm(temp_train_idxs):
                     # file_end = idx-(idx%args.acts_per_file)+args.acts_per_file # 487: 487-(87)+100
                     # file_path = f'{args.save_path}/features/{args.model_name}_{args.dataset_name}_{args.token}/{args.model_name}_{args.train_file_name}_{args.token}_{act_type[args.using_act]}_{file_end}.pkl'
                     # try:
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
+                    if args.using_act=='layer_att_res': 
+                        file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
+                        act2 = file_wise_data[file_path2][idx%args.acts_per_file]
+                        act = np.concatenate([act,act2],axis=0)
+                        actual_answer_width.append(act.shape[1])
+                        max_tokens = args.max_answer_tokens
+                        if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
+                            pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
+                            act = np.concatenate([act,pads],axis=1)
+                        elif act.shape[1]>max_tokens:
+                            act = act[:,-max_tokens:,:] # Only most recent tokens
+                        # print(act.shape)
                     # except IndexError:
                     #     print(idx)
                     # except (torch.cuda.OutOfMemoryError, RuntimeError):
@@ -605,6 +623,7 @@ def main():
                     #     print('Loading on device',device_id)
                     #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     my_train_acts.append(act)
+                print(np.histogram(actual_answer_width), np.max(actual_answer_width))
             my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
         
         if args.test_file_name is not None:
@@ -626,9 +645,25 @@ def main():
             for file_path in unique_file_paths:
                 with open(file_path, "rb") as my_temp_data:
                     file_wise_data[file_path] = pickle.load(my_temp_data)
+                if args.using_act=='layer_att_res':
+                    file_path2 = file_path.replace('layer_wise','attresout_wise')
+                    with open(file_path2, "rb") as my_temp_data:
+                        file_wise_data[file_path2] = pickle.load(my_temp_data)
+            actual_answer_width = []
             for idx in test_idxs:
                 act = file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file]
+                if args.using_act=='layer_att_res': 
+                    file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
+                    act2 = file_wise_data[file_path2][idx%args.test_acts_per_file]
+                    act = np.concatenate([act,act2],axis=0)
+                    actual_answer_width.append(act.shape[1])
+                    if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
+                        pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
+                        act = np.concatenate([act,pads],axis=1)
+                    elif act.shape[1]>max_tokens:
+                        act = act[:,-50:,:] # Only last 50 tokens
                 my_test_acts.append(act)
+            print(np.histogram(actual_answer_width), np.max(actual_answer_width))
         my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
 
     if args.multi_gpu:
@@ -779,6 +814,7 @@ def main():
                         num_layers = 18 if 'gemma_2B' in args.model_name else 28 if 'gemma_7B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
                         loop_layers = range(num_layers-1,-1,-1) if 'reverse' in args.method else range(num_layers)
                         loop_layers = [num_layers-1] if args.last_only else loop_layers
+                        if args.using_act=='layer_att_res': loop_layers = range(my_train_acts.shape[1])
                         model_idx = -1
                         for layer in tqdm(loop_layers):
                             loop_heads = range(num_heads) if args.using_act == 'ah' else [0]
@@ -809,10 +845,11 @@ def main():
                                     ds_test = Dataset.from_dict({"inputs_idxs": test_idxs, "labels": y_test}).with_format("torch")
                                     ds_test = DataLoader(ds_test, batch_size=args.bs)
 
-                                act_dims = {'layer':2048,'mlp':None,'mlp_l1':None,'ah':256} if 'gemma_2B' in args.model_name else {'layer':3072,'mlp':None,'mlp_l1':None,'ah':128} if 'gemma_7B' in args.model_name else {'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
+                                act_dims = {'layer_att_res':2048,'layer':2048,'mlp':None,'mlp_l1':None,'ah':256} if 'gemma_2B' in args.model_name else {'layer_att_res':3072,'layer':3072,'mlp':None,'mlp_l1':None,'ah':128} if 'gemma_7B' in args.model_name else {'layer_att_res':4096,'layer':4096,'mlp':4096,'mlp_l1':11008,'ah':128}
                                 bias = False if 'specialised' in args.method or 'orthogonal' in args.method or args.no_bias else True
                                 supcon = True if 'supcon' in args.method else False
-                                nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
+                                nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else None #My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
+                                if 'individual_att_pool' in args.method: nlinear_model = Att_Pool_Layer(llm_dim=act_dims[args.using_act], n_outputs=1)
                                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
                                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                                 if args.retrain_full_model_path is not None:
@@ -920,7 +957,7 @@ def main():
                                         {'params': [p for n, p in named_params if any(nd in n for nd in no_decay)], 'weight_decay': 0.0, 'lr': args.lr}
                                     ]
                                     optimizer = torch.optim.AdamW(optimizer_grouped_parameters) # torch.optim.Adam(optimizer_grouped_parameters)
-                                    steps_per_epoch = int(len(train_set_idxs)/args.bs)  # number of steps in an epoch
+                                    steps_per_epoch = int(len(train_set_idxs)/args.bs)+1  # number of steps in an epoch
                                     warmup_period = steps_per_epoch * 5
                                     T_max = (steps_per_epoch*args.epochs) - warmup_period # args.epochs-warmup_period
                                     scheduler1 = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=warmup_period)
@@ -1322,9 +1359,10 @@ def main():
                                                 # sys.exit()
                                                 predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                             else:
-                                                predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                                                # print('line 1326',inputs.shape)
+                                                # predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                                 val_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                                            y_val_pred += predicted
+                                            # y_val_pred += predicted
                                             y_val_true += batch['labels'].tolist()
                                             val_preds.append(val_preds_batch)
                                             if args.token in single_token_types: val_logits.append(nlinear_model(inputs))
@@ -1333,18 +1371,18 @@ def main():
                                     val_preds = torch.cat(val_preds).cpu().numpy()
                                     all_val_preds[i].append(val_preds)
                                     all_y_true_val[i].append(y_val_true)
-                                    all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
-                                    if layer==num_layers-1:
-                                        print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
-                                        print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
-                                        best_val_t = get_best_threshold(y_val_true, val_preds, True if 'knn' in args.method else False)
-                                        if 'knn' in args.method:
-                                            y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
-                                        else:
-                                            y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
-                                        log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
-                                        log_val_recall = recall_score(y_val_true,y_val_pred_opt)
-                                        log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if 'knn' in args.method else roc_auc_score(y_val_true, val_preds)
+                                    # all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+                                    # if layer==num_layers-1:
+                                    #     print('Val F1:',f1_score(y_val_true,y_val_pred),f1_score(y_val_true,y_val_pred,pos_label=0))
+                                    #     print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
+                                    #     best_val_t = get_best_threshold(y_val_true, val_preds, True if 'knn' in args.method else False)
+                                    #     if 'knn' in args.method:
+                                    #         y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
+                                    #     else:
+                                    #         y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
+                                    #     log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
+                                    #     log_val_recall = recall_score(y_val_true,y_val_pred_opt)
+                                    #     log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if 'knn' in args.method else roc_auc_score(y_val_true, val_preds)
                                 pred_correct = 0
                                 y_test_pred, y_test_true = [], []
                                 test_preds = []
@@ -1387,9 +1425,9 @@ def main():
                                                 test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca) if args.token in single_token_types else None
                                                 predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                                             else:
-                                                predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
+                                                # predicted = [1 if torch.sigmoid(nlinear_model(inp).data)>0.5 else 0 for inp in inputs] if args.token in single_token_types else torch.stack([1 if torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0]>0.5 else 0 for inp in inputs]) # For each sample, get max prob per class across tokens, then choose the class with highest prob
                                                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data) if args.token in single_token_types else torch.stack([torch.max(torch.sigmoid(nlinear_model(inp).data), dim=0)[0] for inp in inputs]) # For each sample, get max prob per class across tokens
-                                            y_test_pred += predicted
+                                            # y_test_pred += predicted
                                             y_test_true += batch['labels'].tolist()
                                             test_preds.append(test_preds_batch)
                                             if args.token in single_token_types: test_logits.append(nlinear_model(inputs))
@@ -1397,20 +1435,20 @@ def main():
                                     test_preds = torch.cat(test_preds).cpu().numpy()
                                     all_test_preds[i].append(test_preds)
                                     all_y_true_test[i].append(y_test_true)
-                                    all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
-                                    if layer==num_layers-1:
-                                        precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
-                                        print('AuPR:',"%.3f" % auc(recall,precision))
-                                        print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
-                                        print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
-                                        print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
-                                        if 'knn' in args.method:
-                                            y_test_pred_opt = [1 if v<best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
-                                        else:
-                                            if args.skip_train_acts==False: y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
-                                        # log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
-                                        # log_test_recall = recall_score(y_test_true, y_test_pred_opt)
-                                        # log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if 'knn' in args.method else roc_auc_score(y_test_true, test_preds)
+                                    # all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+                                    # if layer==num_layers-1:
+                                    #     precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
+                                    #     print('AuPR:',"%.3f" % auc(recall,precision))
+                                    #     print('F1:',f1_score(y_test_true,y_test_pred),f1_score(y_test_true,y_test_pred,pos_label=0))
+                                    #     print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
+                                    #     print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
+                                    #     if 'knn' in args.method:
+                                    #         y_test_pred_opt = [1 if v<best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
+                                    #     else:
+                                    #         if args.skip_train_acts==False: y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
+                                    #     # log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
+                                    #     # log_test_recall = recall_score(y_test_true, y_test_pred_opt)
+                                    #     # log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if 'knn' in args.method else roc_auc_score(y_test_true, test_preds)
                                     all_test_logits[i].append(torch.cat(test_logits))
                                 
                         #     break
@@ -1430,8 +1468,8 @@ def main():
                         np.save(f'{args.save_path}/probes/{probes_file_name}_supcon_train_loss.npy', all_supcon_train_loss)
                         # all_val_preds = np.stack([np.stack(all_val_preds[i]) for i in range(args.num_folds)])
                         np.save(f'{args.save_path}/probes/{probes_file_name}_val_pred.npy', all_val_preds)
-                        # all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
-                        np.save(f'{args.save_path}/probes/{probes_file_name}_val_f1.npy', all_val_f1s)
+                        # # all_val_f1s = np.stack([np.array(all_val_f1s[i]) for i in range(args.num_folds)])
+                        # np.save(f'{args.save_path}/probes/{probes_file_name}_val_f1.npy', all_val_f1s)
                         # all_y_true_val = np.stack([np.array(all_y_true_val[i]) for i in range(args.num_folds)])
                         np.save(f'{args.save_path}/probes/{probes_file_name}_val_true.npy', all_y_true_val)
                         # all_val_logits = np.stack([torch.stack(all_val_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
@@ -1444,8 +1482,8 @@ def main():
                     if args.test_file_name is not None:
                         all_test_preds = np.stack([np.stack(all_test_preds[i]) for i in range(args.num_folds)])
                         np.save(f'{args.save_path}/probes/{probes_file_name}_test_pred.npy', all_test_preds)
-                        all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
-                        np.save(f'{args.save_path}/probes/{probes_file_name}_test_f1.npy', all_test_f1s)
+                        # all_test_f1s = np.stack([np.array(all_test_f1s[i]) for i in range(args.num_folds)])
+                        # np.save(f'{args.save_path}/probes/{probes_file_name}_test_f1.npy', all_test_f1s)
                         all_y_true_test = np.stack([np.array(all_y_true_test[i]) for i in range(args.num_folds)])
                         np.save(f'{args.save_path}/probes/{probes_file_name}_test_true.npy', all_y_true_test)
                         all_test_logits = np.stack([torch.stack(all_test_logits[i]).detach().cpu().numpy() for i in range(args.num_folds)])
