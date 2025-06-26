@@ -8,9 +8,9 @@ import pickle
 from utils import get_llama_activations_bau, get_llama_activations_bau_custom, get_token_tags, get_token_nll
 # from utils import tokenized_tqa, tokenized_tqa_gen, tokenized_tqa_gen_end_q, 
 from utils import tokenized_nq, tokenized_mi, tokenized_mi_v2, tokenized_from_file, tokenized_from_file_v2
-import llama
+# import llama
 from transformers import AutoTokenizer
-# from base_transformers.models import llama3,gemma
+from base_transformers.models import llama3,gemma
 import pickle
 import argparse
 from transformers import BitsAndBytesConfig, GenerationConfig

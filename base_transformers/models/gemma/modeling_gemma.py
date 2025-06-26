@@ -326,6 +326,7 @@ class GemmaDecoderLayer(nn.Module):
         self.input_layernorm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = GemmaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.layer_out = nn.Identity()
+        self.att_res_out = nn.Identity()
 
     def forward(
         self,
@@ -359,6 +360,7 @@ class GemmaDecoderLayer(nn.Module):
 
         # Fully Connected
         residual = hidden_states
+        residual = self.att_res_out(residual)
         hidden_states = self.post_attention_layernorm(hidden_states)
         hidden_states = self.mlp(hidden_states)
         hidden_states = self.layer_out(residual + hidden_states)
