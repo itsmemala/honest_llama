@@ -95,7 +95,7 @@ def main():
             samples_neg_affected, samples_pos_affected = [], []
             with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
                 data = json.load(read_file)
-            with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_baseline_responses_test.json', 'r') as read_file: # hl_llama_7B_{args.dataset_name} # {args.model_name}_{args.dataset_name}_baseline_responses_test.json # hl_llama_7B_{args.dataset_name}_{args.mitigated_responses_file_name}
+            with open(f'{args.save_path}/responses/hl_llama_7B_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file: # hl_llama_7B_{args.dataset_name} # {args.model_name}_{args.dataset_name}_baseline_responses_test.json # hl_llama_7B_{args.dataset_name}_{args.mitigated_responses_file_name}
                 ordered_data = json.load(read_file)
                 for i in range(len(ordered_data['full_input_text'])):
                     # m_responses.append(data['model_answer'][i])
@@ -135,7 +135,7 @@ def main():
     # num_heads = 8 if 'gemma_2B' in args.model_name else 32 if 'llama3' in args.model_name else 32
     num_layers = 18 if 'gemma_2B' in args.model_name else 28 if 'gemma_7B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 32 if '8B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
     num_heads = 8 if 'gemma_2B' in args.model_name else 16 if 'gemma_7B' in args.model_name else 32 if 'llama3' in args.model_name else 32
-    num_models = num_layers if args.using_act in ['layer','mlp'] else num_layers*num_heads #18 if '2B' in args.model_name else 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
+    num_models = num_layers if args.using_act in ['layer','mlp'] else num_layers*2 if args.using_act=='layer_att_res' else num_layers*num_heads #18 if '2B' in args.model_name else 33 if args.using_act=='layer' else 32 if args.using_act=='mlp' else 32*32
     if ('knn' in args.probes_file_name) or ('kmeans' in args.probes_file_name): 
         print('\n\nSETTING NUM_LAYERS=1\n\n')
         num_layers, num_models = 1, 1 # We only ran these for the last layer

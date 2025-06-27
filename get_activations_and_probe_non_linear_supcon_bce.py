@@ -623,7 +623,7 @@ def main():
                     #     print('Loading on device',device_id)
                     #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     my_train_acts.append(act)
-                print(np.histogram(actual_answer_width), np.max(actual_answer_width))
+                # print(np.histogram(actual_answer_width), np.max(actual_answer_width))
             my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
         
         if args.test_file_name is not None:
@@ -661,9 +661,9 @@ def main():
                         pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
                         act = np.concatenate([act,pads],axis=1)
                     elif act.shape[1]>max_tokens:
-                        act = act[:,-50:,:] # Only last 50 tokens
+                        act = act[:,-max_tokens:,:] # Only last 50 tokens
                 my_test_acts.append(act)
-            print(np.histogram(actual_answer_width), np.max(actual_answer_width))
+            # print(np.histogram(actual_answer_width), np.max(actual_answer_width))
         my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
 
     if args.multi_gpu:
@@ -851,6 +851,17 @@ def main():
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else None #My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
                                 if 'individual_att_pool' in args.method: nlinear_model = Att_Pool_Layer(llm_dim=act_dims[args.using_act], n_outputs=1)
                                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
+                                print('\n\nModel Size')
+                                wgts = 0
+                                for p in nlinear_model.parameters():
+                                    sp = torch.squeeze(p)
+                                    print(sp.shape)
+                                    num_params = 1
+                                    for i in range(len(sp.shape)):
+                                        num_params *= sp.shape[i]
+                                    wgts += num_params
+                                print('\n\n#:',wgts)
+                                sys.exit()                                
                                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                                 if args.retrain_full_model_path is not None:
                                     retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
