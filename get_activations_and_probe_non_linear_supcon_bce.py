@@ -864,7 +864,7 @@ def main():
                                         num_params *= sp.shape[i]
                                     wgts += num_params
                                 print('\n\n#:',wgts)
-                                sys.exit()                                
+                                # sys.exit()                                
                                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                                 if args.retrain_full_model_path is not None:
                                     retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
