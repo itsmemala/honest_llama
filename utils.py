@@ -63,7 +63,6 @@ class Att_Pool_Layer(torch.nn.Module):
         return y_pred
     
     def forward_upto_classifier(self, x): # x: (bs, n_tokens, llm_dim)
-        # if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension
         qt_h = torch.matmul(x,self.query) # qt_h: (bs, n_tokens)
         att_wgts = nn.functional.softmax(qt_h, dim=-1)  # att_wgts: (bs, n_tokens)
         att_out = []

@@ -100,7 +100,7 @@ def main():
             samples_neg_affected, samples_pos_affected = [], []
             with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file:
                 data = json.load(read_file)
-            with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_baseline_responses_test.json', 'r') as read_file: # hl_llama_7B_{args.dataset_name}
+            with open(f'{args.save_path}/responses/{args.model_name}_{args.dataset_name}_{args.mitigated_responses_file_name}.json', 'r') as read_file: # hl_llama_7B_{args.dataset_name} # {args.model_name}_{args.dataset_name}_baseline_responses_test.json
                 ordered_data = json.load(read_file)
                 for i in range(len(ordered_data['full_input_text'])):
                     # m_responses.append(data['model_answer'][i])
@@ -490,43 +490,43 @@ def main():
         # if 'hallu_pos' in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls0),np.mean(test_recall_cls1),'\n') # NH, H
         # if 'hallu_pos' not in args.probes_file_name: print('\nAverage Recall:',np.mean(test_recall_cls1),np.mean(test_recall_cls0),'\n') # NH, H
         
-        seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
-        # seed_results_list.append(np.mean(best_r))
-        # seed_results_list.append(np.mean(test_fpr_best_r))
-        if args.fpr_at_recall==-1:
-            # Create dirs if does not exist:
-            if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
-                os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
-            # print('model:',model)
-            recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
-            fig, axs = plt.subplots(1,1)
-            axs.plot(recall_vals,fpr_at_recall_vals)
-            for xy in zip(recall_vals,fpr_at_recall_vals):
-                axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
-            axs.set_xlabel('Recall')
-            axs.set_ylabel('FPR')
-            axs.title.set_text('FPR at recall')
-            fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
-            seed_results_list.append(aucfpr*100)
-            np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
-            np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
-        else:
-            seed_results_list.append(np.mean(test_fpr)*100)
-        seed_results_list.append(np.mean(test_fpr_best_f1)*100)
-        seed_results_list.append(np.mean(test_f1_cls1)*100)
-        seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
-        seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
-        seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
-        seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
-        if args.wpdist_metric!='':
-            use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
-            wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
-            seed_results_list.append(np.mean(wp_dist[use_indices,0])) # Dist to same class
+        # seed_results_list.append(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)])*100) # print(np.mean([np.mean(test_f1_cls0),np.mean(test_f1_cls1)]))
+        # # seed_results_list.append(np.mean(best_r))
+        # # seed_results_list.append(np.mean(test_fpr_best_r))
+        # if args.fpr_at_recall==-1:
+        #     # Create dirs if does not exist:
+        #     if not os.path.exists(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}'):
+        #         os.makedirs(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}', exist_ok=True)
+        #     # print('model:',model)
+        #     recall_vals, fpr_at_recall_vals, aucfpr = my_aufpr(test_preds[model],labels)
+        #     fig, axs = plt.subplots(1,1)
+        #     axs.plot(recall_vals,fpr_at_recall_vals)
+        #     for xy in zip(recall_vals,fpr_at_recall_vals):
+        #         axs.annotate('(%.2f, %.2f)' % xy, xy=xy)
+        #     axs.set_xlabel('Recall')
+        #     axs.set_ylabel('FPR')
+        #     axs.title.set_text('FPR at recall')
+        #     fig.savefig(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall.png')
+        #     seed_results_list.append(aucfpr*100)
+        #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_xaxis.npy',np.array(recall_vals))
+        #     np.save(f'{args.save_path}/fpr_at_recall_curves/{best_probes_file_name}_fpr_at_recall_yaxis.npy',np.array(fpr_at_recall_vals))
+        # else:
+        #     seed_results_list.append(np.mean(test_fpr)*100)
+        # seed_results_list.append(np.mean(test_fpr_best_f1)*100)
+        # seed_results_list.append(np.mean(test_f1_cls1)*100)
+        # seed_results_list.append(np.mean(test_precision_cls1)*100) # print(np.mean(test_precision_cls1)) # H
+        # seed_results_list.append(np.mean(test_recall_cls1)*100) # print(np.mean(test_recall_cls1)) # H
+        # seed_results_list.append(np.mean(aupr_by_layer)*100) # print(np.mean(aupr_by_layer)) # 'Avg AUPR:',
+        # seed_results_list.append(np.mean(auroc_by_layer)*100) # print(np.mean(auroc_by_layer)) # 'Avg AUROC:',
+        # if args.wpdist_metric!='':
+        #     use_indices = wp_dist[:,0]!=-10000 # Only use samples which have at least one other wp sample of same class
+        #     wp_dist[:,0][wp_dist[:,0]<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
+        #     seed_results_list.append(np.mean(wp_dist[use_indices,0])) # Dist to same class
 
-            seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
+        #     seed_results_list.append(np.mean(wp_dist[:,1])) # Dist to opp class
             
-            r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
-            seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)   
+        #     r_dist = wp_dist[use_indices,1]/(wp_dist[use_indices,0] + wp_dist[use_indices,1])
+        #     seed_results_list.append(np.mean(r_dist)) # Dist to opp class, relative to same class (within prompt)   
         if args.wp_probes_file_name is not None:
             wp_dist = np.load(f'{args.save_path}/probes/{seed_wp_probes_file_name}_test_wpdist_cosine_individual.npy')[0][0]
             wp_dist[wp_dist<0]=0 # Fix cases where cosine_sim results in values>1 # This is an open issue with torch
