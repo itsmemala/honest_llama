@@ -58,7 +58,7 @@ HF_NAMES = {
     'gemma_7B': 'google/gemma-7b'
 }
 
-act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise','layer_maxpool':'layer_wise'}
+act_type = {'mlp':'mlp_wise','mlp_l1':'mlp_l1','ah':'head_wise','layer':'layer_wise','layer_maxpool':'layer_wise','layer_att_res':'layer_wise'}
 
 def list_of_ints(arg):
     return list(map(int, arg.split(',')))
@@ -476,8 +476,6 @@ def main():
         #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
         # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
         num_heads = 32
-    num_layers = 18 if 'gemma_2B' in args.model_name else 28 if 'gemma_7B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
-    args.use_layers_list = np.array(args.use_layers_list) if args.use_layers_list is not None else np.array([k for k in range(num_layers)])
     device = "cuda" if args.device is None else args.device
 
     print("Loading prompts and model responses..")
@@ -684,6 +682,10 @@ def main():
                     # with np.load(file_path,allow_pickle=True) as my_temp_data:
                     with open(file_path, "rb") as my_temp_data:
                         file_wise_data[file_path] = pickle.load(my_temp_data)
+                    if args.using_act=='layer_att_res':
+                        file_path2 = file_path.replace('layer_wise','attresout_wise')
+                        with open(file_path2, "rb") as my_temp_data:
+                            file_wise_data[file_path2] = pickle.load(my_temp_data)
                 for idx in temp_train_idxs:
                     if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
@@ -697,6 +699,19 @@ def main():
                         # try:
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                         act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][args.use_layers_list]
+                        act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
+                        if args.using_act=='layer_att_res': 
+                            file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
+                            act2 = file_wise_data[file_path2][idx%args.acts_per_file]
+                            act = np.concatenate([act,act2],axis=0)
+                            if args.token=='prompt_last_onwards':
+                                actual_answer_width.append(act.shape[1])
+                                max_tokens = args.max_answer_tokens
+                                if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
+                                    pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
+                                    act = np.concatenate([act,pads],axis=1)
+                                elif act.shape[1]>max_tokens:
+                                    act = act[:,-max_tokens:,:] # Only most recent tokens
                         # print(act.shape)
                         # act = act[args.use_layers_list]
                         # print(act.shape)
@@ -726,6 +741,10 @@ def main():
             for file_path in unique_file_paths:
                 with open(file_path, "rb") as my_temp_data:
                     file_wise_data[file_path] = pickle.load(my_temp_data)
+                if args.using_act=='layer_att_res':
+                        file_path2 = file_path.replace('layer_wise','attresout_wise')
+                        with open(file_path2, "rb") as my_temp_data:
+                            file_wise_data[file_path2] = pickle.load(my_temp_data)
             for idx in test_idxs:
                 if args.token in ['prompt_last_and_answer_last','least_likely_and_last','prompt_last_and_least_likely_and_last']:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file]).to(device)
@@ -738,11 +757,26 @@ def main():
                 else:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file][args.use_layers_list]).to(device)
                     act = file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file][args.use_layers_list]
+                    if args.using_act=='layer_att_res': 
+                        file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
+                        act2 = file_wise_data[file_path2][idx%args.test_acts_per_file]
+                        act = np.concatenate([act,act2],axis=0)
+                        if args.token=='prompt_last_onwards':
+                            actual_answer_width.append(act.shape[1])
+                            if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
+                                pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
+                                act = np.concatenate([act,pads],axis=1)
+                            elif act.shape[1]>max_tokens:
+                                act = act[:,-max_tokens:,:] # Only last 50 tokens
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
         my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
         if args.using_act=='layer_maxpool': my_test_acts = torch.max(my_test_acts,dim=1)[0] # max returns tuple of (values,indices)
         print('\n\nEnd time of loading:',datetime.datetime.now(),'\n\n')
+
+    num_layers = 18 if 'gemma_2B' in args.model_name else 28 if 'gemma_7B' in args.model_name else 33 if '7B' in args.model_name and args.using_act=='layer' else 33 if '8B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name else 40 if '13B' in args.model_name else 60 if '33B' in args.model_name else 0 #raise ValueError("Unknown model size.")
+    if args.using_act=='layer_att_res': num_layers = my_train_acts.shape[1]
+    args.use_layers_list = np.array(args.use_layers_list) if args.use_layers_list is not None else np.array([k for k in range(num_layers)])
 
     if args.multi_gpu:
         device_id += 1
