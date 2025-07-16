@@ -607,13 +607,14 @@ def main():
                         file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
                         act2 = file_wise_data[file_path2][idx%args.acts_per_file]
                         act = np.concatenate([act,act2],axis=0)
-                        actual_answer_width.append(act.shape[1])
-                        max_tokens = args.max_answer_tokens
-                        if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
-                            pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
-                            act = np.concatenate([act,pads],axis=1)
-                        elif act.shape[1]>max_tokens:
-                            act = act[:,-max_tokens:,:] # Only most recent tokens
+                        if args.token=='prompt_last_onwards':
+                            actual_answer_width.append(act.shape[1])
+                            max_tokens = args.max_answer_tokens
+                            if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
+                                pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
+                                act = np.concatenate([act,pads],axis=1)
+                            elif act.shape[1]>max_tokens:
+                                act = act[:,-max_tokens:,:] # Only most recent tokens
                         # print(act.shape)
                     # except IndexError:
                     #     print(idx)
@@ -625,6 +626,7 @@ def main():
                     my_train_acts.append(act)
                 # print(np.histogram(actual_answer_width), np.max(actual_answer_width))
             my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
+            print(my_train_acts.shape)
         
         if args.test_file_name is not None:
             print("Loading test acts...",len(test_labels))
@@ -656,12 +658,13 @@ def main():
                     file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
                     act2 = file_wise_data[file_path2][idx%args.test_acts_per_file]
                     act = np.concatenate([act,act2],axis=0)
-                    actual_answer_width.append(act.shape[1])
-                    if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
-                        pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
-                        act = np.concatenate([act,pads],axis=1)
-                    elif act.shape[1]>max_tokens:
-                        act = act[:,-max_tokens:,:] # Only last 50 tokens
+                    if args.token=='prompt_last_onwards':
+                        actual_answer_width.append(act.shape[1])
+                        if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
+                            pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
+                            act = np.concatenate([act,pads],axis=1)
+                        elif act.shape[1]>max_tokens:
+                            act = act[:,-max_tokens:,:] # Only last 50 tokens
                 my_test_acts.append(act)
             # print(np.histogram(actual_answer_width), np.max(actual_answer_width))
         my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
