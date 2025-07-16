@@ -167,6 +167,8 @@ class My_Transformer_Layer(torch.nn.Module):
         # self.classifier = torch.nn.Linear(d_model*n_layers, n_outputs, bias)
         torch.nn.init.normal_(self.class_token, std=0.02)
 
+        self.query = torch.nn.Parameter(torch.randn(n_inputs)).to(device).to(torch.float64)
+
         # Positional Encoding: https://medium.com/@hunter-j-phillips/positional-encoding-7a93db4109e6
         # self.dropout = nn.Dropout(p=dropout)      
         self.pe = torch.zeros(max_length, d_model).to(device) # create tensor of 0s
@@ -210,16 +212,25 @@ class My_Transformer_Layer(torch.nn.Module):
         y_pred = self.classifier(x)
         return y_pred
     
-    def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs)
+    def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs) or (bs, n_layers, n_tokens, n_inputs) # n_inputs=llm_dim
         layer_wise_x = []
-        for layer in range(x.shape[-2]):
+        layers_dim_idx = -3 if len(x.shape)==4 else -2
+        for layer in range(x.shape[layers_dim_idx]):
+            layer_x = torch.squeeze(x[:,layer])
+            if len(x.shape)==4: # if pooling across tokens at each layer
+                qt_h = torch.matmul(layer_x,self.query) # qt_h: (bs, n_tokens)
+                att_wgts = nn.functional.softmax(qt_h, dim=-1)  # att_wgts: (bs, n_tokens)
+                att_out = []
+                for sample in range(layer_x.shape[0]):
+                    att_out.append(torch.matmul(att_wgts[sample],layer_x[sample]))  # att_out: (llm_dim)
+                layer_x = torch.stack(att_out) # layer_x: (bs, llm_dim)
             try:
                 if self.no_act_proj:
-                    layer_wise_x.append(torch.squeeze(x[:,layer,:]))
+                    layer_wise_x.append(layer_x)
                 else:
-                    layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+                    layer_wise_x.append(self.linear(layer_x))
             except AttributeError:
-                layer_wise_x.append(self.linear(torch.squeeze(x[:,layer,:])))
+                layer_wise_x.append(self.linear(layer_x))
         x = torch.stack(layer_wise_x, dim=-2) # x: (bs, n_layers, d_model)
         if len(x.shape)==2: x = x[None,:,:] # Add back bs dimension as torch.squeeze in prev line would remove it when bs=1
         x = torch.cat([self.class_token.expand(x.shape[0], -1, -1), x], dim=-2) # x: (bs, n_layers+1, d_model)
