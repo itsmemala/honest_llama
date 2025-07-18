@@ -39,6 +39,8 @@ from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
 
+torch.set_default_dtype(torch.float64)
+
 HF_NAMES = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
     'hl_llama_7B': 'huggyllama/llama-7b',
@@ -359,6 +361,7 @@ def main():
     parser.add_argument('--multi_probe_dataset_name',type=str, default=None)
     parser.add_argument('--using_act',type=str, default='mlp')
     parser.add_argument('--token',type=str, default='answer_last')
+    parser.add_argument('--max_answer_tokens',type=int, default=20)
     parser.add_argument('--max_tokens',type=int, default=25)
     parser.add_argument('--tokens_first',type=bool, default=False) # Specifies order of tokens and layers when using_act='tagged_tokens'
     parser.add_argument('--no_sep',type=bool, default=False)
@@ -699,13 +702,12 @@ def main():
                         # try:
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                         act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][args.use_layers_list]
-                        act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file]
                         if args.using_act=='layer_att_res': 
                             file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
                             act2 = file_wise_data[file_path2][idx%args.acts_per_file]
-                            act = np.concatenate([act,act2],axis=0)
+                            act = np.concatenate([np.squeeze(act),act2],axis=0) # layer_wise acts have an extra dimension beacuse of [args.use_layers_list] indexing
                             if args.token=='prompt_last_onwards':
-                                actual_answer_width.append(act.shape[1])
+                                # actual_answer_width.append(act.shape[1])
                                 max_tokens = args.max_answer_tokens
                                 if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
                                     pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
@@ -760,9 +762,9 @@ def main():
                     if args.using_act=='layer_att_res': 
                         file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
                         act2 = file_wise_data[file_path2][idx%args.test_acts_per_file]
-                        act = np.concatenate([act,act2],axis=0)
+                        act = np.concatenate([np.squeeze(act),act2],axis=0) # layer_wise acts have an extra dimension beacuse of [args.use_layers_list] indexing
                         if args.token=='prompt_last_onwards':
-                            actual_answer_width.append(act.shape[1])
+                            # actual_answer_width.append(act.shape[1])
                             if act.shape[1]<max_tokens: # Let max num of answer tokens be max_tokens
                                 pads = np.zeros([act.shape[0],max_tokens-act.shape[1],act.shape[2]])
                                 act = np.concatenate([act,pads],axis=1)
@@ -1360,26 +1362,26 @@ def main():
                                                 # sys.exit()
                                                 predicted = [1 if v<0.5 else 0 for v in val_preds_batch]
                                             else:
-                                                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                                                # predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                                                 val_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
-                                            y_val_pred += predicted
+                                            # y_val_pred += predicted
                                             y_val_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
                                             val_preds.append(val_preds_batch)
                                             val_logits.append(nlinear_model(inputs))
                                     val_preds = torch.cat(val_preds).cpu().numpy()
                                     all_val_preds[i].append(val_preds)
                                     all_y_true_val[i].append(y_val_true)
-                                    all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
+                                    # all_val_f1s[i].append(f1_score(y_val_true,y_val_pred))
                                     all_val_logits[i].append(torch.cat(val_logits))
-                                    print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
+                                    # print('Val F1: ',"%.3f" % f1_score(y_val_true,y_val_pred),"%.3f" % f1_score(y_val_true,y_val_pred,pos_label=0))
                                     print('Val AUROC:',"%.3f" % roc_auc_score(y_val_true, val_preds))
                                     best_val_t = get_best_threshold(y_val_true, val_preds, True if ('knn' in args.method) or ('kmeans' in args.method) else False)
-                                    if ('knn' in args.method) or ('kmeans' in args.method):
-                                        y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
-                                    else:
-                                        y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
-                                    log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
-                                    log_val_recall = recall_score(y_val_true,y_val_pred_opt)
+                                    # if ('knn' in args.method) or ('kmeans' in args.method):
+                                    #     y_val_pred_opt = [1 if v<best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
+                                    # else:
+                                    #     y_val_pred_opt = [1 if v>best_val_t else 0 for v in val_preds] if args.use_best_val_t else y_val_pred
+                                    # log_val_f1 = np.mean([f1_score(y_val_true,y_val_pred_opt),f1_score(y_val_true,y_val_pred_opt,pos_label=0)])
+                                    # log_val_recall = recall_score(y_val_true,y_val_pred_opt)
                                     log_val_auc = roc_auc_score(y_val_true, [-v for v in val_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_val_true, val_preds)
                                 pred_correct = 0
                                 y_test_pred, y_test_true = [], []
@@ -1432,7 +1434,7 @@ def main():
                                                 test_preds_batch = compute_knn_dist(outputs.data,train_outputs.data,device,train_labels,args.dist_metric,args.top_k,cluster_centers,cluster_centers_labels,pca)
                                                 predicted = [1 if v<0.5 else 0 for v in test_preds_batch]
                                             else:
-                                                predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
+                                                # predicted = [1 if torch.sigmoid(nlinear_model(inp[None,:]).data)>0.5 else 0 for inp in inputs] # inp[None,:,:] to add bs dimension
                                                 test_preds_batch = torch.sigmoid(nlinear_model(inputs).data)
                                             if args.wp_dist:
                                                 outputs = nlinear_model.forward_upto_classifier(inputs)
@@ -1442,27 +1444,27 @@ def main():
                                                     norm_emb = F.normalize(outputs, p=2, dim=-1)
                                                     outputs = nlinear_model.projection(norm_emb)
                                                 test_wpdist.append(compute_wp_dist(outputs,batch['labels'].tolist(),device,wpdist_metric))
-                                            y_test_pred += predicted
+                                            # y_test_pred += predicted
                                             y_test_true += batch['labels'][np.array(batch_target_idxs)].tolist() if 'tagged_tokens' in args.token else batch['labels'].tolist()
                                             test_preds.append(test_preds_batch)
                                             test_logits.append(nlinear_model(inputs))
                                     test_preds = torch.cat(test_preds).cpu().numpy()
                                     all_test_preds[i].append(test_preds)
                                     all_y_true_test[i].append(y_test_true)
-                                    all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
+                                    # all_test_f1s[i].append(f1_score(y_test_true,y_test_pred))
                                     precision, recall, _ = precision_recall_curve(y_test_true, test_preds)
                                     print('AuPR:',"%.3f" % auc(recall,precision))
-                                    print('F1:',"%.3f" % f1_score(y_test_true,y_test_pred),"%.3f" % f1_score(y_test_true,y_test_pred,pos_label=0))
-                                    print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
+                                    # print('F1:',"%.3f" % f1_score(y_test_true,y_test_pred),"%.3f" % f1_score(y_test_true,y_test_pred,pos_label=0))
+                                    # print('Recall:',"%.3f" % recall_score(y_test_true, y_test_pred))
                                     print('AuROC:',"%.3f" % roc_auc_score(y_test_true, test_preds))
                                     print('Samples:',num_test_samples_used)
                                     # if ('knn' in args.method) or ('kmeans' in args.method):
                                     #     y_test_pred_opt = [1 if v<best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
                                     # else:
                                     #     y_test_pred_opt = [1 if v>best_val_t else 0 for v in test_preds] if args.use_best_val_t else y_test_pred
-                                    y_test_pred_opt = y_test_pred
-                                    log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
-                                    log_test_recall = recall_score(y_test_true, y_test_pred_opt)
+                                    # y_test_pred_opt = y_test_pred
+                                    # log_test_f1 = np.mean([f1_score(y_test_true,y_test_pred_opt),f1_score(y_test_true,y_test_pred_opt,pos_label=0)])
+                                    # log_test_recall = recall_score(y_test_true, y_test_pred_opt)
                                     log_test_auc = roc_auc_score(y_test_true, [-v for v in test_preds]) if ('knn' in args.method) or ('kmeans' in args.method) else roc_auc_score(y_test_true, test_preds)
                                     all_test_logits[i].append(torch.cat(test_logits))
                                     if args.wp_dist: all_test_wpdist[i].append(torch.cat(test_wpdist))

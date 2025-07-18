@@ -29,6 +29,8 @@ from functools import partial
 import openai
 # from truthfulqa.configs import BEST_COL, ANSWER_COL, INCORRECT_COL
 
+torch.set_default_dtype(torch.float64)
+
 ENGINE_MAP = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf', 
     'alpaca_7B': 'circulus/alpaca-7b', 
@@ -167,7 +169,7 @@ class My_Transformer_Layer(torch.nn.Module):
         # self.classifier = torch.nn.Linear(d_model*n_layers, n_outputs, bias)
         torch.nn.init.normal_(self.class_token, std=0.02)
 
-        self.query = torch.nn.Parameter(torch.randn(n_inputs)).to(device).to(torch.float64)
+        self.query = torch.nn.Parameter(torch.randn(n_inputs)).to(device)
 
         # Positional Encoding: https://medium.com/@hunter-j-phillips/positional-encoding-7a93db4109e6
         # self.dropout = nn.Dropout(p=dropout)      
@@ -213,12 +215,13 @@ class My_Transformer_Layer(torch.nn.Module):
         return y_pred
     
     def forward_upto_classifier(self, x): # x: (bs, n_layers, n_inputs) or (bs, n_layers, n_tokens, n_inputs) # n_inputs=llm_dim
+        x = x.to(torch.float64)
         layer_wise_x = []
         layers_dim_idx = -3 if len(x.shape)==4 else -2
         for layer in range(x.shape[layers_dim_idx]):
             layer_x = torch.squeeze(x[:,layer])
             if len(x.shape)==4: # if pooling across tokens at each layer
-                qt_h = torch.matmul(layer_x,self.query) # qt_h: (bs, n_tokens)
+                qt_h = torch.matmul(layer_x,self.query.to(layer_x.dtype)) # qt_h: (bs, n_tokens)
                 att_wgts = nn.functional.softmax(qt_h, dim=-1)  # att_wgts: (bs, n_tokens)
                 att_out = []
                 for sample in range(layer_x.shape[0]):
@@ -228,6 +231,7 @@ class My_Transformer_Layer(torch.nn.Module):
                 if self.no_act_proj:
                     layer_wise_x.append(layer_x)
                 else:
+                    # print(layer_x.shape)
                     layer_wise_x.append(self.linear(layer_x))
             except AttributeError:
                 layer_wise_x.append(self.linear(layer_x))
