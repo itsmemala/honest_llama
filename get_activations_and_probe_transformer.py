@@ -701,7 +701,7 @@ def main():
                     else:
                         # try:
                         # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
-                        act = file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][args.use_layers_list]
+                        act = np.squeeze(file_wise_data[act_wise_file_paths[idx]][idx%args.acts_per_file][args.use_layers_list])
                         if args.using_act=='layer_att_res': 
                             file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
                             act2 = file_wise_data[file_path2][idx%args.acts_per_file]
@@ -724,7 +724,7 @@ def main():
                         #     print('Loading on device',device_id)
                         #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     my_train_acts.append(act)
-            my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)#.type(torch.float16)
+            my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device).to(torch.float64)#.type(torch.float16)
             if args.using_act=='layer_maxpool': my_train_acts = torch.max(my_train_acts,dim=1)[0] # max returns tuple of (values,indices)
             print(my_train_acts.shape)
             # sys.exit()
@@ -758,7 +758,7 @@ def main():
                     act = torch.reshape(act, (act.shape[0]*act.shape[1],act.shape[2])) # (layers,tokens,act_dims) -> (layers*tokens,act_dims)
                 else:
                     # act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.test_acts_per_file][args.use_layers_list]).to(device)
-                    act = file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file][args.use_layers_list]
+                    act = np.squeeze(file_wise_data[act_wise_file_paths[idx]][idx%args.test_acts_per_file][args.use_layers_list])
                     if args.using_act=='layer_att_res': 
                         file_path2 = act_wise_file_paths[idx].replace('layer_wise','attresout_wise')
                         act2 = file_wise_data[file_path2][idx%args.test_acts_per_file]
@@ -772,7 +772,7 @@ def main():
                                 act = act[:,-max_tokens:,:] # Only last 50 tokens
                 my_test_acts.append(act)
             # if args.token=='tagged_tokens': my_test_acts = torch.nn.utils.rnn.pad_sequence(my_test_acts, batch_first=True)
-        my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
+        my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device).to(torch.float64)
         if args.using_act=='layer_maxpool': my_test_acts = torch.max(my_test_acts,dim=1)[0] # max returns tuple of (values,indices)
         print('\n\nEnd time of loading:',datetime.datetime.now(),'\n\n')
 

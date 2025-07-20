@@ -294,8 +294,10 @@ def main():
             
             if args.plot_loss:
                 # Create dirs if does not exist:
-                if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
-                    os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
+                # if not os.path.exists(f'{args.save_path}/loss_figures/{best_probes_file_name}'):
+                #     os.makedirs(f'{args.save_path}/loss_figures/{best_probes_file_name}', exist_ok=True)
+                if not os.path.exists(f'/home/jovyan/loss_figures/{best_probes_file_name}'):
+                    os.makedirs(f'/home/jovyan/loss_figures/{best_probes_file_name}', exist_ok=True)
                 # loss_to_plot = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon_train_loss.npy', allow_pickle=True).item()
                 # loss_to_plot1 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon1_train_loss.npy', allow_pickle=True).item()
                 # loss_to_plot2 = np.load(f'{args.save_path}/probes/{best_probes_file_name}_supcon2_train_loss.npy', allow_pickle=True).item()
@@ -314,7 +316,8 @@ def main():
                 axs.plot(loss_to_plot1[0][0],label='val_ce_loss')
                 axs.plot(loss_to_plot2[0][0],label='val_auc')
                 axs.legend()
-                fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
+                # fig.savefig(f'{args.save_path}/loss_figures/{best_probes_file_name}_train_curves.png')
+                fig.savefig(f'/home/jovyan/loss_figures/{best_probes_file_name}_train_curves.png')
 
             if args.best_hyp_on_test:
                 all_val_pred, all_val_true = np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_pred.npy'), np.load(f'{args.save_path}/probes/{best_probes_file_name}_test_true.npy')

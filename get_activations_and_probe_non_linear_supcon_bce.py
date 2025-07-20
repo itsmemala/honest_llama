@@ -625,7 +625,7 @@ def main():
                     #     act = torch.from_numpy(np.load(file_path,allow_pickle=True)[idx%args.acts_per_file]).to(device)
                     my_train_acts.append(act)
                 # print(np.histogram(actual_answer_width), np.max(actual_answer_width))
-            my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device)
+            my_train_acts = torch.from_numpy(np.stack(my_train_acts)).to(device).to(torch.float64)
             print(my_train_acts.shape)
         
         if args.test_file_name is not None:
@@ -667,7 +667,7 @@ def main():
                             act = act[:,-max_tokens:,:] # Only last 50 tokens
                 my_test_acts.append(act)
             # print(np.histogram(actual_answer_width), np.max(actual_answer_width))
-        my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device)
+        my_test_acts = torch.from_numpy(np.stack(my_test_acts)).to(device).to(torch.float64)
 
     if args.multi_gpu:
         device_id += 1
