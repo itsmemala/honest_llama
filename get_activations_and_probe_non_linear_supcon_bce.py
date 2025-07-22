@@ -17,7 +17,7 @@ import statistics
 import pickle
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
-from utils import My_SupCon_NonLinear_Classifier4, LogisticRegression_Torch, Att_Pool_Layer # , My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier_wProj
+from utils import My_SupCon_NonLinear_Classifier4, LogisticRegression_Torch, Att_Pool_Layer, Ens_Att_Pool # , My_SupCon_NonLinear_Classifier, My_SupCon_NonLinear_Classifier_wProj
 from losses import SupConLoss
 from copy import deepcopy
 import llama
@@ -853,6 +853,10 @@ def main():
                                 supcon = True if 'supcon' in args.method else False
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else None #My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
                                 if 'individual_att_pool' in args.method: nlinear_model = Att_Pool_Layer(llm_dim=act_dims[args.using_act], n_outputs=1)
+                                if 'ens_att_pool' in args.method: 
+                                    ind_att_pool_probes_file_name = probes_file_name.replace('ens_att_pool','individual_att_pool')
+                                    ind_att_pool_probes_file_name = f'{args.save_path}/probes/models/{ind_att_pool_probes_file_name}_model{i}'
+                                    nlinear_model = Ens_Att_Pool(n_inputs=my_train_acts.shape[1], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, probes_file_name=ind_att_pool_probes_file_name).to(device)
                                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
                                 print('\n\nModel Size')
                                 wgts = 0

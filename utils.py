@@ -279,6 +279,36 @@ class LogisticRegression_Torch(torch.nn.Module):
     def forward_upto_classifier(self, x):
         return x
 
+class Ens_Att_Pool(torch.nn.Module):    
+    # build the constructor
+    def __init__(self, n_inputs, n_outputs, bias, norm_emb=False, norm_cfr=False, cfr_no_bias=False, probes_file_name=None): # bias should not be used; retained for backward compatibility; use cfr_no_bias instead for alignment with other NLP and Tr networks
+        super().__init__()
+        self.norm_emb=norm_emb
+        self.norm_cfr=norm_cfr
+        self.linear = torch.nn.Linear(n_inputs, n_outputs, bias=not cfr_no_bias)
+        self.probes_file_name = probes_file_name
+    # make predictions
+    def forward(self, x):
+        x = self.forward_upto_classifier(x)
+        if self.norm_emb: x = F.normalize(x, p=2, dim=-1) # unit normalise, setting dim=-1 since inside forward() we define ops for one sample only
+        if self.norm_cfr and self.training==False:
+                norm_cfr_wgts = F.normalize(self.linear.weight, p=2, dim=-1)
+                y_pred = torch.sum(x * norm_cfr_wgts, dim=-1)
+                y_pred = (y_pred + 1)/2 # re-scale to yield probability values
+                assert y_pred.min().item()>=0 and y_pred.max().item()<=1
+                return y_pred[:,None] # ensure same shape of output between eval() and train()
+        y_pred = self.linear(x)
+        return y_pred
+    def forward_upto_classifier(self, x): # x: (bs, n_layers, n_tokens, llm_dim)
+        ind_att_pool_out []
+        for layer in range(x.shape[1]):
+            layer_x = x[:,layer]
+            model_path = f'{self.probes_file_name}_{layer}_0'
+            ind_att_pool_model = torch.load(model_path,map_location=device)
+            ind_att_pool_out.append([torch.sigmoid(ind_att_pool_model(layer_x).detach())]
+        ind_att_pool_out = torch.stack(ind_att_pool_out, dim=1)
+        return ind_att_pool_out # (bs, n_layers)
+
 # class FeedforwardNeuralNetModel(nn.Module):
 #     def __init__(self, input_dim, hidden_dim1, output_dim):
 #         super(FeedforwardNeuralNetModel, self).__init__()

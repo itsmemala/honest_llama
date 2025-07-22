@@ -389,8 +389,20 @@ def main():
                 if args.m_probes_file_name is not None: 
                     m_test_pred_model = np.load(f'{args.save_path}/probes/{seed_m_probes_file_name}_test_pred_model.npy')
                     if 'sampled' in args.mitigated_responses_file_name:
-                        first_random_idx = np.arange(0,len(m_test_pred_model),args.test_num_samples)
-                        m_test_pred_model = m_test_pred_model[first_random_idx]
+                        if args.use_all_m_sampled_responses:
+                            m_prompts = len(m_test_pred_model)/args.test_num_samples
+                            m_test_pred_model_temp= []
+                            print(m_test_pred_model[:20])
+                            for m_prompt_idx in range(m_prompts[:2]):
+                                m_idx = m_prompt_idx*args.test_num_samples
+                                sample_probs = m_test_pred_model[m_idx:m_idx+args.test_num_samples]
+                                print(sample_probs)
+                                m_test_pred_model_temp.append(np.min(sample_probs))
+                            sys.exit()
+                        m_test_pred_model = m_test_pred_model_temp
+                        else:
+                            first_random_idx = np.arange(0,len(m_test_pred_model),args.test_num_samples)
+                            m_test_pred_model = m_test_pred_model[first_random_idx]
                         try:
                             assert len(m_test_pred_model)==len(labels)
                         except AssertionError:
