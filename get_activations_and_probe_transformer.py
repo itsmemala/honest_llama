@@ -19,7 +19,7 @@ import pickle
 # import orjson as json
 import json
 from utils import get_llama_activations_bau_custom, tokenized_mi, tokenized_from_file, tokenized_from_file_v2, get_token_tags
-from utils import My_Transformer_Layer, My_Projection_w_Classifier_Layer, LogisticRegression_Torch
+from utils import My_Transformer_Layer, My_Projection_w_Classifier_Layer, LogisticRegression_Torch, Ens_Att_Pool
 from losses import SupConLoss
 from copy import deepcopy
 import llama
@@ -371,6 +371,7 @@ def main():
     parser.add_argument('--filt_prompts_catg_list',type=list_of_ints, default=None)
     parser.add_argument('--retrain_model_path',type=str, default=None)
     parser.add_argument('--retrain_full_model_path',type=str, default=None)
+    parser.add_argument('--ind_att_pool_probes_file_name',type=str, default=None)
     parser.add_argument('--use_dropout',type=bool, default=False)
     parser.add_argument('--use_batch_norm',type=bool, default=False)
     parser.add_argument('--no_bias',type=bool, default=False)
@@ -960,6 +961,10 @@ def main():
                                 if args.using_act=='layer_maxpool': nlinear_model = LogisticRegression_Torch(n_inputs=act_dims, n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims, output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=False, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else None
                                 if 'project_linear' in args.method: nlinear_model = My_Projection_w_Classifier_Layer(n_inputs=act_dims, n_layers=num_layers_to_use, n_outputs=1, bias=bias, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj).to(device)
                                 if 'project_non_linear_4' in args.method: nlinear_model = My_Projection_w_Classifier_Layer(n_inputs=act_dims, n_layers=num_layers_to_use, n_outputs=1, bias=bias, batch_norm=args.use_batch_norm, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, d_model=args.tfr_d_model, no_act_proj=args.no_act_proj, non_linear=True).to(device)
+                                if 'ens_att_pool' in args.method: 
+                                    ind_att_pool_probes_file_name = f'{args.save_path}/probes/models/{args.ind_att_pool_probes_file_name}_model{i}'
+                                    nlinear_model = Ens_Att_Pool(n_inputs=my_train_acts.shape[1], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, probes_file_name=ind_att_pool_probes_file_name).to(device)
+                                
                                 wgts = 0
                                 # print('\n\nModel Size')
                                 # for p in nlinear_model.parameters():

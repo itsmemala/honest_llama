@@ -300,13 +300,15 @@ class Ens_Att_Pool(torch.nn.Module):
         y_pred = self.linear(x)
         return y_pred
     def forward_upto_classifier(self, x): # x: (bs, n_layers, n_tokens, llm_dim)
-        ind_att_pool_out []
+        ind_att_pool_out = []
         for layer in range(x.shape[1]):
-            layer_x = x[:,layer]
+            layer_x = torch.squeeze(x[:,layer])
             model_path = f'{self.probes_file_name}_{layer}_0'
-            ind_att_pool_model = torch.load(model_path,map_location=device)
-            ind_att_pool_out.append([torch.sigmoid(ind_att_pool_model(layer_x).detach())]
+            ind_att_pool_model = torch.load(model_path,map_location='cuda')
+            model_out = torch.squeeze(torch.sigmoid(ind_att_pool_model(layer_x)).data)
+            ind_att_pool_out.append(model_out)
         ind_att_pool_out = torch.stack(ind_att_pool_out, dim=1)
+        # print(ind_att_pool_out.shape)
         return ind_att_pool_out # (bs, n_layers)
 
 # class FeedforwardNeuralNetModel(nn.Module):

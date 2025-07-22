@@ -399,7 +399,7 @@ def main():
                                 print(sample_probs)
                                 m_test_pred_model_temp.append(np.min(sample_probs))
                             sys.exit()
-                        m_test_pred_model = m_test_pred_model_temp
+                            m_test_pred_model = m_test_pred_model_temp
                         else:
                             first_random_idx = np.arange(0,len(m_test_pred_model),args.test_num_samples)
                             m_test_pred_model = m_test_pred_model[first_random_idx]
