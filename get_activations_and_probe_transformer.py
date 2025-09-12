@@ -38,6 +38,8 @@ from sklearn.decomposition import PCA
 from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
+# from thop import profile
+from fvcore.nn import FlopCountAnalysis
 
 torch.set_default_dtype(torch.float64)
 
@@ -964,6 +966,7 @@ def main():
                                 if 'ens_att_pool' in args.method: 
                                     ind_att_pool_probes_file_name = f'{args.save_path}/probes/models/{args.ind_att_pool_probes_file_name}_model{i}'
                                     nlinear_model = Ens_Att_Pool(n_inputs=my_train_acts.shape[1], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias, probes_file_name=ind_att_pool_probes_file_name).to(device)
+                                nlinear_model = nlinear_model.to(my_train_acts.dtype)
                                 
                                 wgts = 0
                                 # print('\n\nModel Size')
@@ -976,6 +979,15 @@ def main():
                                 #     wgts += num_params
                                 # print('\n\n#:',wgts)
                                 # sys.exit()
+
+                                print(my_train_acts[0].shape)
+                                # total_flops, total_params = profile(nlinear_model, (my_train_acts[:2].to(device),))
+                                flops = FlopCountAnalysis(nlinear_model, my_train_acts[:1].to(device))
+                                total_flops = flops.total()
+                                print(total_flops)
+                                print(f"Model FLOPS: {total_flops / 1e6:.2f} MFLOPs")
+                                sys.exit()
+
                                 if args.retrain_full_model_path is not None:
                                     retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
                                     retrain_model_state_dict = torch.load(retrain_full_model_path).state_dict()
@@ -1289,6 +1301,7 @@ def main():
                                         prior_probes_file_name = prior_probes_file_name.replace("/","") # FOR BACKWARD COMPATIBILITY
                                         prior_save_path = f'{args.save_path}/probes/models/{prior_probes_file_name}_model{i}'
                                         nlinear_model = torch.load(prior_save_path,map_location=device)
+                                    nlinear_model = nlinear_model.to(my_train_acts.dtype)
                                     if args.which_checkpoint not in probes_file_name: probes_file_name += '_' + args.which_checkpoint
                                     probe_save_path = f'{args.save_path}/probes/models/{probes_file_name}_model{i}'
                                     torch.save(nlinear_model, probe_save_path)
