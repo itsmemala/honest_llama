@@ -870,7 +870,7 @@ def main():
 
                                 # print(my_train_acts[0].shape)
                                 # total_flops, total_params = profile(nlinear_model, (my_train_acts[:2].to(device),))
-                                flops = FlopCountAnalysis(nlinear_model, torch.ones((1,128)).to(device)) # one layer only
+                                flops = FlopCountAnalysis(nlinear_model, torch.ones((1,4096)).to(device)) # one layer only
                                 total_flops = flops.total()
                                 print(total_flops)
                                 print(f"Model FLOPS: {total_flops / 1e6:.2f} MFLOPs")
