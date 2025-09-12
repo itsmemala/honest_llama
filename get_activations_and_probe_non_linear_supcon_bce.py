@@ -36,6 +36,7 @@ from sklearn.decomposition import PCA
 from scipy.spatial.distance import mahalanobis
 from matplotlib import pyplot as plt
 import wandb
+from fvcore.nn import FlopCountAnalysis 
 
 HF_NAMES = {
     'llama_7B': 'baffo32/decapoda-research-llama-7B-hf',
@@ -591,6 +592,7 @@ def main():
                     if file_path not in unique_file_paths: unique_file_paths.append(file_path)
                 file_wise_data = {}
                 print("Loading files..")
+                print(unique_file_paths[0])
                 for file_path in unique_file_paths:
                     file_wise_data[file_path] = np.load(file_path,allow_pickle=True)
                     if args.using_act=='layer_att_res':
@@ -856,15 +858,24 @@ def main():
                                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
                                 print('\n\nModel Size')
                                 wgts = 0
-                                for p in nlinear_model.parameters():
-                                    sp = torch.squeeze(p)
-                                    print(sp.shape)
-                                    num_params = 1
-                                    for i in range(len(sp.shape)):
-                                        num_params *= sp.shape[i]
-                                    wgts += num_params
-                                print('\n\n#:',wgts)
-                                # sys.exit()                                
+                                # for p in nlinear_model.parameters():
+                                #     sp = torch.squeeze(p)
+                                #     print(sp.shape)
+                                #     num_params = 1
+                                #     for i in range(len(sp.shape)):
+                                #         num_params *= sp.shape[i]
+                                #     wgts += num_params
+                                # print('\n\n#:',wgts)
+                                # sys.exit()      
+
+                                # print(my_train_acts[0].shape)
+                                # total_flops, total_params = profile(nlinear_model, (my_train_acts[:2].to(device),))
+                                flops = FlopCountAnalysis(nlinear_model, torch.ones((2,128)).to(device)) # one layer only
+                                total_flops = flops.total()
+                                print(total_flops)
+                                print(f"Model FLOPS: {total_flops / 1e6:.2f} MFLOPs")
+                                sys.exit()
+
                                 final_layer_name, projection_layer_name = 'linear' if 'individual_linear' in args.method else 'classifier', 'projection'
                                 if args.retrain_full_model_path is not None:
                                     retrain_full_model_path = f'{args.save_path}/probes/models/{args.retrain_full_model_path}_model{i}'
