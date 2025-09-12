@@ -856,8 +856,8 @@ def main():
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else None #My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
                                 if 'individual_att_pool' in args.method: nlinear_model = Att_Pool_Layer(llm_dim=act_dims[args.using_act], n_outputs=1)
                                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
-                                print('\n\nModel Size')
-                                wgts = 0
+                                # print('\n\nModel Size')
+                                # wgts = 0
                                 # for p in nlinear_model.parameters():
                                 #     sp = torch.squeeze(p)
                                 #     print(sp.shape)
@@ -870,7 +870,7 @@ def main():
 
                                 # print(my_train_acts[0].shape)
                                 # total_flops, total_params = profile(nlinear_model, (my_train_acts[:2].to(device),))
-                                flops = FlopCountAnalysis(nlinear_model, torch.ones((2,128)).to(device)) # one layer only
+                                flops = FlopCountAnalysis(nlinear_model, torch.ones((1,128)).to(device)) # one layer only
                                 total_flops = flops.total()
                                 print(total_flops)
                                 print(f"Model FLOPS: {total_flops / 1e6:.2f} MFLOPs")
