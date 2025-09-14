@@ -351,44 +351,44 @@ def main():
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
 
-    if args.model_name=='flan_33B':
-        # Cache directory
-        os.environ['TRANSFORMERS_CACHE'] = args.save_path+"/"+args.model_cache_dir
-        # Base model
-        model_name_or_path = 'huggyllama/llama-30b' # 'huggyllama/llama-7b'
-        # Adapter name on HF hub or local checkpoint path.
-        # adapter_path, _ = get_last_checkpoint('qlora/output/guanaco-7b')
-        adapter_path = MODEL # 'timdettmers/guanaco-7b'
+    # if args.model_name=='flan_33B':
+    #     # Cache directory
+    #     os.environ['TRANSFORMERS_CACHE'] = args.save_path+"/"+args.model_cache_dir
+    #     # Base model
+    #     model_name_or_path = 'huggyllama/llama-30b' # 'huggyllama/llama-7b'
+    #     # Adapter name on HF hub or local checkpoint path.
+    #     # adapter_path, _ = get_last_checkpoint('qlora/output/guanaco-7b')
+    #     adapter_path = MODEL # 'timdettmers/guanaco-7b'
 
-        tokenizer = llama.LlamaTokenizer.from_pretrained(model_name_or_path)
-        # Fixing some of the early LLaMA HF conversion issues.
-        tokenizer.bos_token_id = 1
+    #     tokenizer = llama.LlamaTokenizer.from_pretrained(model_name_or_path)
+    #     # Fixing some of the early LLaMA HF conversion issues.
+    #     tokenizer.bos_token_id = 1
 
-        if args.load_act==True: # Only load model if we need activations on the fly
-            # Load the model (use bf16 for faster inference)
-            base_model = llama.LlamaForCausalLM.from_pretrained(
-                model_name_or_path,
-                torch_dtype=torch.bfloat16,
-                device_map={"": 0},
-                # load_in_4bit=True,
-                quantization_config=BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_compute_dtype=torch.bfloat16,
-                    bnb_4bit_use_double_quant=True,
-                    bnb_4bit_quant_type='nf4',
-                ),
-                cache_dir=args.save_path+"/"+args.model_cache_dir
-            )
-            model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
-    elif "llama3" in args.model_name:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL)
-        if args.load_act==True:
-            model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-    else:
-        tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-        if args.load_act==True: # Only load model if we need activations on the fly
-            model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-        # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
+    #     if args.load_act==True: # Only load model if we need activations on the fly
+    #         # Load the model (use bf16 for faster inference)
+    #         base_model = llama.LlamaForCausalLM.from_pretrained(
+    #             model_name_or_path,
+    #             torch_dtype=torch.bfloat16,
+    #             device_map={"": 0},
+    #             # load_in_4bit=True,
+    #             quantization_config=BitsAndBytesConfig(
+    #                 load_in_4bit=True,
+    #                 bnb_4bit_compute_dtype=torch.bfloat16,
+    #                 bnb_4bit_use_double_quant=True,
+    #                 bnb_4bit_quant_type='nf4',
+    #             ),
+    #             cache_dir=args.save_path+"/"+args.model_cache_dir
+    #         )
+    #         model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
+    # elif "llama3" in args.model_name:
+    #     tokenizer = AutoTokenizer.from_pretrained(MODEL)
+    #     if args.load_act==True:
+    #         model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    # else:
+    #     tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+    #     if args.load_act==True: # Only load model if we need activations on the fly
+    #         model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    #     # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
     device = "cuda"
 
     num_heads = 8 if 'gemma_2B' in args.model_name else 16 if 'gemma_7B' in args.model_name else 32 if 'llama3' in args.model_name else 32
@@ -436,8 +436,8 @@ def main():
         elif args.dataset_name == 'nq_open' or args.dataset_name == 'cnn_dailymail' or args.dataset_name == 'trivia_qa' or args.dataset_name == 'tqa_gen' or args.dataset_name in ['city_country','movie_cast','player_date_birth']:
             num_samples = args.num_samples if ('sampled' in args.train_file_name and args.num_samples is not None) else 11 if 'sampled' in args.train_file_name else 1
             file_path = f'{args.save_path}/responses/{args.train_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.train_file_name}.json'
-            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
-            prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
+            # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = tokenized_from_file(file_path, tokenizer, num_samples)
+            # prompts, tokenized_prompts, answer_token_idxes, prompt_tokens = prompts[:args.len_dataset], tokenized_prompts[:args.len_dataset], answer_token_idxes[:args.len_dataset], prompt_tokens[:args.len_dataset]
             if 'se_labels' in args.train_labels_file_name:
                 file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.train_labels_file_name}.npy'
                 labels = np.load(file_path).tolist()
@@ -498,7 +498,7 @@ def main():
         elif 'nq_open' in args.test_file_name or 'trivia_qa' in args.test_file_name or 'city_country' in args.test_file_name or 'movie_cast' in args.test_file_name or 'player_date_birth' in args.test_file_name:
             # num_samples = args.num_samples if ('sampled' in args.test_file_name and args.num_samples is not None) else 11 if 'sampled' in args.test_file_name else 1
             file_path = f'{args.save_path}/responses/{args.test_file_name}.json' if args.dataset_name == 'tqa_gen' else f'{args.save_path}/responses/{args.model_name}_{args.test_file_name}.json'
-            test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,args.test_num_samples)
+            # test_prompts, test_tokenized_prompts, test_answer_token_idxes, test_prompt_tokens = tokenized_from_file(file_path, tokenizer,args.test_num_samples)
             if 'se_labels' in args.test_labels_file_name:
                 file_path = f'{args.save_path}/uncertainty/{args.model_name}_{args.test_labels_file_name}.npy'
                 test_labels = np.load(file_path)
@@ -532,11 +532,11 @@ def main():
 
     hallu_cls = 1 if 'hallu_pos' in args.method else 0
 
-    if args.token=='tagged_tokens':
-        tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
-        test_tagged_token_idxs = get_token_tags(test_prompts,test_prompt_tokens)
-    else:
-        tagged_token_idxs,test_tagged_token_idxs = [[] for i in range(len(prompts))],[[] for i in range(len(test_prompts))]
+    # if args.token=='tagged_tokens':
+    #     tagged_token_idxs = get_token_tags(prompts,prompt_tokens)
+    #     test_tagged_token_idxs = get_token_tags(test_prompts,test_prompt_tokens)
+    # else:
+    #     tagged_token_idxs,test_tagged_token_idxs = [[] for i in range(len(prompts))],[[] for i in range(len(test_prompts))]
     
     # if args.dataset_name=='strqa':
     #     args.acts_per_file = 50
@@ -856,16 +856,16 @@ def main():
                                 nlinear_model = LogisticRegression_Torch(n_inputs=act_dims[args.using_act], n_outputs=1, bias=bias, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'individual_linear' in args.method else My_SupCon_NonLinear_Classifier4(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon, norm_emb=args.norm_emb, norm_cfr=args.norm_cfr, cfr_no_bias=args.cfr_no_bias).to(device) if 'non_linear_4' in args.method else None #My_SupCon_NonLinear_Classifier(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout, supcon=supcon).to(device)
                                 if 'individual_att_pool' in args.method: nlinear_model = Att_Pool_Layer(llm_dim=act_dims[args.using_act], n_outputs=1)
                                 # nlinear_model = My_SupCon_NonLinear_Classifier_wProj(input_size=act_dims[args.using_act], output_size=1, bias=bias, use_dropout=args.use_dropout).to(device)
-                                # print('\n\nModel Size')
-                                # wgts = 0
-                                # for p in nlinear_model.parameters():
-                                #     sp = torch.squeeze(p)
-                                #     print(sp.shape)
-                                #     num_params = 1
-                                #     for i in range(len(sp.shape)):
-                                #         num_params *= sp.shape[i]
-                                #     wgts += num_params
-                                # print('\n\n#:',wgts)
+                                print('\n\nModel Size')
+                                wgts = 0
+                                for p in nlinear_model.parameters():
+                                    sp = torch.squeeze(p)
+                                    print(sp.shape)
+                                    num_params = 1
+                                    for i in range(len(sp.shape)):
+                                        num_params *= sp.shape[i]
+                                    wgts += num_params
+                                print('\n\n#:',wgts)
                                 # sys.exit()      
 
                                 # print(my_train_acts[0].shape)

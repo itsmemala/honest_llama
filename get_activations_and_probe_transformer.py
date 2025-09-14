@@ -443,45 +443,45 @@ def main():
 
     MODEL = HF_NAMES[args.model_name] if not args.model_dir else args.model_dir
 
-    if args.model_name=='flan_33B':
-        # Cache directory
-        os.environ['TRANSFORMERS_CACHE'] = args.save_path+"/"+args.model_cache_dir
-        # Base model
-        model_name_or_path = 'huggyllama/llama-30b' # 'huggyllama/llama-7b'
-        # Adapter name on HF hub or local checkpoint path.
-        # adapter_path, _ = get_last_checkpoint('qlora/output/guanaco-7b')
-        adapter_path = MODEL # 'timdettmers/guanaco-7b'
+    # if args.model_name=='flan_33B':
+    #     # Cache directory
+    #     os.environ['TRANSFORMERS_CACHE'] = args.save_path+"/"+args.model_cache_dir
+    #     # Base model
+    #     model_name_or_path = 'huggyllama/llama-30b' # 'huggyllama/llama-7b'
+    #     # Adapter name on HF hub or local checkpoint path.
+    #     # adapter_path, _ = get_last_checkpoint('qlora/output/guanaco-7b')
+    #     adapter_path = MODEL # 'timdettmers/guanaco-7b'
 
-        tokenizer = llama.LlamaTokenizer.from_pretrained(model_name_or_path)
-        # Fixing some of the early LLaMA HF conversion issues.
-        tokenizer.bos_token_id = 1
+    #     tokenizer = llama.LlamaTokenizer.from_pretrained(model_name_or_path)
+    #     # Fixing some of the early LLaMA HF conversion issues.
+    #     tokenizer.bos_token_id = 1
 
-        if args.load_act==True: # Only load model if we need activations on the fly
-            # Load the model (use bf16 for faster inference)
-            base_model = llama.LlamaForCausalLM.from_pretrained(
-                model_name_or_path,
-                torch_dtype=torch.bfloat16,
-                device_map={"": 0},
-                # load_in_4bit=True,
-                quantization_config=BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_compute_dtype=torch.bfloat16,
-                    bnb_4bit_use_double_quant=True,
-                    bnb_4bit_quant_type='nf4',
-                ),
-                cache_dir=args.save_path+"/"+args.model_cache_dir
-            )
-            model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
-    elif "llama3" in args.model_name:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL)
-        # if args.load_act==True:
-        #     model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-    else:
-        tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
-        # if args.load_act==True: # Only load model if we need activations on the fly
-        #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
-        # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
-        num_heads = 32
+    #     if args.load_act==True: # Only load model if we need activations on the fly
+    #         # Load the model (use bf16 for faster inference)
+    #         base_model = llama.LlamaForCausalLM.from_pretrained(
+    #             model_name_or_path,
+    #             torch_dtype=torch.bfloat16,
+    #             device_map={"": 0},
+    #             # load_in_4bit=True,
+    #             quantization_config=BitsAndBytesConfig(
+    #                 load_in_4bit=True,
+    #                 bnb_4bit_compute_dtype=torch.bfloat16,
+    #                 bnb_4bit_use_double_quant=True,
+    #                 bnb_4bit_quant_type='nf4',
+    #             ),
+    #             cache_dir=args.save_path+"/"+args.model_cache_dir
+    #         )
+    #         model = PeftModel.from_pretrained(base_model, adapter_path, cache_dir=args.save_path+"/"+args.model_cache_dir)
+    # elif "llama3" in args.model_name:
+    #     tokenizer = AutoTokenizer.from_pretrained(MODEL)
+    #     # if args.load_act==True:
+    #     #     model = llama3.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+    # else:
+        # tokenizer = llama.LlamaTokenizer.from_pretrained(MODEL)
+        # # if args.load_act==True: # Only load model if we need activations on the fly
+        # #     model = llama.LlamaForCausalLM.from_pretrained(MODEL, low_cpu_mem_usage=True, torch_dtype=torch.float16, device_map="auto")
+        # # num_layers = 33 if '7B' in args.model_name and args.using_act=='layer' else 32 if '7B' in args.model_name and args.using_act=='mlp' else None #TODO: update for bigger models
+        # num_heads = 32
     device = "cuda" if args.device is None else args.device
 
     print("Loading prompts and model responses..")
@@ -969,15 +969,15 @@ def main():
                                 nlinear_model = nlinear_model.to(my_train_acts.dtype)
                                 
                                 wgts = 0
-                                # print('\n\nModel Size')
-                                # for p in nlinear_model.parameters():
-                                #     sp = torch.squeeze(p)
-                                #     print(sp.shape)
-                                #     num_params = 1
-                                #     for i in range(len(sp.shape)):
-                                #         num_params *= sp.shape[i]
-                                #     wgts += num_params
-                                # print('\n\n#:',wgts)
+                                print('\n\nModel Size')
+                                for p in nlinear_model.parameters():
+                                    sp = torch.squeeze(p)
+                                    print(sp.shape)
+                                    num_params = 1
+                                    for i in range(len(sp.shape)):
+                                        num_params *= sp.shape[i]
+                                    wgts += num_params
+                                print('\n\n#:',wgts)
                                 # sys.exit()
 
                                 print(my_train_acts[0].shape)
@@ -986,6 +986,7 @@ def main():
                                 total_flops = flops.total()
                                 print(total_flops)
                                 print(f"Model FLOPS: {total_flops / 1e6:.2f} MFLOPs")
+                                print(flops.by_module_and_operator())
                                 sys.exit()
 
                                 if args.retrain_full_model_path is not None:
