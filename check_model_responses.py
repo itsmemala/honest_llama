@@ -90,7 +90,7 @@ def main():
                     #         gt_answer = data['model_answer'][i][0]
                     #     else:
                     #         gt_answer = not data['model_answer'][i][0]
-                    for eval_sent_k in eval_sent.split(". "):
+                    # for eval_sent_k in eval_sent.split(". "):
                         # inputs = nli_tokenizer.batch_encode_plus(
                         # batch_text_or_text_pairs=[(eval_sent_k, data['model_completion'][i][j])],
                         # add_special_tokens=True, padding="longest",
@@ -100,12 +100,12 @@ def main():
                         # logits = nli_model(**inputs).logits # neutral is already removed
                         # probs = torch.softmax(logits, dim=-1)
                         # prob_ = probs[0][1].item() # prob(contradiction)
-                        prompt = f"Context: {data['model_completion'][i][j]}\nSentence: {eval_sent_k}\nIs the sentence supported by the context above?\nAnswer YES or NO.\nAnswer:"
-                        tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids.to('cuda')
-                        llm_contra_resp = llm.generate(tokenized_prompt, max_new_tokens=5, do_sample=False, num_return_sequences=1)[:, tokenized_prompt.shape[-1]:]
-                        llm_contra_resp = tokenizer.decode(llm_contra_resp[0], skip_special_tokens=True).lower()
-                        prob_ = 0 if 'yes' in llm_contra_resp else 1.0 if 'no' in llm_contra_resp else 0.5
-                        contra_scores.append(prob_)
+                    prompt = f"Context: {data['model_completion'][i][j]}\nSentence: {eval_sent}\nIs the sentence supported by the context above?\nAnswer YES or NO.\nAnswer:"
+                    tokenized_prompt = tokenizer(prompt, return_tensors = 'pt').input_ids.to('cuda')
+                    llm_contra_resp = llm.generate(tokenized_prompt, max_new_tokens=5, do_sample=False, num_return_sequences=1)[:, tokenized_prompt.shape[-1]:]
+                    llm_contra_resp = tokenizer.decode(llm_contra_resp[0], skip_special_tokens=True).lower()
+                    prob_ = 0 if 'yes' in llm_contra_resp else 1.0 if 'no' in llm_contra_resp else 0.5
+                    contra_scores.append(prob_)
                 selfcheck_scores.append(np.mean(contra_scores))
                 # if len(marginalised_answers)>0:
                 #     maj_vote = Counter(marginalised_answers).most_common(1)[0][0]
